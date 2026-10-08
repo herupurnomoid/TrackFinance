@@ -72,7 +72,7 @@ class _MenuGridSectionState extends State<MenuGridSection>
             // 2. Ekspor
             Expanded(
               child: _buildClayMenuItem(
-                title: 'Ekspor & Import',
+                title: 'Data',
                 icon: Icons.sync_rounded,
                 iconColor: AppColors.primary,
                 iconBgColor: AppColors.surfaceContainerLow,
