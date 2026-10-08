@@ -57,6 +57,23 @@ void main() {
     expect(find.text('Pendapatan Freelance'), findsOneWidget);
   });
 
+  testWidgets('Dashboard screen skeleton loading smoke test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const DashboardScreen(isLoading: true),
+      ),
+    );
+
+    // Verify skeleton widget is active
+    expect(find.byKey(const ValueKey('skeleton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('content')), findsNothing);
+  });
+
   testWidgets('Profile screen smoke test', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.625;
