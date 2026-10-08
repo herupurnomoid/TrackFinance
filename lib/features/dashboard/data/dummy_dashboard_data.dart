@@ -24,10 +24,7 @@ class TransactionDateGroup {
   final String date;
   final List<TransactionItem> items;
 
-  const TransactionDateGroup({
-    required this.date,
-    required this.items,
-  });
+  const TransactionDateGroup({required this.date, required this.items});
 }
 
 class CashflowDataPoint {

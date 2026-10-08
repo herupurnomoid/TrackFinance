@@ -28,6 +28,7 @@ class AppColors {
   static const Color tertiaryFixed = Color(0xFFBEE9FF);
 
   static const Color secondaryContainer = Color(0xFFD8E5EA);
+  static const Color onSecondaryContainer = Color(0xFF5A666B);
   static const Color onPrimary = Color(0xFFFFFFFF);
 
   // Status & Transaction Colors

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_text_styles.dart';
 
 class LogoutButton extends StatefulWidget {
   final Future<void> Function() onLogout;
@@ -25,29 +25,40 @@ class _LogoutButtonState extends State<LogoutButton> {
         return AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: const Text(
+          title: Text(
             'Konfirmasi Keluar',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
           ),
-          content: const Text(
+          content: Text(
             'Apakah Anda yakin ingin keluar dari akun ini?',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: AppColors.onSurfaceVariant,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
+              child: Text(
                 'Batal',
-                style: TextStyle(color: AppColors.secondary),
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondary,
+                ),
               ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Keluar'),
+              child: Text(
+                'Keluar',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         );
@@ -70,26 +81,30 @@ class _LogoutButtonState extends State<LogoutButton> {
   @override
   Widget build(BuildContext context) {
     return AnimatedScale(
-      scale: _isPressed ? 0.96 : 1.0,
-      duration: const Duration(milliseconds: 120),
+      scale: _isPressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 100),
       child: Container(
         width: double.infinity,
-        height: 56,
+        height: 52,
         decoration: BoxDecoration(
           color: AppColors.errorContainer,
           borderRadius: BorderRadius.circular(99),
           boxShadow: [
             BoxShadow(
-              color: AppColors.error.withValues(alpha: 0.22),
-              blurRadius: 24,
+              color: AppColors.error.withValues(alpha: 0.18),
+              blurRadius: 20,
               spreadRadius: -4,
-              offset: const Offset(0, 12),
+              offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: AppColors.onErrorContainer.withValues(alpha: 0.1),
-              blurRadius: 10,
-              spreadRadius: -2,
-              offset: const Offset(0, 4),
+              color: Colors.white.withValues(alpha: 0.8),
+              blurRadius: 4,
+              offset: const Offset(0, -2),
+            ),
+            BoxShadow(
+              color: AppColors.onErrorContainer.withValues(alpha: 0.15),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -106,30 +121,20 @@ class _LogoutButtonState extends State<LogoutButton> {
             child: Center(
               child: _isLoading
                   ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 20,
+                      height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
                         color: AppColors.onErrorContainer,
                       ),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.logout_rounded,
-                          size: 20,
-                          color: AppColors.onErrorContainer,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Keluar dari Akun',
-                          style: AppTextStyles.labelLg.copyWith(
-                            color: AppColors.onErrorContainer,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                  : Text(
+                      'Keluar',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onErrorContainer,
+                      ),
                     ),
             ),
           ),

@@ -163,7 +163,9 @@ class _DashboardSearchFilterState extends State<DashboardSearchFilter> {
                       boxShadow: isSelected
                           ? const [
                               BoxShadow(
-                                color: Color(0x7365D0F4), // rgba(101,208,244,0.45)
+                                color: Color(
+                                  0x7365D0F4,
+                                ), // rgba(101,208,244,0.45)
                                 blurRadius: 14,
                                 spreadRadius: -2,
                                 offset: Offset(0, 6),

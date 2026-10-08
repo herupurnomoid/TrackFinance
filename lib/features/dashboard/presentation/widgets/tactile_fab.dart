@@ -7,17 +7,14 @@ class TactileFab extends StatefulWidget {
   final VoidCallback? onAddIncome;
   final VoidCallback? onAddExpense;
 
-  const TactileFab({
-    super.key,
-    this.onAddIncome,
-    this.onAddExpense,
-  });
+  const TactileFab({super.key, this.onAddIncome, this.onAddExpense});
 
   @override
   State<TactileFab> createState() => _TactileFabState();
 }
 
-class _TactileFabState extends State<TactileFab> with SingleTickerProviderStateMixin {
+class _TactileFabState extends State<TactileFab>
+    with SingleTickerProviderStateMixin {
   bool _isOpen = false;
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;

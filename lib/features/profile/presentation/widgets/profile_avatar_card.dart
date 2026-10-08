@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_text_styles.dart';
 
 class ProfileAvatarCard extends StatelessWidget {
   final String name;
@@ -19,151 +19,126 @@ class ProfileAvatarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveUrl = avatarUrl ?? _defaultAvatarUrl;
+    final effectiveUrl = (avatarUrl != null && avatarUrl!.isNotEmpty)
+        ? avatarUrl!
+        : _defaultAvatarUrl;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.clayShadow.withValues(alpha: 0.25),
-            blurRadius: 28,
-            spreadRadius: -6,
-            offset: const Offset(0, 12),
-          ),
-          BoxShadow(
-            color: const Color(0xFF0D2C3A).withValues(alpha: 0.05),
-            blurRadius: 12,
-            spreadRadius: -2,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Clay Avatar Sphere with Verified Badge Pin
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 3D Avatar Outer Sphere (112x112)
-              Container(
-                width: 112,
-                height: 112,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.primaryFixed,
-                      AppColors.primaryContainer,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryContainer.withValues(alpha: 0.45),
-                      blurRadius: 28,
-                      spreadRadius: -4,
-                      offset: const Offset(0, 16),
-                    ),
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      spreadRadius: -2,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    effectiveUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.primaryFixed,
-                        child: const Icon(
-                          Icons.person_rounded,
-                          size: 54,
-                          color: AppColors.primary,
-                        ),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: AppColors.surfaceContainerLow,
-                        child: const Center(
-                          child: SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // 128x128 3D Clay Gradient Avatar Sphere
+        Container(
+          width: 128,
+          height: 128,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFB7EAFF),
+                AppColors.primaryContainer,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryContainer.withValues(alpha: 0.45),
+                blurRadius: 32,
+                spreadRadius: -6,
+                offset: const Offset(0, 18),
               ),
-
-              // Verified Badge Pin at bottom-right
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        blurRadius: 4,
-                        offset: const Offset(0, -1),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.check_circle_rounded,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.85),
+                blurRadius: 8,
+                offset: const Offset(0, -3),
+              ),
+              BoxShadow(
+                color: const Color(0xFF006780).withValues(alpha: 0.22),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-
-          const SizedBox(height: 18),
-
-          // User Name & Email
-          Text(
-            name,
-            style: AppTextStyles.headlineMd.copyWith(
-              fontWeight: FontWeight.w700,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.surfaceContainerLowest,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            email,
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.secondary,
+            child: ClipOval(
+              child: Image.network(
+                effectiveUrl,
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.primaryFixed,
+                    child: const Icon(
+                      Icons.person_rounded,
+                      size: 64,
+                      color: AppColors.primary,
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: AppColors.surfaceContainerLow,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // User Display Name
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22,
+            height: 28 / 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            color: AppColors.onSurface,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        // User Email Address
+        Text(
+          email,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            height: 20 / 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.secondary,
+          ),
+        ),
+      ],
     );
   }
 }

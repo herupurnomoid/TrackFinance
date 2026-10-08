@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/widgets/animations.dart';
 
 class CashflowSummaryCard extends StatelessWidget {
   final String income;
@@ -53,7 +54,10 @@ class CashflowSummaryCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
@@ -121,8 +125,10 @@ class CashflowSummaryCard extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          '+Rp ${income.replaceAll('Rp', '').replaceAll('+', '').replaceAll('-', '').trim()}',
+                        child: CountUpText(
+                          value: income,
+                          prefix: '+Rp ',
+                          delay: const Duration(milliseconds: 250),
                           style: AppTextStyles.headlineSm.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -182,8 +188,10 @@ class CashflowSummaryCard extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          '-Rp ${expense.replaceAll('Rp', '').replaceAll('+', '').replaceAll('-', '').trim()}',
+                        child: CountUpText(
+                          value: expense,
+                          prefix: '-Rp ',
+                          delay: const Duration(milliseconds: 350),
                           style: AppTextStyles.headlineSm.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,

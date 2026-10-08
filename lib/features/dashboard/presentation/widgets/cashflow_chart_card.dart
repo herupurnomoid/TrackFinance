@@ -6,10 +6,7 @@ import '../../data/dummy_dashboard_data.dart';
 class CashflowChartCard extends StatelessWidget {
   final List<CashflowDataPoint> dataPoints;
 
-  const CashflowChartCard({
-    super.key,
-    required this.dataPoints,
-  });
+  const CashflowChartCard({super.key, required this.dataPoints});
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +29,7 @@ class CashflowChartCard extends StatelessWidget {
             spreadRadius: -2,
             offset: Offset(0, 4),
           ),
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 6,
-            offset: Offset(0, -3),
-          ),
+          BoxShadow(color: Colors.white, blurRadius: 6, offset: Offset(0, -3)),
         ],
       ),
       child: Column(
@@ -99,10 +92,7 @@ class CashflowChartCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLegend({
-    required Color color,
-    required String label,
-  }) {
+  Widget _buildLegend({required Color color, required String label}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -124,9 +114,7 @@ class CashflowChartCard extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: AppTextStyles.labelSm.copyWith(
-            color: AppColors.secondary,
-          ),
+          style: AppTextStyles.labelSm.copyWith(color: AppColors.secondary),
         ),
       ],
     );
@@ -178,7 +166,9 @@ class CashflowChartCard extends StatelessWidget {
                           return Container(
                             width: double.infinity,
                             height: 1,
-                            color: AppColors.outlineVariant.withValues(alpha: 0.30),
+                            color: AppColors.outlineVariant.withValues(
+                              alpha: 0.30,
+                            ),
                           );
                         }),
                       ),
@@ -191,8 +181,12 @@ class CashflowChartCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          children: dataPoints.map((point) {
-                            return _buildBarPair(point, chartHeight: chartHeight);
+                          children: dataPoints.asMap().entries.map((e) {
+                            return _buildBarPair(
+                              e.value,
+                              chartHeight: chartHeight,
+                              index: e.key,
+                            );
                           }).toList(),
                         ),
                       ),
@@ -231,16 +225,40 @@ class CashflowChartCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBarPair(CashflowDataPoint point, {required double chartHeight}) {
+  Widget _buildBarPair(
+    CashflowDataPoint point, {
+    required double chartHeight,
+    required int index,
+  }) {
     // Proportional height up to chartHeight, with a minimum touch of 12px
-    final incomeH = (point.incomePercentage * chartHeight).clamp(12.0, chartHeight);
-    final expenseH = (point.expensePercentage * chartHeight).clamp(12.0, chartHeight);
+    final incomeH = (point.incomePercentage * chartHeight).clamp(
+      12.0,
+      chartHeight,
+    );
+    final expenseH = (point.expensePercentage * chartHeight).clamp(
+      12.0,
+      chartHeight,
+    );
+
+    // Each pair waits for the card entrance, then grows 90ms after the previous one.
+    const baseDelayMs = 450;
+    const growMs = 750;
+    final delayMs = baseDelayMs + index * 90;
+    final totalMs = delayMs + growMs;
+    final start = delayMs / totalMs;
+    final incomeCurve = Interval(start, 1.0, curve: Curves.easeOutBack);
+    final expenseCurve = Interval(
+      (start + 0.06).clamp(0.0, 1.0),
+      1.0,
+      curve: Curves.easeOutBack,
+    );
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 700),
-      curve: Curves.easeOutCubic,
-      builder: (context, factor, child) {
+      duration: Duration(milliseconds: totalMs),
+      builder: (context, t, child) {
+        final incomeF = incomeCurve.transform(t);
+        final expenseF = expenseCurve.transform(t);
         return Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -248,7 +266,7 @@ class CashflowChartCard extends StatelessWidget {
             // Masuk Bar (Cyan Primary Container with top-rounded clay pill shape)
             Container(
               width: 14,
-              height: incomeH * factor,
+              height: (incomeH * incomeF).clamp(0.0, chartHeight),
               decoration: const BoxDecoration(
                 color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.only(
@@ -270,7 +288,7 @@ class CashflowChartCard extends StatelessWidget {
             // Keluar Bar (Surface Container Highest with top-rounded clay pill shape)
             Container(
               width: 14,
-              height: expenseH * factor,
+              height: (expenseH * expenseF).clamp(0.0, chartHeight),
               decoration: const BoxDecoration(
                 color: AppColors.surfaceContainerHighest,
                 borderRadius: BorderRadius.only(

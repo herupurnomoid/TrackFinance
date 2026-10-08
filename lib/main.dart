@@ -5,6 +5,8 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/category/presentation/screens/category_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
+import 'features/transaction/presentation/screens/add_transaction_screen.dart';
+import 'features/export/presentation/screens/export_data_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,8 @@ class TrackFinanceApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/category': (context) => const CategoryScreen(),
+        '/add-transaction': (context) => const AddTransactionScreen(),
+        '/export': (context) => const ExportDataScreen(),
       },
     );
   }

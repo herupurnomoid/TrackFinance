@@ -179,10 +179,7 @@ class _TactileStatCard extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
 
-  const _TactileStatCard({
-    required this.child,
-    this.onTap,
-  });
+  const _TactileStatCard({required this.child, this.onTap});
 
   @override
   State<_TactileStatCard> createState() => _TactileStatCardState();

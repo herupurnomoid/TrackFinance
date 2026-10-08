@@ -6,11 +6,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final VoidCallback? onProfile;
 
-  const DashboardAppBar({
-    super.key,
-    this.onBack,
-    this.onProfile,
-  });
+  const DashboardAppBar({super.key, this.onBack, this.onProfile});
 
   @override
   Size get preferredSize => const Size.fromHeight(64);

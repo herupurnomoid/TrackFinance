@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/widgets/animations.dart';
 
-class CategoryTabBar extends StatelessWidget {
-  final bool isExpenseSelected;
-  final ValueChanged<bool> onTabChanged;
-  final int expenseCount;
-  final int incomeCount;
+class TransactionTypeSwitch extends StatelessWidget {
+  final bool isExpense;
+  final ValueChanged<bool> onChanged;
 
-  const CategoryTabBar({
+  const TransactionTypeSwitch({
     super.key,
-    required this.isExpenseSelected,
-    required this.onTabChanged,
-    this.expenseCount = 9,
-    this.incomeCount = 6,
+    required this.isExpense,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(999),
@@ -38,28 +35,26 @@ class CategoryTabBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Pengeluaran Tab
+          // Tab 1: Pengeluaran
           Expanded(
-            child: _buildTabButton(
+            child: _buildTab(
               title: 'Pengeluaran',
-              count: expenseCount,
-              icon: Icons.trending_down_rounded,
-              isSelected: isExpenseSelected,
+              icon: Icons.arrow_downward_rounded,
+              isActive: isExpense,
               onTap: () {
-                if (!isExpenseSelected) onTabChanged(true);
+                if (!isExpense) onChanged(true);
               },
             ),
           ),
 
-          // Pemasukan Tab
+          // Tab 2: Pemasukan
           Expanded(
-            child: _buildTabButton(
+            child: _buildTab(
               title: 'Pemasukan',
-              count: incomeCount,
-              icon: Icons.trending_up_rounded,
-              isSelected: !isExpenseSelected,
+              icon: Icons.arrow_upward_rounded,
+              isActive: !isExpense,
               onTap: () {
-                if (isExpenseSelected) onTabChanged(false);
+                if (isExpense) onChanged(false);
               },
             ),
           ),
@@ -68,24 +63,23 @@ class CategoryTabBar extends StatelessWidget {
     );
   }
 
-  Widget _buildTabButton({
+  Widget _buildTab({
     required String title,
-    required int count,
     required IconData icon,
-    required bool isSelected,
+    required bool isActive,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return PressableScale(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      scaleFactor: 0.97,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : Colors.transparent,
+          color: isActive ? AppColors.primaryContainer : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          boxShadow: isSelected
+          boxShadow: isActive
               ? [
                   BoxShadow(
                     color: const Color(0xFF65D0F4).withValues(alpha: 0.45),
@@ -108,37 +102,17 @@ class CategoryTabBar extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : AppColors.secondary,
+              color: isActive ? Colors.white : AppColors.secondary,
             ),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 title,
-                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
                 style: AppTextStyles.labelLg.copyWith(
-                  color: isSelected ? Colors.white : AppColors.secondary,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            // Count badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.28)
-                    : AppColors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '$count',
-                style: AppTextStyles.labelSm.copyWith(
-                  fontSize: 10,
-                  color: isSelected ? Colors.white : AppColors.secondary,
-                  fontWeight: FontWeight.w700,
+                  color: isActive ? Colors.white : AppColors.secondary,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),

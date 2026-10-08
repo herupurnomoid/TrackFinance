@@ -157,9 +157,7 @@ class DashboardSkeleton extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: ShimmerBox.pill(height: 48),
-            ),
+            Expanded(child: ShimmerBox.pill(height: 48)),
             const SizedBox(width: 12),
             ShimmerBox.pill(width: 110, height: 48),
           ],
@@ -255,11 +253,12 @@ class DashboardSkeleton extends StatelessWidget {
           children: List.generate(4, (index) {
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(
-                  right: index < 3 ? 8.0 : 0.0,
-                ),
+                padding: EdgeInsets.only(right: index < 3 ? 8.0 : 0.0),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(20),
@@ -323,7 +322,10 @@ class DashboardSkeleton extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(5, (_) => ShimmerBox.pill(width: 28, height: 10)),
+                  children: List.generate(
+                    5,
+                    (_) => ShimmerBox.pill(width: 28, height: 10),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -348,7 +350,10 @@ class DashboardSkeleton extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(5, (_) => ShimmerBox.pill(width: 34, height: 10)),
+                      children: List.generate(
+                        5,
+                        (_) => ShimmerBox.pill(width: 34, height: 10),
+                      ),
                     ),
                   ],
                 ),
@@ -395,9 +400,7 @@ class DashboardSkeleton extends StatelessWidget {
           const SizedBox(height: 16),
           ShimmerBox.pill(height: 40),
           const SizedBox(height: 24),
-          Center(
-            child: ShimmerBox.circle(size: 150),
-          ),
+          Center(child: ShimmerBox.circle(size: 150)),
           const SizedBox(height: 24),
           Column(
             children: List.generate(4, (_) {

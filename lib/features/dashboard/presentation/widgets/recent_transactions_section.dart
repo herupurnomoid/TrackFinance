@@ -40,7 +40,10 @@ class RecentTransactionsSection extends StatelessWidget {
                 onTap: onSortTap,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -80,7 +83,10 @@ class RecentTransactionsSection extends StatelessWidget {
               children: [
                 // Date Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4.0,
+                    vertical: 4.0,
+                  ),
                   child: Text(
                     group.date,
                     style: AppTextStyles.labelMd.copyWith(
@@ -128,11 +134,7 @@ class RecentTransactionsSection extends StatelessWidget {
             spreadRadius: -4,
             offset: Offset(0, 8),
           ),
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
+          BoxShadow(color: Colors.white, blurRadius: 4, offset: Offset(0, -2)),
         ],
       ),
       child: Material(
@@ -158,11 +160,7 @@ class RecentTransactionsSection extends StatelessWidget {
                   ],
                 ),
                 child: Center(
-                  child: Icon(
-                    iconData,
-                    size: 20,
-                    color: iconColor,
-                  ),
+                  child: Icon(iconData, size: 20, color: iconColor),
                 ),
               ),
 

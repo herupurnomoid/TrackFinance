@@ -5,10 +5,7 @@ import '../../../../core/constants/app_text_styles.dart';
 class MenuGridSection extends StatefulWidget {
   final Function(String menuTitle)? onMenuTap;
 
-  const MenuGridSection({
-    super.key,
-    this.onMenuTap,
-  });
+  const MenuGridSection({super.key, this.onMenuTap});
 
   @override
   State<MenuGridSection> createState() => _MenuGridSectionState();
@@ -75,7 +72,7 @@ class _MenuGridSectionState extends State<MenuGridSection>
             // 2. Ekspor
             Expanded(
               child: _buildClayMenuItem(
-                title: 'Ekspor',
+                title: 'Ekspor & Import',
                 icon: Icons.sync_rounded,
                 iconColor: AppColors.primary,
                 iconBgColor: AppColors.surfaceContainerLow,
@@ -247,7 +244,9 @@ class _TactileMenuItemButtonState extends State<_TactileMenuItemButton> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       blurRadius: 4,
                                       spreadRadius: 1,
                                     ),
@@ -283,4 +282,3 @@ class _TactileMenuItemButtonState extends State<_TactileMenuItemButton> {
     );
   }
 }
-
