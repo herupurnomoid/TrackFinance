@@ -19,11 +19,12 @@ class MockAuthService implements AuthService {
     await Future.delayed(const Duration(milliseconds: 1200));
 
     // Dummy user profile
-    _currentUser = const UserProfile(
+    _currentUser = UserProfile(
       uid: 'mock-user-12345',
       displayName: 'Heru Purnomo',
       email: 'heru@trackfinance.app',
       photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      createdAt: DateTime(2026, 10, 9),
     );
 
     _authStateController.add(_currentUser);

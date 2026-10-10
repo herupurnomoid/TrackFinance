@@ -85,8 +85,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String displayName = user?.displayName ?? 'Alex Pratama';
-    final String email = user?.email ?? 'alex.pratama@email.com';
+    final activeUser = user ?? AuthServiceProvider.instance.currentUser;
+    final String displayName = activeUser?.displayName ?? 'Alex Pratama';
+    final String email = activeUser?.email ?? 'alex.pratama@email.com';
     final String initial = displayName.isNotEmpty
         ? displayName.trim().substring(0, 1).toUpperCase()
         : 'U';
@@ -120,7 +121,8 @@ class ProfileScreen extends StatelessWidget {
                         displayName: displayName,
                         email: email,
                         initial: initial,
-                        avatarUrl: user?.photoUrl,
+                        avatarUrl: activeUser?.photoUrl,
+                        createdAt: activeUser?.createdAt,
                       ),
 
                       const SizedBox(height: 18),
@@ -175,11 +177,37 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  String _formatJoinDate(DateTime? dateTime) {
+    if (dateTime == null) {
+      return '10 Oktober 2026';
+    }
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+    final local = dateTime.toLocal();
+    final day = local.day;
+    final month = months[local.month - 1];
+    final year = local.year;
+    return '$day $month $year';
+  }
+
   Widget _buildProfileCard({
     required String displayName,
     required String email,
     required String initial,
     String? avatarUrl,
+    DateTime? createdAt,
   }) {
     return Container(
       width: double.infinity,
@@ -206,7 +234,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Avatar Bulat 80x80 dengan Blue Gradient
+          // Avatar Bulat 80x80 dengan Blue Gradient / Photo
           Container(
             width: 80,
             height: 80,
@@ -228,15 +256,32 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                initial,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+            child: ClipOval(
+              child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                  ? Image.network(
+                      avatarUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Text(
+                          initial,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        initial,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
             ),
           ),
 
@@ -295,7 +340,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '9 Oktober 2026',
+                _formatJoinDate(createdAt),
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

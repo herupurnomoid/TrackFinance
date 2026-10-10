@@ -21,7 +21,9 @@ TrackFinance/
     └── README.md
 ```
 
-> 📖 **Dokumentasi Backend Firebase**: Panduan lengkap setup Firebase SDK, Google OAuth, skema Firestore, dan task breakdown fitur Autentikasi tersedia di direktori [`docs/auth/`](docs/auth/README.md).
+> 📖 **Dokumentasi Backend Firebase**: Panduan teknis arsitektur, skema Firestore, dan task breakdown disusun per-fitur:
+> - [🔐 Fitur Autentikasi (Google OAuth)](docs/auth/README.md)
+> - [🏷️ Fitur Manajemen Kategori](docs/categories/README.md)
 
 ## 🚀 Menjalankan Frontend Mobile
 

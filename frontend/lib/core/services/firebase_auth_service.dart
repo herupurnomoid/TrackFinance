@@ -31,16 +31,29 @@ class FirebaseAuthService implements AuthService {
       email: user.email,
       displayName: user.displayName,
       photoUrl: user.photoURL,
+      createdAt: user.metadata.creationTime,
     );
   }
 
   @override
   Stream<UserProfile?> get authStateChanges {
-    return _auth.authStateChanges().map(_mapFirebaseUser);
+    try {
+      return _auth.authStateChanges().map(_mapFirebaseUser);
+    } catch (e) {
+      debugPrint('FirebaseAuthService authStateChanges warning: $e');
+      return const Stream.empty();
+    }
   }
 
   @override
-  UserProfile? get currentUser => _mapFirebaseUser(_auth.currentUser);
+  UserProfile? get currentUser {
+    try {
+      return _mapFirebaseUser(_auth.currentUser);
+    } catch (e) {
+      debugPrint('FirebaseAuthService currentUser warning: $e');
+      return null;
+    }
+  }
 
   @override
   Future<UserProfile?> signInWithGoogle() async {
