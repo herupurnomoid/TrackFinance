@@ -1,6 +1,33 @@
 # TrackFinance
 
-Aplikasi mobile pencatatan keuangan pribadi dengan Flutter dan Firebase backend.
+Aplikasi pencatatan keuangan pribadi dengan arsitektur Monorepo yang memisahkan aplikasi mobile (**Frontend**) dan layanan server (**Backend**).
+
+## 📁 Struktur Monorepo
+
+```
+TrackFinance/
+├── frontend/                # Aplikasi Mobile Flutter (Android, iOS, Web, macOS, Windows, Linux)
+│   ├── lib/
+│   │   ├── core/            # Theme, widget animations, constants, models
+│   │   └── features/        # Auth, Dashboard, Category, Transaction, Export, Report, Profile, Splash
+│   ├── test/                # Automated widget tests (31/31 tests passing)
+│   ├── android/             # Konfigurasi native Android
+│   ├── ios/                 # Konfigurasi native iOS
+│   ├── pubspec.yaml         # Dependencies & assets Flutter
+│   └── ...
+└── backend/                 # Direktori Backend Service / API (dipersiapkan untuk backend)
+    ├── .gitkeep
+    └── README.md
+```
+
+## 🚀 Menjalankan Frontend Mobile
+
+Untuk menjalankan aplikasi mobile:
+```bash
+cd frontend
+flutter pub get
+flutter run
+```
 
 ## 📱 Fitur Saat Ini (Prototype Phase)
 - **Halaman Login OAuth Google**: Presisi sesuai referensi desain UI (Claymorphism 3D Icon, Plus Jakarta Sans, Authentic Google Button, dan Security Badge).
