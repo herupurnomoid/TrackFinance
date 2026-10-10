@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
@@ -9,7 +10,7 @@ class AddCategoryModal extends StatefulWidget {
   final CategoryItem? categoryToEdit;
   final bool initialIsExpense;
   final List<String> existingNames;
-  final Function(String name, IconData icon, Color color, bool isExpense) onSave;
+  final FutureOr<void> Function(String name, IconData icon, Color color, bool isExpense) onSave;
   final VoidCallback? onDelete;
 
   const AddCategoryModal({
@@ -31,6 +32,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
   late IconData _selectedIcon;
   late Color _selectedColor;
   String? _errorMessage;
+  bool _isSaving = false;
 
   // 18 Ikon Populer Keuangan sesuai desain
   final List<IconData> _availableIcons = const [
@@ -126,7 +128,9 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
     return const Color(0xFFDBEAFE);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_isSaving) return;
+
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() => _errorMessage = 'Nama kategori tidak boleh kosong');
@@ -134,8 +138,26 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
     }
     if (_errorMessage != null) return;
 
-    widget.onSave(name, _selectedIcon, _selectedColor, _isExpense);
-    Navigator.of(context).pop();
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final saveResult = widget.onSave(name, _selectedIcon, _selectedColor, _isExpense);
+      if (saveResult is Future) {
+        await saveResult;
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _errorMessage = 'Gagal menyimpan: $e';
+        });
+      }
+    }
   }
 
   @override
@@ -548,17 +570,21 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Pengeluaran',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13.5,
-                                  fontWeight: _isExpense
-                                      ? FontWeight.w700
-                                      : FontWeight.w600,
-                                  color: _isExpense
-                                      ? const Color(0xFFDC2626)
-                                      : const Color(0xFF64748B),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Pengeluaran',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13.5,
+                                    fontWeight: _isExpense
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: _isExpense
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF64748B),
+                                  ),
                                 ),
                               ),
                             ],
@@ -684,17 +710,21 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Pemasukan',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13.5,
-                                  fontWeight: !_isExpense
-                                      ? FontWeight.w700
-                                      : FontWeight.w600,
-                                  color: !_isExpense
-                                      ? const Color(0xFF16A34A)
-                                      : const Color(0xFF64748B),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Pemasukan',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13.5,
+                                    fontWeight: !_isExpense
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    color: !_isExpense
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFF64748B),
+                                  ),
                                 ),
                               ),
                             ],
@@ -959,7 +989,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                 Expanded(
                   flex: 2,
                   child: PressableScale(
-                    onTap: _submit,
+                    onTap: _isSaving ? null : _submit,
                     scaleFactor: 0.95,
                     translateY: 2.0,
                     child: Container(
@@ -1003,54 +1033,70 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.30),
-                                  Colors.white.withValues(alpha: 0.10),
+                          if (_isSaving)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          else
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.30),
+                                    Colors.white.withValues(alpha: 0.10),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF1E3A8A).withValues(alpha: 0.30),
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
                                 ],
                               ),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                width: 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF1E3A8A).withValues(alpha: 0.30),
-                                  blurRadius: 3,
-                                  offset: const Offset(0, 1),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.check_rounded,
+                                  size: 15,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.check_rounded,
-                                size: 16,
-                                color: Colors.white,
                               ),
                             ),
-                          ),
                           const SizedBox(width: 8),
-                          Text(
-                            _isEditMode ? 'Simpan Perubahan' : 'Simpan Kategori',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 0.2,
-                              shadows: const [
-                                Shadow(
-                                  color: Color(0x661E3A8A),
-                                  blurRadius: 3,
-                                  offset: Offset(0, 1.5),
-                                ),
-                              ],
+                          Flexible(
+                            child: Text(
+                              _isSaving
+                                  ? 'Menyimpan...'
+                                  : (_isEditMode ? 'Simpan Perubahan' : 'Simpan Kategori'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.2,
+                                shadows: const [
+                                  Shadow(
+                                    color: Color(0x661E3A8A),
+                                    blurRadius: 3,
+                                    offset: Offset(0, 1.5),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

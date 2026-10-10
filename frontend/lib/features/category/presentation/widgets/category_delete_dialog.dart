@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,10 +6,10 @@ import '../../../../core/widgets/animations.dart';
 
 /// Tactile Delete Confirmation Dialog
 /// Sesuai referensi HTML 3 Modern Tactile Finance
-class CategoryDeleteDialog extends StatelessWidget {
+class CategoryDeleteDialog extends StatefulWidget {
   final String categoryName;
   final int transactionCount;
-  final VoidCallback onConfirmDelete;
+  final FutureOr<void> Function() onConfirmDelete;
 
   const CategoryDeleteDialog({
     super.key,
@@ -16,6 +17,37 @@ class CategoryDeleteDialog extends StatelessWidget {
     this.transactionCount = 0,
     required this.onConfirmDelete,
   });
+
+  @override
+  State<CategoryDeleteDialog> createState() => _CategoryDeleteDialogState();
+}
+
+class _CategoryDeleteDialogState extends State<CategoryDeleteDialog> {
+  bool _isDeleting = false;
+
+  Future<void> _handleConfirm() async {
+    if (_isDeleting) return;
+    setState(() {
+      _isDeleting = true;
+    });
+
+    try {
+      final res = widget.onConfirmDelete();
+      if (res is Future) {
+        await res;
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+      rethrow;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +119,7 @@ class CategoryDeleteDialog extends StatelessWidget {
 
               // 2. Dialog Title
               Text(
-                'Hapus kategori $categoryName?',
+                'Hapus kategori ${widget.categoryName}?',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -101,8 +133,8 @@ class CategoryDeleteDialog extends StatelessWidget {
 
               // 3. Helper Description
               Text(
-                transactionCount > 0
-                    ? '$transactionCount transaksi di kategori ini akan dipindahkan ke ‘Lainnya’.'
+                widget.transactionCount > 0
+                    ? '${widget.transactionCount} transaksi di kategori ini akan dipindahkan ke ‘Lainnya’.'
                     : 'Kategori ini akan dihapus dari daftar.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
@@ -121,7 +153,7 @@ class CategoryDeleteDialog extends StatelessWidget {
                   // Cancel Button
                   Expanded(
                     child: PressableScale(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: _isDeleting ? null : () => Navigator.of(context).pop(),
                       scaleFactor: 0.95,
                       translateY: 2.0,
                       child: Container(
@@ -160,10 +192,7 @@ class CategoryDeleteDialog extends StatelessWidget {
                   // Destructive Delete Button
                   Expanded(
                     child: PressableScale(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onConfirmDelete();
-                      },
+                      onTap: _isDeleting ? null : _handleConfirm,
                       scaleFactor: 0.95,
                       translateY: 2.0,
                       child: Container(
@@ -187,14 +216,23 @@ class CategoryDeleteDialog extends StatelessWidget {
                           ],
                         ),
                         child: Center(
-                          child: Text(
-                            'Hapus',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _isDeleting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'Hapus',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                     ),

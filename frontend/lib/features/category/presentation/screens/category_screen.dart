@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../data/category_model.dart';
+import '../../data/category_repository.dart';
 import '../widgets/add_category_modal.dart';
 import '../widgets/category_delete_dialog.dart';
 import '../widgets/category_empty_state.dart';
@@ -17,11 +19,13 @@ import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart
 class CategoryScreen extends StatefulWidget {
   final UserProfile? user;
   final bool? isLoading;
+  final CategoryRepository? repository;
 
   const CategoryScreen({
     super.key,
     this.user,
     this.isLoading,
+    this.repository,
   });
 
   @override
@@ -30,21 +34,27 @@ class CategoryScreen extends StatefulWidget {
 
 class _CategoryScreenState extends State<CategoryScreen> {
   late bool _isLoading;
+  late CategoryRepository _repository;
   bool _isExpenseTab = true;
 
   // Kategori bawaan terisi sejak pertama kali pengguna masuk
-  late List<CategoryItem> _expenseCategories;
-  late List<CategoryItem> _incomeCategories;
+  List<CategoryItem> _expenseCategories = List.from(DefaultCategories.defaultExpenseCategories);
+  List<CategoryItem> _incomeCategories = List.from(DefaultCategories.defaultIncomeCategories);
 
   // Pesan Toast Floating Feedback
   String? _toastMessage;
+  Timer? _toastTimer;
 
   @override
   void initState() {
     super.initState();
     _isLoading = widget.isLoading ?? false;
-    _expenseCategories = List.from(DefaultCategories.defaultExpenseCategories);
-    _incomeCategories = List.from(DefaultCategories.defaultIncomeCategories);
+    _repository = widget.repository ?? CategoryRepository.instance;
+
+    final uid = widget.user?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      _repository.seedDefaultCategoriesIfEmpty(uid);
+    }
   }
 
   @override
@@ -55,14 +65,30 @@ class _CategoryScreenState extends State<CategoryScreen> {
         _isLoading = widget.isLoading!;
       });
     }
+    if (widget.repository != null && widget.repository != _repository) {
+      _repository = widget.repository!;
+    }
+    if (widget.user?.uid != oldWidget.user?.uid) {
+      final uid = widget.user?.uid;
+      if (uid != null && uid.isNotEmpty) {
+        _repository.seedDefaultCategoriesIfEmpty(uid);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _toastTimer?.cancel();
+    super.dispose();
   }
 
   void _showToast(String message) {
+    _toastTimer?.cancel();
     setState(() {
       _toastMessage = message;
     });
 
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    _toastTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted && _toastMessage == message) {
         setState(() {
           _toastMessage = null;
@@ -84,7 +110,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
         return AddCategoryModal(
           initialIsExpense: _isExpenseTab,
           existingNames: existingNames,
-          onSave: (name, icon, color, isExpense) {
+          onSave: (name, icon, color, isExpense) async {
+            final uid = widget.user?.uid;
             final newCategory = CategoryItem(
               id: 'cat-${DateTime.now().millisecondsSinceEpoch}',
               name: name,
@@ -92,23 +119,28 @@ class _CategoryScreenState extends State<CategoryScreen> {
               color: color,
               isExpense: isExpense,
               isCustom: true,
+              order: (isExpense ? _expenseCategories.length : _incomeCategories.length) + 1,
             );
 
-            setState(() {
-              if (isExpense) {
-                _expenseCategories.insert(
-                  _expenseCategories.isEmpty ? 0 : _expenseCategories.length - 1,
-                  newCategory,
-                );
-                _isExpenseTab = true;
-              } else {
-                _incomeCategories.insert(
-                  _incomeCategories.isEmpty ? 0 : _incomeCategories.length - 1,
-                  newCategory,
-                );
-                _isExpenseTab = false;
-              }
-            });
+            if (uid != null && uid.isNotEmpty) {
+              await _repository.addCategory(uid, newCategory);
+            } else {
+              setState(() {
+                if (isExpense) {
+                  _expenseCategories.insert(
+                    _expenseCategories.isEmpty ? 0 : _expenseCategories.length - 1,
+                    newCategory,
+                  );
+                  _isExpenseTab = true;
+                } else {
+                  _incomeCategories.insert(
+                    _incomeCategories.isEmpty ? 0 : _incomeCategories.length - 1,
+                    newCategory,
+                  );
+                  _isExpenseTab = false;
+                }
+              });
+            }
 
             _showToast('Kategori "$name" berhasil disimpan');
           },
@@ -136,28 +168,32 @@ class _CategoryScreenState extends State<CategoryScreen> {
           categoryToEdit: category,
           initialIsExpense: category.isExpense,
           existingNames: existingNames,
-          onSave: (name, icon, color, isExpense) {
-            setState(() {
-              if (isExpense) {
-                final index = _expenseCategories.indexWhere((c) => c.id == category.id);
-                if (index != -1) {
-                  _expenseCategories[index] = category.copyWith(
-                    name: name,
-                    icon: icon,
-                    color: color,
-                  );
+          onSave: (name, icon, color, isExpense) async {
+            final updated = category.copyWith(
+              name: name,
+              icon: icon,
+              color: color,
+              isExpense: isExpense,
+            );
+
+            final uid = widget.user?.uid;
+            if (uid != null && uid.isNotEmpty) {
+              await _repository.updateCategory(uid, updated);
+            } else {
+              setState(() {
+                if (isExpense) {
+                  final index = _expenseCategories.indexWhere((c) => c.id == category.id);
+                  if (index != -1) {
+                    _expenseCategories[index] = updated;
+                  }
+                } else {
+                  final index = _incomeCategories.indexWhere((c) => c.id == category.id);
+                  if (index != -1) {
+                    _incomeCategories[index] = updated;
+                  }
                 }
-              } else {
-                final index = _incomeCategories.indexWhere((c) => c.id == category.id);
-                if (index != -1) {
-                  _incomeCategories[index] = category.copyWith(
-                    name: name,
-                    icon: icon,
-                    color: color,
-                  );
-                }
-              }
-            });
+              });
+            }
 
             _showToast('Perubahan kategori disimpan');
           },
@@ -169,31 +205,60 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  void _showDeleteDialog(CategoryItem category) {
+  void _showDeleteDialog(CategoryItem category) async {
+    final uid = widget.user?.uid;
+    int txCount = 0;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        txCount = await _repository.countTransactionsByCategory(uid, category.id);
+      } catch (_) {
+        txCount = 0;
+      }
+    }
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       builder: (context) {
         return CategoryDeleteDialog(
           categoryName: category.name,
-          transactionCount: 0,
-          onConfirmDelete: () {
-            setState(() {
-              if (category.isExpense) {
-                _expenseCategories.removeWhere((c) => c.id == category.id);
+          transactionCount: txCount,
+          onConfirmDelete: () async {
+            try {
+              if (uid != null && uid.isNotEmpty) {
+                if (txCount > 0) {
+                  final fallbackId = category.isExpense ? 'exp-8' : 'inc-6';
+                  await _repository.migrateTransactionsCategory(
+                    uid,
+                    fromCategoryId: category.id,
+                    toCategoryId: fallbackId,
+                  );
+                }
+                await _repository.deleteCategory(uid, category.id);
               } else {
-                _incomeCategories.removeWhere((c) => c.id == category.id);
+                setState(() {
+                  if (category.isExpense) {
+                    _expenseCategories.removeWhere((c) => c.id == category.id);
+                  } else {
+                    _incomeCategories.removeWhere((c) => c.id == category.id);
+                  }
+                });
               }
-            });
 
-            _showToast('Kategori "${category.name}" berhasil dihapus');
+              _showToast('Kategori "${category.name}" berhasil dihapus');
+            } catch (e) {
+              _showToast('Gagal menghapus kategori: $e');
+            }
           },
         );
       },
     );
   }
 
-  void _addQuickCategory(String name, IconData icon, Color color) {
+  void _addQuickCategory(String name, IconData icon, Color color) async {
+    final uid = widget.user?.uid;
     final newCategory = CategoryItem(
       id: 'quick-${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -201,24 +266,26 @@ class _CategoryScreenState extends State<CategoryScreen> {
       color: color,
       isExpense: _isExpenseTab,
       isCustom: true,
+      order: (_isExpenseTab ? _expenseCategories.length : _incomeCategories.length) + 1,
     );
 
-    setState(() {
-      if (_isExpenseTab) {
-        _expenseCategories.add(newCategory);
-      } else {
-        _incomeCategories.add(newCategory);
-      }
-    });
+    if (uid != null && uid.isNotEmpty) {
+      await _repository.addCategory(uid, newCategory);
+    } else {
+      setState(() {
+        if (_isExpenseTab) {
+          _expenseCategories.add(newCategory);
+        } else {
+          _incomeCategories.add(newCategory);
+        }
+      });
+    }
 
     _showToast('Kategori "$name" berhasil ditambahkan');
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentCategories = _isExpenseTab ? _expenseCategories : _incomeCategories;
-    final isEmpty = currentCategories.isEmpty;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -253,64 +320,91 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
                       child: _isLoading
                           ? const CategorySkeleton(key: ValueKey('skeleton'))
-                          : Column(
-                              key: const ValueKey('content'),
-                              children: [
-                                // Tactile Recessed Segmented Toggle Track
-                                _buildSegmentedTabTrack(),
+                          : StreamBuilder<List<CategoryItem>>(
+                              stream: (widget.user?.uid != null && widget.user!.uid.isNotEmpty)
+                                  ? _repository.getCategoriesStream(widget.user!.uid)
+                                  : null,
+                              initialData: [
+                                ..._expenseCategories,
+                                ..._incomeCategories,
+                              ],
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                                  return const CategorySkeleton(key: ValueKey('skeleton'));
+                                }
 
-                                const SizedBox(height: 14),
+                                if (snapshot.hasData &&
+                                    snapshot.data != null &&
+                                    widget.user?.uid != null &&
+                                    widget.user!.uid.isNotEmpty) {
+                                  final allDocs = snapshot.data!;
+                                  _expenseCategories = allDocs.where((c) => c.isExpense).toList();
+                                  _incomeCategories = allDocs.where((c) => !c.isExpense).toList();
+                                }
 
-                          // Instruction Badge (Jika tidak kosong)
-                          if (!isEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.touch_app_rounded,
-                                    size: 16,
-                                    color: Color(0xFF004AC6),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      'Ketuk kategori untuk mengubah atau menghapus',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                        color: const Color(0xFF64748B),
+                                final currentCategories = _isExpenseTab ? _expenseCategories : _incomeCategories;
+                                final isEmpty = currentCategories.isEmpty;
+
+                                return Column(
+                                  key: const ValueKey('content'),
+                                  children: [
+                                    // Tactile Recessed Segmented Toggle Track
+                                    _buildSegmentedTabTrack(),
+
+                                    const SizedBox(height: 14),
+
+                                    // Instruction Badge (Jika tidak kosong)
+                                    if (!isEmpty) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.touch_app_rounded,
+                                              size: 16,
+                                              color: Color(0xFF004AC6),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                'Ketuk kategori untuk mengubah atau menghapus',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: const Color(0xFF64748B),
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                      const SizedBox(height: 16),
+                                    ],
+
+                                    // Konten Kategori (Grid Matrix atau Empty State)
+                                    if (isEmpty)
+                                      CategoryEmptyState(
+                                        isExpense: _isExpenseTab,
+                                        onAddCategory: _openAddModal,
+                                        onAddQuickCategory: _addQuickCategory,
+                                      )
+                                    else ...[
+                                      // 4-Column Skeuomorphic Tile Matrix
+                                      _buildCategoryGrid(currentCategories),
+
+                                      const SizedBox(height: 18),
+
+                                      // Contextual Information Card: Tips Manajemen Anggaran
+                                      _buildBudgetTipsCard(),
+                                    ],
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // Konten Kategori (Grid Matrix atau Empty State)
-                          if (isEmpty)
-                            CategoryEmptyState(
-                              isExpense: _isExpenseTab,
-                              onAddCategory: _openAddModal,
-                              onAddQuickCategory: _addQuickCategory,
-                            )
-                          else ...[
-                            // 4-Column Skeuomorphic Tile Matrix
-                            _buildCategoryGrid(currentCategories),
-
-                            const SizedBox(height: 18),
-
-                            // Contextual Information Card: Tips Manajemen Anggaran
-                            _buildBudgetTipsCard(),
-                          ],
-                        ],
-                      ),
                     ),
                   ),
                 ),
