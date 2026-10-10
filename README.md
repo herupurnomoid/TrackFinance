@@ -6,6 +6,7 @@ Aplikasi pencatatan keuangan pribadi dengan arsitektur Monorepo yang memisahkan 
 
 ```
 TrackFinance/
+├── docs/                    # Dokumentasi Teknis Backend Firebase & Task Breakdown
 ├── frontend/                # Aplikasi Mobile Flutter (Android, iOS, Web, macOS, Windows, Linux)
 │   ├── lib/
 │   │   ├── core/            # Theme, widget animations, constants, models
@@ -19,6 +20,8 @@ TrackFinance/
     ├── .gitkeep
     └── README.md
 ```
+
+> 📖 **Dokumentasi Backend Firebase**: Panduan lengkap setup Firebase SDK, Google OAuth, skema Firestore, dan task breakdown fitur Autentikasi tersedia di direktori [`docs/auth/`](docs/auth/README.md).
 
 ## 🚀 Menjalankan Frontend Mobile
 

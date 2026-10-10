@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/theme/app_theme.dart';
@@ -11,8 +12,14 @@ import 'features/report/presentation/screens/report_screen.dart';
 
 import 'features/splash/presentation/screens/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initialization warning: $e');
+  }
 
   // Set system UI overlay style for seamless edge-to-edge light theme
   SystemChrome.setSystemUIOverlayStyle(

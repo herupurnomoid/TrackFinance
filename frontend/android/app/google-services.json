@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "24704467613",
+    "project_id": "trackfinance-6ccfd",
+    "storage_bucket": "trackfinance-6ccfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:24704467613:android:c0e72cc2983730d58aca74",
+        "android_client_info": {
+          "package_name": "com.trackfinance.TrackFinance"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "24704467613-528jsl1gcrf65rf308tircdp2e9t0lu2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.trackfinance.TrackFinance",
+            "certificate_hash": "f57ab92537c483de1446f367cbbb5b0fde8e1b28"
+          }
+        },
+        {
+          "client_id": "24704467613-3rfjs0hbv52f426dgpcojd9g65oj9urk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWzaHD0C-kmPKYA4OjKRH2rOx9blcLKpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "24704467613-3rfjs0hbv52f426dgpcojd9g65oj9urk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
