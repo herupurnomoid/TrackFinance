@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
+import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../data/category_model.dart';
 import '../../data/category_repository.dart';
@@ -45,13 +46,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
   String? _toastMessage;
   Timer? _toastTimer;
 
+  String? get _uid =>
+      widget.user?.uid ?? AuthServiceProvider.instance.currentUser?.uid;
+
   @override
   void initState() {
     super.initState();
     _isLoading = widget.isLoading ?? false;
     _repository = widget.repository ?? CategoryRepository.instance;
 
-    final uid = widget.user?.uid;
+    final uid = _uid;
     if (uid != null && uid.isNotEmpty) {
       _repository.seedDefaultCategoriesIfEmpty(uid);
     }
@@ -68,8 +72,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     if (widget.repository != null && widget.repository != _repository) {
       _repository = widget.repository!;
     }
-    if (widget.user?.uid != oldWidget.user?.uid) {
-      final uid = widget.user?.uid;
+    if (_uid != oldWidget.user?.uid) {
+      final uid = _uid;
       if (uid != null && uid.isNotEmpty) {
         _repository.seedDefaultCategoriesIfEmpty(uid);
       }
@@ -111,7 +115,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           initialIsExpense: _isExpenseTab,
           existingNames: existingNames,
           onSave: (name, icon, color, isExpense) async {
-            final uid = widget.user?.uid;
+            final uid = _uid;
             final newCategory = CategoryItem(
               id: 'cat-${DateTime.now().millisecondsSinceEpoch}',
               name: name,
@@ -176,7 +180,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               isExpense: isExpense,
             );
 
-            final uid = widget.user?.uid;
+            final uid = _uid;
             if (uid != null && uid.isNotEmpty) {
               await _repository.updateCategory(uid, updated);
             } else {
@@ -206,7 +210,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _showDeleteDialog(CategoryItem category) async {
-    final uid = widget.user?.uid;
+    final uid = _uid;
     int txCount = 0;
     if (uid != null && uid.isNotEmpty) {
       try {
@@ -258,7 +262,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   void _addQuickCategory(String name, IconData icon, Color color) async {
-    final uid = widget.user?.uid;
+    final uid = _uid;
     final newCategory = CategoryItem(
       id: 'quick-${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -321,8 +325,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       child: _isLoading
                           ? const CategorySkeleton(key: ValueKey('skeleton'))
                           : StreamBuilder<List<CategoryItem>>(
-                              stream: (widget.user?.uid != null && widget.user!.uid.isNotEmpty)
-                                  ? _repository.getCategoriesStream(widget.user!.uid)
+                              stream: (_uid != null && _uid!.isNotEmpty)
+                                  ? _repository.getCategoriesStream(_uid!)
                                   : null,
                               initialData: [
                                 ..._expenseCategories,
@@ -335,8 +339,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
                                 if (snapshot.hasData &&
                                     snapshot.data != null &&
-                                    widget.user?.uid != null &&
-                                    widget.user!.uid.isNotEmpty) {
+                                    _uid != null &&
+                                    _uid!.isNotEmpty) {
                                   final allDocs = snapshot.data!;
                                   _expenseCategories = allDocs.where((c) => c.isExpense).toList();
                                   _incomeCategories = allDocs.where((c) => !c.isExpense).toList();

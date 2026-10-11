@@ -105,7 +105,7 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
           // 2. Area Grafik (Empty vs Populated dengan Animasi)
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            child: widget.isEmpty
+            child: (widget.isEmpty || (widget.dailyTrends != null && widget.dailyTrends!.isEmpty))
                 ? _buildEmptyChartArea()
                 : _buildPopulatedChartArea(),
           ),
@@ -233,18 +233,68 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
     );
   }
 
+  static double _calculateDynamicMaxScale(int highest, bool isIncome) {
+    if (highest <= 120000 && !isIncome) return 120000.0;
+    if (highest <= 6000000 && isIncome) return 6000000.0;
+    if (highest <= 100000) return 120000.0;
+    if (highest <= 500000) return 600000.0;
+    if (highest <= 1000000) return 1200000.0;
+    if (highest <= 3000000) return 3000000.0;
+    if (highest <= 6000000) return 6000000.0;
+    if (highest <= 12000000) return 12000000.0;
+    return highest * 1.25;
+  }
+
+  static String _formatYTick(double val) {
+    if (val >= 1000000) {
+      final jt = val / 1000000;
+      return jt % 1 == 0 ? '${jt.toInt()}jt' : '${jt.toStringAsFixed(1)}jt';
+    }
+    if (val >= 1000) {
+      final k = val / 1000;
+      return k % 1 == 0 ? '${k.toInt()}k' : '${k.toStringAsFixed(1)}k';
+    }
+    return val.toInt().toString();
+  }
+
   /// Tampilan Grafik Terisi (Populated State)
   Widget _buildPopulatedChartArea() {
     final trends = widget.dailyTrends ?? ReportDataStore.oktoberDailyTrends;
     final isIncome = !widget.isExpenseMode;
 
-    // Sumbu Y labels
-    final List<String> yLabels = isIncome
-        ? ['6jt', '4jt', '2jt', '0']
-        : ['120k', '80k', '40k', '0'];
+    // Sumbu Y labels & skala adaptif (REP-10)
+    final double maxScale;
+    final List<String> yLabels;
 
-    // Skala maksimum untuk normalisasi bar height (100% tinggi bar ~ 116px)
-    final double maxScale = isIncome ? 6000000.0 : 120000.0;
+    final isDefaultOktober = widget.dailyTrends == null ||
+        identical(widget.dailyTrends, ReportDataStore.oktoberDailyTrends);
+
+    if (isDefaultOktober) {
+      maxScale = isIncome ? 6000000.0 : 120000.0;
+      yLabels = isIncome
+          ? ['6jt', '4jt', '2jt', '0']
+          : ['120k', '80k', '40k', '0'];
+    } else {
+      int highest = 0;
+      for (final t in trends) {
+        if (t.expense > highest) highest = t.expense;
+        if (t.income > highest) highest = t.income;
+      }
+      if (highest <= 0) {
+        maxScale = isIncome ? 6000000.0 : 120000.0;
+        yLabels = isIncome
+            ? ['6jt', '4jt', '2jt', '0']
+            : ['120k', '80k', '40k', '0'];
+      } else {
+        maxScale = _calculateDynamicMaxScale(highest, isIncome);
+        yLabels = [
+          _formatYTick(maxScale),
+          _formatYTick(maxScale * 2 / 3),
+          _formatYTick(maxScale / 3),
+          '0',
+        ];
+      }
+    }
     const double maxBarHeight = 116.0;
 
     return SizedBox(

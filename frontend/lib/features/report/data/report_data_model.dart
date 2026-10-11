@@ -21,6 +21,57 @@ class ReportCategoryItem {
     required this.badgeTextColor,
     required this.sliceColor,
   });
+
+  ReportCategoryItem copyWith({
+    String? name,
+    double? percentage,
+    int? amount,
+    IconData? icon,
+    Color? iconColor,
+    Color? containerColor,
+    Color? badgeTextColor,
+    Color? sliceColor,
+  }) {
+    return ReportCategoryItem(
+      name: name ?? this.name,
+      percentage: percentage ?? this.percentage,
+      amount: amount ?? this.amount,
+      icon: icon ?? this.icon,
+      iconColor: iconColor ?? this.iconColor,
+      containerColor: containerColor ?? this.containerColor,
+      badgeTextColor: badgeTextColor ?? this.badgeTextColor,
+      sliceColor: sliceColor ?? this.sliceColor,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReportCategoryItem &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          percentage == other.percentage &&
+          amount == other.amount &&
+          icon == other.icon &&
+          iconColor == other.iconColor &&
+          containerColor == other.containerColor &&
+          badgeTextColor == other.badgeTextColor &&
+          sliceColor == other.sliceColor;
+
+  @override
+  int get hashCode =>
+      name.hashCode ^
+      percentage.hashCode ^
+      amount.hashCode ^
+      icon.hashCode ^
+      iconColor.hashCode ^
+      containerColor.hashCode ^
+      badgeTextColor.hashCode ^
+      sliceColor.hashCode;
+
+  @override
+  String toString() =>
+      'ReportCategoryItem(name: $name, percentage: $percentage%, amount: $amount)';
 }
 
 /// Model Titik Harian untuk Grafik Batang Tren Keuangan
@@ -36,6 +87,41 @@ class ReportDailyTrendItem {
     required this.expense,
     required this.income,
   });
+
+  ReportDailyTrendItem copyWith({
+    String? dayStr,
+    String? fullDateStr,
+    int? expense,
+    int? income,
+  }) {
+    return ReportDailyTrendItem(
+      dayStr: dayStr ?? this.dayStr,
+      fullDateStr: fullDateStr ?? this.fullDateStr,
+      expense: expense ?? this.expense,
+      income: income ?? this.income,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReportDailyTrendItem &&
+          runtimeType == other.runtimeType &&
+          dayStr == other.dayStr &&
+          fullDateStr == other.fullDateStr &&
+          expense == other.expense &&
+          income == other.income;
+
+  @override
+  int get hashCode =>
+      dayStr.hashCode ^
+      fullDateStr.hashCode ^
+      expense.hashCode ^
+      income.hashCode;
+
+  @override
+  String toString() =>
+      'ReportDailyTrendItem(day: $dayStr, date: $fullDateStr, expense: $expense, income: $income)';
 }
 
 /// Data Store untuk Laporan Keuangan

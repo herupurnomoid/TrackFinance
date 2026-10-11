@@ -4,11 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/user_profile.dart';
+import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../category/presentation/screens/category_screen.dart';
 import '../../../dashboard/data/dashboard_transaction_model.dart';
 import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart';
 import '../../data/transaction_action_result.dart';
+import '../../data/transaction_model.dart';
+import '../../data/transaction_repository.dart';
 import '../widgets/add_transaction_skeleton.dart';
 import '../widgets/additional_details_section.dart';
 import '../widgets/all_categories_bottom_sheet.dart';
@@ -27,6 +30,8 @@ class AddTransactionScreen extends StatefulWidget {
   final bool initialIsExpense;
   final bool initialIsLoading;
   final DashboardTransaction? transaction;
+  final DateTime? initialDate;
+  final TimeOfDay? initialTime;
 
   const AddTransactionScreen({
     super.key,
@@ -34,6 +39,8 @@ class AddTransactionScreen extends StatefulWidget {
     this.initialIsExpense = true,
     this.initialIsLoading = false,
     this.transaction,
+    this.initialDate,
+    this.initialTime,
   });
 
   @override
@@ -72,7 +79,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
       // Ekstraksi waktu & catatan dari meta (e.g. '16.03 · kopi')
       final parts = tx.meta.split('·').map((e) => e.trim()).toList();
-      TimeOfDay time = const TimeOfDay(hour: 14, minute: 30);
+      TimeOfDay time = TimeOfDay.fromDateTime(DateTime.now());
       String note = '';
       for (final p in parts) {
         final timeMatch = RegExp(r'^(\d{1,2})[\.:](\d{2})$').firstMatch(p);
@@ -87,12 +94,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _selectedTime = time;
       _noteController = TextEditingController(text: note);
     } else {
+      final now = DateTime.now();
       _isExpense = widget.initialIsExpense;
-      _amountController = TextEditingController(text: '150.000');
+      _amountController = TextEditingController(text: '0');
       _noteController = TextEditingController();
-      _selectedCategoryId = _isExpense ? 'cat-food' : 'cat-salary';
-      _selectedDate = DateTime(2025, 5, 24);
-      _selectedTime = const TimeOfDay(hour: 14, minute: 30);
+      _selectedCategoryId = '';
+      _selectedDate = widget.initialDate ?? DateTime(2025, 5, 24);
+      _selectedTime = widget.initialTime ?? TimeOfDay.fromDateTime(now);
     }
 
     _amountController.addListener(_formatAmountInput);
@@ -167,7 +175,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void _handleTypeChanged(bool isExpense) {
     setState(() {
       _isExpense = isExpense;
-      _selectedCategoryId = isExpense ? 'cat-food' : 'cat-salary';
+      _selectedCategoryId = '';
       _hasValidationError = false;
       _validationErrorMessage = null;
     });
@@ -237,6 +245,76 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (confirmed == true && mounted) {
       HapticFeedback.heavyImpact();
       final txId = widget.transaction?.id ?? '';
+      final uid =
+          widget.user?.uid ?? AuthServiceProvider.instance.currentUser?.uid;
+
+      if (uid != null && uid.isNotEmpty && txId.isNotEmpty) {
+        try {
+          TransactionModel? txToDelete =
+              await TransactionRepository.instance.getTransaction(uid, txId);
+          if (txToDelete == null && widget.transaction != null) {
+            final old = widget.transaction!;
+            final oldCategoryId = _findCategoryId(old.category, !old.isIncome);
+            final oldDate = DateTime(old.year, old.month + 1, old.day);
+            final oldMonthKey =
+                '${old.year}-${(old.month + 1).toString().padLeft(2, '0')}';
+            final oldDateKey = old.dateKey.isNotEmpty
+                ? old.dateKey
+                : '$oldMonthKey-${old.day.toString().padLeft(2, '0')}';
+
+            final parts = old.meta.split('·').map((e) => e.trim()).toList();
+            TimeOfDay time = const TimeOfDay(hour: 14, minute: 30);
+            String oldNote = '';
+            for (final p in parts) {
+              final timeMatch =
+                  RegExp(r'^(\d{1,2})[\.:](\d{2})$').firstMatch(p);
+              if (timeMatch != null) {
+                final h = int.tryParse(timeMatch.group(1)!) ?? 12;
+                final m = int.tryParse(timeMatch.group(2)!) ?? 0;
+                time = TimeOfDay(hour: h, minute: m);
+              } else {
+                oldNote = p;
+              }
+            }
+
+            txToDelete = TransactionModel(
+              id: old.id,
+              type: old.isIncome ? 'income' : 'expense',
+              amount: old.amount.abs(),
+              categoryId: oldCategoryId,
+              categoryName: old.category,
+              categoryIconCode: old.icon.codePoint,
+              notes: oldNote,
+              timeStr:
+                  '${time.hour.toString().padLeft(2, '0')}.${time.minute.toString().padLeft(2, '0')}',
+              date: DateTime(
+                oldDate.year,
+                oldDate.month,
+                oldDate.day,
+                time.hour,
+                time.minute,
+              ),
+              dateKey: oldDateKey,
+              monthKey: oldMonthKey,
+              year: old.year,
+              month: old.month,
+              day: old.day,
+            );
+          }
+
+          if (txToDelete != null) {
+            await TransactionRepository.instance.deleteTransaction(
+              uid,
+              txToDelete,
+            );
+          }
+        } catch (e) {
+          debugPrint('TransactionRepository.deleteTransaction error: $e');
+        }
+      }
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -282,11 +360,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (_isSaving || _isSaved) return;
 
     final amountVal = _parseAmount(_amountController.text);
-    if (amountVal <= 0) {
+    if (amountVal <= 0 || _selectedCategoryId.isEmpty) {
       HapticFeedback.mediumImpact();
       setState(() {
         _hasValidationError = true;
-        _validationErrorMessage = 'Mohon lengkapi data bertanda merah';
+        _validationErrorMessage = amountVal <= 0
+            ? 'Nominal transaksi tidak boleh 0'
+            : 'Pilih kategori transaksi terlebih dahulu';
       });
       return;
     }
@@ -299,8 +379,123 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     HapticFeedback.lightImpact();
 
-    // Simulasi penyimpanan transaksi
-    await Future.delayed(const Duration(milliseconds: 650));
+    final catOption = _getCategoryOption(_selectedCategoryId, _isExpense);
+    final typeText = _isExpense ? 'Pengeluaran' : 'Pemasukan';
+    final formattedAmount = _amountController.text;
+
+    final timeStr =
+        '${_selectedTime.hour.toString().padLeft(2, '0')}.${_selectedTime.minute.toString().padLeft(2, '0')}';
+    final note = _noteController.text.trim();
+    final monthKey =
+        '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}';
+    final dateKey =
+        '$monthKey-${_selectedDate.day.toString().padLeft(2, '0')}';
+    final txDate = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+
+    final txId = widget.transaction?.id ??
+        'tx-${DateTime.now().millisecondsSinceEpoch}';
+
+    final txModel = TransactionModel(
+      id: txId,
+      type: _isExpense ? 'expense' : 'income',
+      amount: amountVal,
+      categoryId: _selectedCategoryId,
+      categoryName: catOption.name,
+      categoryIconCode: catOption.icon.codePoint,
+      notes: note,
+      timeStr: timeStr,
+      date: txDate,
+      dateKey: dateKey,
+      monthKey: monthKey,
+      year: _selectedDate.year,
+      month: _selectedDate.month - 1,
+      day: _selectedDate.day,
+    );
+
+    final uid =
+        widget.user?.uid ?? AuthServiceProvider.instance.currentUser?.uid;
+
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        if (isEditMode) {
+          // TX-10: Mode Edit Transaksi
+          TransactionModel? oldTx =
+              await TransactionRepository.instance.getTransaction(uid, txId);
+          if (oldTx == null && widget.transaction != null) {
+            final old = widget.transaction!;
+            final oldCategoryId =
+                _findCategoryId(old.category, !old.isIncome);
+            final oldDate = DateTime(old.year, old.month + 1, old.day);
+            final oldMonthKey =
+                '${old.year}-${(old.month + 1).toString().padLeft(2, '0')}';
+            final oldDateKey = old.dateKey.isNotEmpty
+                ? old.dateKey
+                : '$oldMonthKey-${old.day.toString().padLeft(2, '0')}';
+
+            final parts = old.meta.split('·').map((e) => e.trim()).toList();
+            TimeOfDay time = const TimeOfDay(hour: 14, minute: 30);
+            String oldNote = '';
+            for (final p in parts) {
+              final timeMatch =
+                  RegExp(r'^(\d{1,2})[\.:](\d{2})$').firstMatch(p);
+              if (timeMatch != null) {
+                final h = int.tryParse(timeMatch.group(1)!) ?? 12;
+                final m = int.tryParse(timeMatch.group(2)!) ?? 0;
+                time = TimeOfDay(hour: h, minute: m);
+              } else {
+                oldNote = p;
+              }
+            }
+
+            oldTx = TransactionModel(
+              id: old.id,
+              type: old.isIncome ? 'income' : 'expense',
+              amount: old.amount.abs(),
+              categoryId: oldCategoryId,
+              categoryName: old.category,
+              categoryIconCode: old.icon.codePoint,
+              notes: oldNote,
+              timeStr:
+                  '${time.hour.toString().padLeft(2, '0')}.${time.minute.toString().padLeft(2, '0')}',
+              date: DateTime(
+                oldDate.year,
+                oldDate.month,
+                oldDate.day,
+                time.hour,
+                time.minute,
+              ),
+              dateKey: oldDateKey,
+              monthKey: oldMonthKey,
+              year: old.year,
+              month: old.month,
+              day: old.day,
+            );
+          }
+
+          if (oldTx != null) {
+            await TransactionRepository.instance.updateTransaction(
+              uid,
+              oldTx,
+              txModel,
+            );
+          }
+        } else {
+          // TX-09: Mode Tambah Transaksi
+          await TransactionRepository.instance.addTransaction(uid, txModel);
+        }
+      } catch (e) {
+        debugPrint('TransactionRepository error: $e');
+      }
+    } else {
+      // Delay simulasi singkat bila tidak ada kredensial pengguna (preview / offline)
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
 
     if (!mounted) return;
 
@@ -315,32 +510,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     if (!mounted) return;
 
-    final catOption = _getCategoryOption(_selectedCategoryId, _isExpense);
-    final typeText = _isExpense ? 'Pengeluaran' : 'Pemasukan';
-    final formattedAmount = _amountController.text;
-
-    final timeStr =
-        '${_selectedTime.hour.toString().padLeft(2, '0')}.${_selectedTime.minute.toString().padLeft(2, '0')}';
-    final note = _noteController.text.trim();
-    final metaStr = note.isNotEmpty ? '$timeStr · $note' : timeStr;
-
-    final txId = widget.transaction?.id ??
-        'tx-${DateTime.now().millisecondsSinceEpoch}';
-    final updatedTx = DashboardTransaction(
-      id: txId,
-      dateStr:
-          '${_selectedDate.day} ${DashboardDataStore.monthsName[_selectedDate.month - 1]} ${_selectedDate.year}',
-      dateKey:
-          '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-      year: _selectedDate.year,
-      month: _selectedDate.month - 1,
-      day: _selectedDate.day,
-      category: catOption.name,
-      meta: metaStr,
-      amount: _isExpense ? -amountVal : amountVal,
-      type: _isExpense ? TransactionType.expense : TransactionType.income,
-      icon: catOption.icon,
-    );
+    final updatedTx = txModel.toDashboardTransaction();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -387,7 +557,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     final currentAmount = _parseAmount(_amountController.text);
-    final bool isFormValid = currentAmount > 0;
+    final bool isFormValid = currentAmount > 0 && _selectedCategoryId.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F3FF), // surface-container-low
@@ -470,6 +640,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                 onSelect: (cat) {
                                   setState(() {
                                     _selectedCategoryId = cat.id;
+                                    if (_hasValidationError && _selectedCategoryId.isNotEmpty) {
+                                      _hasValidationError = false;
+                                      _validationErrorMessage = null;
+                                    }
                                   });
                                 },
                                 onManageTap: _openManageCategories,
@@ -705,54 +879,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           borderRadius: 18,
         ),
 
-        // Tombol Hapus Transaksi Sekunder di Mode Edit
-        if (isEditMode) ...[
-          const SizedBox(height: 12),
-          PressableScale(
-            onTap: _isSaving ? null : _handleDeleteTransaction,
-            scaleFactor: 0.96,
-            child: Container(
-              width: double.infinity,
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFFECACA),
-                  width: 1.2,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A0F172A),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.delete_outline_rounded,
-                    size: 19,
-                    color: Color(0xFFDC2626),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Hapus Transaksi',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFDC2626),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
 
         // Synchronized Wallet Status Note
         Row(

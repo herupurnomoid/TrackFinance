@@ -100,7 +100,7 @@ class ReportStructureCard extends StatelessWidget {
                     // Donut Chart Canvas
                     CustomPaint(
                       size: const Size(176, 176),
-                      painter: isEmpty
+                      painter: (isEmpty || items.isEmpty)
                           ? _EmptyDonutPainter()
                           : _MultiSliceDonutPainter(items: items),
                     ),
@@ -125,7 +125,7 @@ class ReportStructureCard extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: isEmpty
+                            color: (isEmpty || totalAmount == 0)
                                 ? const Color(0xFF737686)
                                 : (isExpenseTab
                                     ? const Color(0xFFDC2626)
@@ -142,7 +142,7 @@ class ReportStructureCard extends StatelessWidget {
           ),
 
           // 3. Daftar Kartu Kategori (Hanya ditampilkan jika tidak kosong)
-          if (!isEmpty) ...[
+          if (!isEmpty && items.isNotEmpty) ...[
             const SizedBox(height: 12),
             ListView.separated(
               shrinkWrap: true,
@@ -153,6 +153,21 @@ class ReportStructureCard extends StatelessWidget {
                 final cat = items[index];
                 return _buildCategoryItemRow(cat);
               },
+            ),
+          ] else if (!isEmpty && items.isEmpty) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Belum ada transaksi ${isExpenseTab ? 'pengeluaran' : 'pemasukan'}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
             ),
           ],
         ],

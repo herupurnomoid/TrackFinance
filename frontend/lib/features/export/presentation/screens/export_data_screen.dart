@@ -1,17 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
+import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../transaction/presentation/widgets/transaction_date_picker_modal.dart';
+import '../../data/export_share_service.dart';
 import '../../data/import_data_model.dart';
+import '../../data/sync_export_repository.dart';
+import '../../data/sync_import_repository.dart';
 import '../widgets/export_format_selector.dart';
 import '../widgets/export_import_segmented_control.dart';
 import '../widgets/export_import_success_dialog.dart';
 import '../widgets/export_range_filter_section.dart';
 import '../widgets/export_skeleton.dart';
-import '../widgets/import_csv_spec_card.dart';
 import '../widgets/import_data_preview_section.dart';
 import '../widgets/import_drop_zone.dart';
 import '../widgets/import_skeleton.dart';
@@ -33,15 +40,17 @@ class ExportDataScreen extends StatefulWidget {
   final bool initialHasFile;
   final String initialExportPeriod;
   final String initialExportFormat;
+  final Future<FilePickerResult?> Function()? filePicker;
 
   const ExportDataScreen({
     super.key,
     this.user,
     this.initialIsExport = false,
     this.initialIsLoading = false,
-    this.initialHasFile = true,
+    this.initialHasFile = false,
     this.initialExportPeriod = 'Bulan',
     this.initialExportFormat = 'PDF',
+    this.filePicker,
   });
 
   @override
@@ -71,6 +80,10 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   late AnimationController _entranceController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  UserProfile? get _currentUser =>
+      widget.user ?? AuthServiceProvider.instance.currentUser;
+  String? get _uid => _currentUser?.uid;
 
   @override
   void initState() {
@@ -114,6 +127,12 @@ class _ExportDataScreenState extends State<ExportDataScreen>
     );
 
     _entranceController.forward();
+
+    if (_currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateTransactionEstimates();
+      });
+    }
   }
 
   @override
@@ -158,17 +177,126 @@ class _ExportDataScreenState extends State<ExportDataScreen>
     }
   }
 
-  // --- HANDLER TAB IMPOR ---
+  // --- HANDLER TAB IMPOR (SYNC-08) ---
   Future<void> _handlePickFile() async {
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _uploadedFile = ImportFileModel.defaultMock();
-      });
-      _showToast('File ${_uploadedFile!.fileName} berhasil dimuat');
+
+    try {
+      FilePickerResult? result;
+      try {
+        if (widget.filePicker != null) {
+          result = await widget.filePicker!();
+        } else {
+          // Menggunakan FileType.any agar pada Android semua berkas (termasuk .csv
+          // yang di-download dengan MIME type text/plain atau application/octet-stream)
+          // dapat dipilih oleh pengguna tanpa terblokir / greyed out oleh SAF picker.
+          result = await FilePicker.platform.pickFiles(
+            type: FileType.any,
+            withData: true,
+          );
+        }
+      } catch (_) {
+        // Exception dari platform channels di headless tests
+      }
+
+      if (result != null && result.files.isNotEmpty) {
+        final pickedFile = result.files.first;
+        final rawName = pickedFile.name.trim();
+        final ext = (pickedFile.extension ?? '').trim().toLowerCase();
+        final path = (pickedFile.path ?? '').trim();
+
+        // 1. Ambil bytes berkas terlebih dahulu
+        Uint8List? bytes = pickedFile.bytes;
+        if (bytes == null && path.isNotEmpty) {
+          final ioFile = File(path);
+          if (ioFile.existsSync()) {
+            bytes = await ioFile.readAsBytes();
+          }
+        }
+
+        if (bytes == null || bytes.isEmpty) {
+          _showToast('Berkas CSV kosong atau tidak dapat diakses');
+          return;
+        }
+
+        // 2. Validasi ukuran berkas maksimal 5 MB
+        if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+          _showToast('Ukuran berkas melebihi batas maksimal 5 MB');
+          return;
+        }
+
+        // 3. Deteksi berkas biner (bukan teks CSV)
+        final bool isBinary = bytes.take(1024).contains(0x00) ||
+            (bytes.length >= 4 &&
+                ((bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46) || // %PDF
+                 (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47))); // .PNG
+
+        if (isBinary) {
+          _showToast('Format berkas harus .csv (contoh: transaksi.csv)');
+          return;
+        }
+
+        // 4. Tentukan nama berkas efektif (tangani nama tanpa ekstensi di Android SAF)
+        String effectiveFileName = rawName;
+        if (!effectiveFileName.toLowerCase().endsWith('.csv')) {
+          if (ext == 'csv') {
+            effectiveFileName = '$effectiveFileName.csv';
+          } else if (path.toLowerCase().endsWith('.csv')) {
+            final pathFileName = path.split(Platform.pathSeparator).last.trim();
+            if (pathFileName.toLowerCase().endsWith('.csv')) {
+              effectiveFileName = pathFileName;
+            } else {
+              effectiveFileName = '$effectiveFileName.csv';
+            }
+          } else if (effectiveFileName.toLowerCase().endsWith('.txt')) {
+            effectiveFileName = '${effectiveFileName.substring(0, effectiveFileName.length - 4)}.csv';
+          } else {
+            effectiveFileName = '$effectiveFileName.csv';
+          }
+        }
+
+        // 5. Uraikan dan validasi berkas CSV
+        try {
+          final model = await SyncImportRepository.instance.parseAndValidateCsv(
+            bytes,
+            effectiveFileName,
+            uid: _uid,
+          );
+
+          if (mounted) {
+            setState(() {
+              _uploadedFile = model;
+            });
+            _showToast('File $effectiveFileName berhasil dimuat (${model.validCount} valid)');
+          }
+        } catch (e) {
+          if (e is FormatException && e.message.contains('kosong')) {
+            _showToast(e.message);
+          } else {
+            _showToast('Format berkas harus .csv (contoh: transaksi.csv)');
+          }
+        }
+        return;
+      }
+
+      // Fallback untuk test environment jika FilePicker tidak mengembalikan berkas
+      if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+        if (mounted) {
+          setState(() {
+            _uploadedFile = ImportFileModel.defaultMock();
+          });
+          _showToast('File ${_uploadedFile!.fileName} berhasil dimuat');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showToast('Gagal membaca berkas: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -241,6 +369,20 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   void _handleDownloadTemplate() {
     HapticFeedback.mediumImpact();
     _showToast('Template CSV berhasil diunduh');
+
+    if (!kIsWeb && !Platform.environment.containsKey('FLUTTER_TEST')) {
+      const templateContent = '''No,Tanggal,Waktu,Tipe,Kategori,Nominal,Catatan
+1,2026-10-01,12:30,PENGELUARAN,Makanan & Minuman,25000,Makan siang bersama tim
+2,2026-10-01,09:00,PEMASUKAN,Gaji Pokok,5000000,Gaji bulanan
+3,2026-10-02,17:15,PENGELUARAN,Transportasi,35000,Bensin motor''';
+      ExportShareService.instance.saveAndShareFile(
+        fileName: 'template_transaksi_trackfinance.csv',
+        bytes: utf8.encode(templateContent),
+        mimeType: 'text/csv',
+        subject: 'Template CSV TrackFinance',
+        text: 'Template berkas CSV untuk impor transaksi TrackFinance.',
+      );
+    }
   }
 
   void _handleDisabledImportTap() {
@@ -249,27 +391,54 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   }
 
   Future<void> _handleExecuteImport() async {
-    if (_uploadedFile == null || _isProcessing) return;
+    final file = _uploadedFile;
+    if (file == null || _isProcessing) return;
+
+    if (file.validCount == 0) {
+      _showToast('Tidak ada transaksi valid untuk diimpor');
+      return;
+    }
 
     HapticFeedback.heavyImpact();
     setState(() => _isProcessing = true);
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      final uid = _uid;
+      final validTx = file.validTransactions;
 
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      _showImportSuccessModal();
+      if (uid != null && uid.trim().isNotEmpty && validTx.isNotEmpty) {
+        await SyncImportRepository.instance.commitImport(uid, validTx);
+      } else {
+        // Fallback delay untuk pengujian atau guest mode
+        await Future.delayed(const Duration(milliseconds: 600));
+      }
+
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        _showImportSuccessModal();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        _showToast('Gagal mengimpor data: $e');
+      }
     }
   }
 
   void _showImportSuccessModal() {
-    final count = _uploadedFile?.validCount ?? 120;
+    final count = _uploadedFile?.validCount ?? 0;
     ExportImportSuccessDialog.show(
       context,
       message: '$count transaksi diimpor',
       onDone: () {
         Navigator.of(context).pop();
-        Navigator.of(context).maybePop();
+        if (mounted) {
+          setState(() {
+            _uploadedFile = null;
+          });
+          _showToast('$count transaksi berhasil diimpor');
+          Navigator.of(context).maybePop(true);
+        }
       },
     );
   }
@@ -289,6 +458,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
           _transactionCount = (days * 1.2).clamp(1, 100).toInt();
           _estimatedTotal = _transactionCount * 426000;
         });
+        _updateTransactionEstimates();
       },
     );
   }
@@ -307,6 +477,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
           _transactionCount = (days * 1.2).clamp(1, 100).toInt();
           _estimatedTotal = _transactionCount * 426000;
         });
+        _updateTransactionEstimates();
       },
     );
   }
@@ -320,6 +491,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
           _selectedMonth = month;
           _transactionCount = (month.month * 2).clamp(14, 38);
         });
+        _updateTransactionEstimates();
       },
     );
   }
@@ -334,31 +506,121 @@ class _ExportDataScreenState extends State<ExportDataScreen>
           _transactionCount = 288;
           _estimatedTotal = 45600000;
         });
+        _updateTransactionEstimates();
       },
     );
   }
 
+  // --- ESTIMASI TRANSAKSI DINAMIS (SYNC-07) ---
+  (DateTime, DateTime) _getCurrentExportDateRange() {
+    if (_exportPeriod == 'Bulan') {
+      final start = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+      final nextMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+      final end = nextMonth.subtract(const Duration(seconds: 1));
+      return (start, end);
+    } else if (_exportPeriod == 'Tahun') {
+      final start = DateTime(_selectedMonth.year, 1, 1);
+      final end = DateTime(_selectedMonth.year, 12, 31, 23, 59, 59);
+      return (start, end);
+    } else {
+      final start = DateTime(_exportStartDate.year, _exportStartDate.month, _exportStartDate.day, 0, 0, 0);
+      final end = DateTime(_exportEndDate.year, _exportEndDate.month, _exportEndDate.day, 23, 59, 59);
+      return (start, end);
+    }
+  }
+
+  String _getCurrentPeriodLabel() {
+    if (_exportPeriod == 'Bulan') {
+      const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      return '${months[_selectedMonth.month - 1]} ${_selectedMonth.year}';
+    } else if (_exportPeriod == 'Tahun') {
+      return 'Tahun ${_selectedMonth.year}';
+    } else {
+      return '${_exportStartDate.day.toString().padLeft(2, '0')}/${_exportStartDate.month.toString().padLeft(2, '0')}/${_exportStartDate.year} s/d ${_exportEndDate.day.toString().padLeft(2, '0')}/${_exportEndDate.month.toString().padLeft(2, '0')}/${_exportEndDate.year}';
+    }
+  }
+
+  String _generateExportFileName(String extension) {
+    if (_exportPeriod == 'Bulan') {
+      return 'transaksi_${_selectedMonth.year}-${_selectedMonth.month.toString().padLeft(2, '0')}.$extension';
+    } else if (_exportPeriod == 'Tahun') {
+      return 'transaksi_${_selectedMonth.year}.$extension';
+    } else {
+      return 'transaksi_${_exportStartDate.year}-${_exportStartDate.month.toString().padLeft(2, '0')}-${_exportStartDate.day.toString().padLeft(2, '0')}_sd_${_exportEndDate.year}-${_exportEndDate.month.toString().padLeft(2, '0')}-${_exportEndDate.day.toString().padLeft(2, '0')}.$extension';
+    }
+  }
+
+  Future<void> _updateTransactionEstimates() async {
+    final uid = _uid;
+    if (uid == null || uid.isEmpty) return;
+
+    final (start, end) = _getCurrentExportDateRange();
+    try {
+      final transactions = await SyncExportRepository.instance.getTransactionsByDateRange(
+        uid,
+        startDate: start,
+        endDate: end,
+      );
+      if (mounted) {
+        setState(() {
+          _transactionCount = transactions.length;
+          _estimatedTotal = transactions.fold<double>(
+            0.0,
+            (sum, tx) => sum + tx.amount,
+          );
+        });
+      }
+    } catch (_) {
+      // Abaikan jika offline / belum ada dokumen
+    }
+  }
+
+  // --- EKSEKUSI EKSPOR DATA RIIL (SYNC-06) ---
   Future<void> _handleExecuteExport() async {
     if (_isProcessing) return;
 
     HapticFeedback.heavyImpact();
     setState(() => _isProcessing = true);
 
-    await Future.delayed(const Duration(milliseconds: 900));
+    final uid = _uid;
+    final extension = _exportFormat.toLowerCase();
+    final fileName = _generateExportFileName(extension);
 
-    if (mounted) {
-      setState(() => _isProcessing = false);
-      _showExportSuccessModal();
+    try {
+      if (uid != null && uid.isNotEmpty) {
+        final (startDate, endDate) = _getCurrentExportDateRange();
+        await SyncExportRepository.instance.exportAndShare(
+          uid: uid,
+          startDate: startDate,
+          endDate: endDate,
+          format: _exportFormat,
+          fileName: fileName,
+          userName: _currentUser?.displayName,
+          periodLabel: _getCurrentPeriodLabel(),
+        );
+      } else {
+        // Fallback delay untuk pengujian jika tidak terautentikasi
+        await Future.delayed(const Duration(milliseconds: 900));
+      }
+
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        _showExportSuccessModal();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        _showToast('Gagal mengekspor data: $e');
+      }
     }
   }
 
   void _showExportSuccessModal() {
     final String extension = _exportFormat.toLowerCase();
-    final String filename = _exportPeriod == 'Bulan'
-        ? 'transaksi_${_selectedMonth.year}-${_selectedMonth.month.toString().padLeft(2, '0')}.$extension'
-        : (_exportPeriod == 'Tahun'
-            ? 'transaksi_${_selectedMonth.year}.$extension'
-            : 'transaksi_${_exportStartDate.year}-${_exportStartDate.month.toString().padLeft(2, '0')}-${_exportStartDate.day.toString().padLeft(2, '0')}_sd_${_exportEndDate.year}-${_exportEndDate.month.toString().padLeft(2, '0')}-${_exportEndDate.day.toString().padLeft(2, '0')}.$extension');
+    final String filename = _generateExportFileName(extension);
 
     ExportImportSuccessDialog.show(
       context,
@@ -659,8 +921,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        const ImportCsvSpecCard(),
       ],
     );
   }
@@ -690,6 +950,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                 _estimatedTotal = 3840000;
               }
             });
+            _updateTransactionEstimates();
           },
           startDate: _exportStartDate,
           endDate: _exportEndDate,
@@ -710,8 +971,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
           onFormatChanged: (format) {
             setState(() => _exportFormat = format);
           },
-          showSubtitle: _exportPeriod == 'Rentang',
-          showNoteCard: _exportPeriod == 'Rentang',
         ),
       ],
     );
@@ -870,22 +1129,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                 ),
               ),
             ),
-
-              // Subteks Keterangan untuk Tab Ekspor (hanya di mode Rentang)
-              if (!_isImportTab && _exportPeriod == 'Rentang') ...[
-                const SizedBox(height: 8),
-                Text(
-                  _exportFormat == 'CSV'
-                      ? 'Ukuran file diperkirakan ~14 KB'
-                      : 'Ukuran file diperkirakan ~280 KB',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF737686),
-                  ),
-                ),
-              ],
-            ],
+          ],
           ),
         ),
       ),

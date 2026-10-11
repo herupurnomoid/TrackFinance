@@ -51,17 +51,6 @@ class ExportRangeFilterSection extends StatelessWidget {
     return '${months[date.month - 1]} ${date.year}';
   }
 
-  String _formatCurrency(double amount) {
-    final rawNumber = amount.toInt().toString();
-    final chars = rawNumber.split('').reversed.toList();
-    final parts = <String>[];
-    for (int i = 0; i < chars.length; i++) {
-      if (i > 0 && i % 3 == 0) parts.add('.');
-      parts.add(chars[i]);
-    }
-    return 'Rp ${parts.reversed.join('')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isRangeMode = activePeriod == 'Rentang';
@@ -87,15 +76,6 @@ class ExportRangeFilterSection extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (isRangeMode)
-              Text(
-                'Filter Waktu',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF546065),
-                ),
-              ),
           ],
         ),
 
@@ -156,85 +136,8 @@ class ExportRangeFilterSection extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Active Range Chips
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDBE1FF),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF004AC6),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '$transactionCount transaksi ditemukan',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF004AC6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFDAD6),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        size: 13,
-                        color: Color(0xFFBA1A1A),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'Jika kosong: 0 data',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFFBA1A1A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // Micro Insight Well
-          _buildMicroInsightWell(),
+          // Transaction Count Pill Badge
+          _buildTransactionCountPill(transactionCount),
         ] else if (isMonthMode) ...[
           // MODE BULAN (Single Selector Card: Contoh "Oktober 2026")
           _buildSelectorCard(
@@ -245,216 +148,62 @@ class ExportRangeFilterSection extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          // Transaction Count Pill Badge (receipt_long + "24 transaksi")
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFDAE2FD),
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A131B2E),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.receipt_long_rounded,
-                    size: 14,
-                    color: Color(0xFF004AC6),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$transactionCount transaksi',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF004AC6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Transaction Count Pill Badge
+          _buildTransactionCountPill(transactionCount),
         ] else ...[
           // MODE TAHUN (Single Selector Card: Contoh "Tahun 2026")
           _buildSelectorCard(
             title: 'Tahun ${selectedMonth.year}',
-            subtitle: 'Januari - Desember ${selectedMonth.year}',
             icon: Icons.date_range_rounded,
             onTap: onPickYear ?? onPickMonth,
           ),
 
           const SizedBox(height: 10),
 
-          // Transaction Count Pill Badge + 12 Bulan Aktif
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDAE2FD),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0A131B2E),
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.receipt_long_rounded,
-                        size: 14,
-                        color: Color(0xFF004AC6),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '$transactionCount transaksi ditemukan',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF004AC6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '12 Bulan Aktif',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF434655),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // Estimasi Total Tahun Card + Tersinkron Badge
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2E7FF).withValues(alpha: 0.60),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFC3C6D7).withValues(alpha: 0.35),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A131B2E),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.insights_rounded,
-                            size: 18,
-                            color: Color(0xFF004AC6),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Estimasi Total Tahun ${selectedMonth.year}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF434655),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatCurrency(estimatedTotal),
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF131B2E),
-                                letterSpacing: -0.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7FFC97).withValues(alpha: 0.30),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        size: 13,
-                        color: Color(0xFF006329),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Tersinkron',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF006329),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Transaction Count Pill Badge
+          _buildTransactionCountPill(transactionCount),
         ],
       ],
+    );
+  }
+
+  /// Transaction Count Pill Badge (receipt_long + "X transaksi")
+  Widget _buildTransactionCountPill(int count) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDAE2FD),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A131B2E),
+              blurRadius: 2,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.receipt_long_rounded,
+              size: 14,
+              color: Color(0xFF004AC6),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$count transaksi',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF004AC6),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -712,90 +461,5 @@ class ExportRangeFilterSection extends StatelessWidget {
           ),
         ),
       );
-  }
-
-  Widget _buildMicroInsightWell() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-          BoxShadow(
-            color: const Color(0xFF131B2E).withValues(alpha: 0.03),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAEDFF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.analytics_rounded,
-                size: 20,
-                color: Color(0xFF546065),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Estimasi Total Rentang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF434655),
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  _formatCurrency(estimatedTotal),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF131B2E),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              'Tersinkron',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF006329),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

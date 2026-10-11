@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
+import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../data/monthly_report_model.dart';
+import '../../data/report_data_model.dart';
+import '../../data/report_repository.dart';
 import '../widgets/report_health_card.dart';
 import '../widgets/report_month_picker_modal.dart';
 import '../widgets/report_skeleton.dart';
@@ -12,9 +17,12 @@ import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart
 
 /// Halaman Laporan Keuangan Modern Tactile Finance
 /// Mendukung:
-/// - Mode Kosong (Empty State, e.g. Sep 2026)
-/// - Mode Pengeluaran / Keluar (Oktober 2026 dengan bar merah, donut merah, 4 kategori, minus kritis)
-/// - Mode Pemasukan / Masuk (Oktober 2026 dengan bar ganda, donut hijau, 3 kategori, sehat 95%)
+/// - Realtime Stream Laporan (REP-06)
+/// - Mode Kosong Dinamis (REP-07)
+/// - Pemilihan Bulan/Tahun dengan ReportMonthPickerModal (REP-08)
+/// - Indikator Kesehatan Dinamis (REP-09)
+/// - Tren Arus Kas Harian Dinamis (REP-10)
+/// - Struktur Kategori Donut Chart Dinamis
 /// - Transisi halus, animasi interaktif bar tooltip & donut, serta skeleton loading.
 class ReportScreen extends StatefulWidget {
   final UserProfile? user;
@@ -42,6 +50,8 @@ class _ReportScreenState extends State<ReportScreen>
   late int _currentYear;
   late int _currentMonthIndex;
   late bool _isExpenseMode;
+  MonthlyReportData? _reportData;
+  StreamSubscription<MonthlyReportData>? _reportSubscription;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -91,6 +101,7 @@ class _ReportScreenState extends State<ReportScreen>
     );
 
     _fadeController.forward();
+    _loadReportData();
   }
 
   @override
@@ -105,43 +116,110 @@ class _ReportScreenState extends State<ReportScreen>
 
   @override
   void dispose() {
+    _reportSubscription?.cancel();
     _fadeController.dispose();
     super.dispose();
   }
 
-  /// Menentukan apakah bulan yang dipilih memiliki data atau kosong
-  /// (Bulan Oktober 2026 memiliki data lengkap sesuai referensi, bulan lain kosong)
+  UserProfile? get _currentUser =>
+      widget.user ?? AuthServiceProvider.instance.currentUser;
+  String? get _uid => _currentUser?.uid;
+
+  /// Memuat data laporan dari ReportRepository dan berlangganan realtime stream
+  Future<void> _loadReportData() async {
+    final uid = _uid;
+    if (uid == null || uid.trim().isEmpty) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final data = await ReportRepository.instance.getMonthlyReport(
+        uid,
+        year: _currentYear,
+        monthIndex: _currentMonthIndex,
+      );
+      if (mounted) {
+        setState(() {
+          _reportData = data;
+          _isLoading = false;
+        });
+        _fadeController.forward(from: 0.0);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+
+    // Berlangganan realtime stream laporan
+    _reportSubscription?.cancel();
+    _reportSubscription = ReportRepository.instance
+        .watchMonthlyReportByPeriod(
+          uid,
+          year: _currentYear,
+          monthIndex: _currentMonthIndex,
+        )
+        .listen((data) {
+      if (mounted) {
+        setState(() {
+          _reportData = data;
+        });
+      }
+    });
+  }
+
+  /// Menentukan apakah bulan yang dipilih memiliki data atau kosong (REP-07)
   bool get _isMonthEmpty {
+    if (_reportData != null) {
+      return _reportData!.isEmpty;
+    }
     return !(_currentYear == 2026 && _currentMonthIndex == 9);
   }
 
   int get _currentExpenseTotal {
+    if (_reportData != null) {
+      return _reportData!.totalExpense;
+    }
     if (_isMonthEmpty) return 0;
     return 248466;
   }
 
   int get _currentIncomeTotal {
+    if (_reportData != null) {
+      return _reportData!.totalIncome;
+    }
     if (_isMonthEmpty) return 0;
-    // Jika di mode Keluar, tampilan pemasukan di summary bisa 0 sesuai HTML 1,
-    // di mode Masuk bernilai Rp 5.000.000 sesuai HTML 2
     return _isExpenseMode ? 0 : 5000000;
   }
 
   int get _structureTotalAmount {
+    if (_reportData != null) {
+      return _isExpenseMode
+          ? _reportData!.totalExpense
+          : _reportData!.totalIncome;
+    }
     if (_isMonthEmpty) return 0;
     return _isExpenseMode ? 248466 : 5000000;
   }
 
   Future<void> _handleRefresh() async {
     HapticFeedback.lightImpact();
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 650));
-    if (mounted) {
-      setState(() => _isLoading = false);
-      _fadeController.forward(from: 0.0);
+    final uid = _uid;
+    if (uid != null && uid.trim().isNotEmpty) {
+      await _loadReportData();
+    } else {
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(milliseconds: 650));
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _fadeController.forward(from: 0.0);
+      }
     }
   }
 
+  /// Membuka modal pemilihan bulan/tahun dan memicu pengambilan data baru (REP-08)
   void _openMonthPickerModal() {
     HapticFeedback.lightImpact();
     ReportMonthPickerModal.show(
@@ -153,7 +231,12 @@ class _ReportScreenState extends State<ReportScreen>
           _currentYear = year;
           _currentMonthIndex = monthIndex;
         });
-        _fadeController.forward(from: 0.0);
+        final uid = _uid;
+        if (uid != null && uid.trim().isNotEmpty) {
+          _loadReportData();
+        } else {
+          _fadeController.forward(from: 0.0);
+        }
       },
     );
   }
@@ -240,6 +323,9 @@ class _ReportScreenState extends State<ReportScreen>
                                         isExpenseMode: _isExpenseMode,
                                         expenseTotal: _currentExpenseTotal,
                                         incomeTotal: _currentIncomeTotal,
+                                        dailyTrends: _reportData != null
+                                            ? _reportData!.dailyTrends
+                                            : (_isMonthEmpty ? const [] : ReportDataStore.oktoberDailyTrends),
                                       ),
 
                                       const SizedBox(height: 16),
@@ -250,6 +336,11 @@ class _ReportScreenState extends State<ReportScreen>
                                         totalAmount: _structureTotalAmount,
                                         isExpenseTab: _isExpenseMode,
                                         onTabChanged: _handleTabChanged,
+                                        categoryItems: _reportData != null
+                                            ? (_isExpenseMode
+                                                ? _reportData!.expenseCategories
+                                                : _reportData!.incomeCategories)
+                                            : null,
                                       ),
 
                                       const SizedBox(height: 16),
@@ -260,7 +351,15 @@ class _ReportScreenState extends State<ReportScreen>
                                         isExpenseMode: _isExpenseMode,
                                         healthScore: _isMonthEmpty
                                             ? null
-                                            : (_isExpenseMode ? -100.0 : 95.0),
+                                            : (_reportData != null
+                                                ? _reportData!.healthScore.toDouble()
+                                                : (_isExpenseMode ? -100.0 : 95.0)),
+                                        score: _reportData?.healthScore,
+                                        savingsRate: _reportData?.savingsRate,
+                                        healthStatus: _reportData?.healthStatus,
+                                        recommendation: _reportData?.healthRecommendation,
+                                        incomeTotal: _currentIncomeTotal,
+                                        expenseTotal: _currentExpenseTotal,
                                       ),
                                     ],
                                   ),

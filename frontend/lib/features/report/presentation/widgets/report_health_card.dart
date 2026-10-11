@@ -8,12 +8,24 @@ import 'package:google_fonts/google_fonts.dart';
 /// 3. Mode Masuk (Sehat): Badge 'Sehat', knob di 95% hijau, skor 'Skor: 95.0%'
 class ReportHealthCard extends StatelessWidget {
   final double? healthScore;
+  final int? score;
+  final double? savingsRate;
+  final String? healthStatus;
+  final String? recommendation;
+  final int? incomeTotal;
+  final int? expenseTotal;
   final bool isEmpty;
   final bool isExpenseMode;
 
   const ReportHealthCard({
     super.key,
     this.healthScore,
+    this.score,
+    this.savingsRate,
+    this.healthStatus,
+    this.recommendation,
+    this.incomeTotal,
+    this.expenseTotal,
     this.isEmpty = true,
     this.isExpenseMode = true,
   });
@@ -21,31 +33,60 @@ class ReportHealthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Penentuan Label Badge & Warna
-    final String badgeLabel = isEmpty
-        ? 'Belum ada data'
-        : (isExpenseMode ? 'Minus Kritis' : 'Sehat');
+    final String badgeLabel;
+    final Color badgeBg;
+    final Color badgeText;
+    final String scoreDisplay;
+    final Color scoreColor;
+    final double targetPercent;
 
-    final Color badgeBg = isEmpty
-        ? const Color(0xFFEAEDFF)
-        : (isExpenseMode ? const Color(0xFFFFDAD6) : const Color(0xFFDCFCE7));
+    if (isEmpty) {
+      badgeLabel = 'Belum ada data';
+      badgeBg = const Color(0xFFEAEDFF);
+      badgeText = const Color(0xFF737686);
+      scoreDisplay = 'Skor: -';
+      scoreColor = const Color(0xFF737686);
+      targetPercent = 0.0;
+    } else if (healthScore == -100.0 || (healthScore != null && healthScore! < 0)) {
+      badgeLabel = 'Minus Kritis';
+      badgeBg = const Color(0xFFFFDAD6);
+      badgeText = const Color(0xFF93000A);
+      scoreDisplay = 'Skor: -100.0%';
+      scoreColor = const Color(0xFFDC2626);
+      targetPercent = 0.0;
+    } else if (healthScore == 95.0 && score == null && healthStatus == null) {
+      badgeLabel = 'Sehat';
+      badgeBg = const Color(0xFFDCFCE7);
+      badgeText = const Color(0xFF006329);
+      scoreDisplay = 'Skor: 95.0%';
+      scoreColor = const Color(0xFF006329);
+      targetPercent = 0.95;
+    } else {
+      final effectiveScore = score ?? (healthScore?.round() ?? 75);
+      final effectiveStatus = healthStatus ?? (isExpenseMode ? 'Minus Kritis' : 'Sehat');
 
-    final Color badgeText = isEmpty
-        ? const Color(0xFF737686)
-        : (isExpenseMode ? const Color(0xFF93000A) : const Color(0xFF006329));
+      if (effectiveStatus == 'Sangat Sehat' || effectiveStatus == 'Sehat') {
+        badgeLabel = effectiveStatus;
+        badgeBg = const Color(0xFFDCFCE7);
+        badgeText = const Color(0xFF006329);
+        scoreColor = const Color(0xFF006329);
+      } else if (effectiveStatus == 'Waspada') {
+        badgeLabel = effectiveStatus;
+        badgeBg = const Color(0xFFFEF3C7);
+        badgeText = const Color(0xFFB45309);
+        scoreColor = const Color(0xFFD97706);
+      } else {
+        badgeLabel = effectiveStatus;
+        badgeBg = const Color(0xFFFFDAD6);
+        badgeText = const Color(0xFF93000A);
+        scoreColor = const Color(0xFFDC2626);
+      }
 
-    // Skor teks
-    final String scoreDisplay = isEmpty
-        ? 'Skor: -'
-        : (isExpenseMode ? 'Skor: -100.0%' : 'Skor: 95.0%');
-
-    final Color scoreColor = isEmpty
-        ? const Color(0xFF737686)
-        : (isExpenseMode ? const Color(0xFFDC2626) : const Color(0xFF006329));
-
-    // Posisi Persentase Knob (0.0 hingga 1.0)
-    final double targetPercent = isEmpty
-        ? 0.0
-        : (isExpenseMode ? 0.0 : 0.95);
+      scoreDisplay = savingsRate != null
+          ? 'Skor: ${effectiveScore >= 0 ? effectiveScore : 0}'
+          : 'Skor: $effectiveScore';
+      targetPercent = (effectiveScore / 100.0).clamp(0.0, 1.0);
+    }
 
     return Container(
       width: double.infinity,
@@ -266,6 +307,48 @@ class ReportHealthCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // 4. Rekomendasi Finansial Cerdas Dinamis
+          if (!isEmpty && recommendation != null && recommendation!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1),
+                    child: Icon(
+                      Icons.tips_and_updates_rounded,
+                      size: 16,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      recommendation!,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF475569),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

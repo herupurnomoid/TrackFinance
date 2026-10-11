@@ -222,7 +222,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const AddTransactionScreen(),
+        home: AddTransactionScreen(
+          initialDate: DateTime(2025, 5, 24),
+          initialTime: const TimeOfDay(hour: 14, minute: 30),
+        ),
       ),
     );
 
@@ -240,7 +243,8 @@ void main() {
     expect(find.text('Nominal Transaksi'), findsOneWidget);
     expect(find.text('Keluar'), findsOneWidget);
     expect(find.text('Rp'), findsOneWidget);
-    expect(find.text('150.000'), findsOneWidget);
+    final initialEditable = tester.widgetList<EditableText>(find.byType(EditableText)).first;
+    expect(initialEditable.controller.text, '0');
 
     // Verify Quick Chips
     expect(find.text('+10.000'), findsOneWidget);
@@ -265,10 +269,10 @@ void main() {
     // Verify CTA Button
     expect(find.text('Simpan Transaksi'), findsOneWidget);
 
-    // Test Quick Add +50.000 -> 150.000 + 50.000 = 200.000
+    // Test Quick Add +50.000 -> 0 + 50.000 = 50.000
     await tester.tap(find.text('+50.000'));
     await tester.pump();
-    expect(find.text('200.000'), findsOneWidget);
+    expect(find.text('50.000'), findsOneWidget);
 
     // Test Clear button
     await tester.tap(find.byIcon(Icons.backspace_outlined));
@@ -448,10 +452,6 @@ void main() {
     // Verify Template Action
     expect(find.text('Unduh template'), findsOneWidget);
 
-    // Verify Format CSV Table Specification
-    expect(find.text('Format CSV'), findsOneWidget);
-    expect(find.text('PENGELUARAN'), findsOneWidget);
-
     // Test Tapping "Unduh template" triggers toast
     await tester.tap(find.text('Unduh template'));
     await tester.pump();
@@ -503,7 +503,6 @@ void main() {
 
     // Verify Period Section & Sub-Segmented Tabs
     expect(find.text('Periode'), findsOneWidget);
-    expect(find.text('Filter Waktu'), findsOneWidget);
     expect(find.text('Rentang'), findsOneWidget);
     expect(find.text('Bulan'), findsOneWidget);
     expect(find.text('Tahun'), findsOneWidget);
@@ -514,12 +513,8 @@ void main() {
     expect(find.text('Sampai'), findsOneWidget);
     expect(find.text('09 Okt 2026'), findsOneWidget);
 
-    // Verify Active Chips & Insight Well
-    expect(find.text('9 transaksi ditemukan'), findsOneWidget);
-    expect(find.text('Jika kosong: 0 data'), findsOneWidget);
-    expect(find.text('Estimasi Total Rentang'), findsOneWidget);
-    expect(find.text('Rp 3.840.000'), findsOneWidget);
-    expect(find.text('Tersinkron'), findsOneWidget);
+    // Verify Clean Transaction Pill Badge
+    expect(find.text('9 transaksi'), findsOneWidget);
 
     // Verify Format Selector
     expect(find.text('Format'), findsOneWidget);
@@ -528,13 +523,11 @@ void main() {
 
     // Verify Bottom CTA Button
     expect(find.text('Ekspor CSV'), findsOneWidget);
-    expect(find.text('Ukuran file diperkirakan ~14 KB'), findsOneWidget);
 
     // Test Selecting Format PDF
     await tester.tap(find.text('PDF'));
     await tester.pumpAndSettle();
     expect(find.text('Ekspor PDF'), findsOneWidget);
-    expect(find.text('Ukuran file diperkirakan ~280 KB'), findsOneWidget);
 
     // Test Selecting Format CSV back
     await tester.tap(find.text('CSV'));
@@ -550,7 +543,7 @@ void main() {
     // Test Switching back to "Rentang"
     await tester.tap(find.text('Rentang'));
     await tester.pumpAndSettle();
-    expect(find.text('9 transaksi ditemukan'), findsOneWidget);
+    expect(find.text('9 transaksi'), findsOneWidget);
 
     // Test Executing Export
     await tester.tap(find.text('Ekspor CSV'));
@@ -664,18 +657,11 @@ void main() {
     expect(find.text('Bulan'), findsOneWidget);
     expect(find.text('Tahun'), findsOneWidget);
 
-    // Verify Year Selector Card ("Tahun 2026", "Januari - Desember 2026")
+    // Verify Year Selector Card ("Tahun 2026")
     expect(find.text('Tahun 2026'), findsOneWidget);
-    expect(find.text('Januari - Desember 2026'), findsOneWidget);
 
-    // Verify Transaction Count & Active Months
-    expect(find.text('288 transaksi ditemukan'), findsOneWidget);
-    expect(find.text('12 Bulan Aktif'), findsOneWidget);
-
-    // Verify Estimasi Total Card & Tersinkron Badge
-    expect(find.text('Estimasi Total Tahun 2026'), findsOneWidget);
-    expect(find.text('Rp 45.600.000'), findsOneWidget);
-    expect(find.text('Tersinkron'), findsOneWidget);
+    // Verify Transaction Count Badge ("288 transaksi")
+    expect(find.text('288 transaksi'), findsOneWidget);
 
     // Verify Format Section (PDF selected, CSV unselected)
     expect(find.text('Format'), findsOneWidget);
@@ -695,7 +681,6 @@ void main() {
     await tester.tap(find.text('2025'));
     await tester.pumpAndSettle();
     expect(find.text('Tahun 2025'), findsOneWidget);
-    expect(find.text('Januari - Desember 2025'), findsOneWidget);
 
     // Test Selecting Format CSV
     await tester.tap(find.text('CSV'));
@@ -1081,7 +1066,7 @@ void main() {
 
     // Verify Edit Mode Header
     expect(find.text('Edit Transaksi'), findsOneWidget);
-    expect(find.byIcon(Icons.delete_outline_rounded), findsWidgets);
+    expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
 
     // Verify Pre-populated Nominal
     expect(find.text('45.000'), findsOneWidget);
@@ -1091,7 +1076,6 @@ void main() {
 
     // Verify CTA button text
     expect(find.text('Perbarui Transaksi'), findsOneWidget);
-    expect(find.text('Hapus Transaksi'), findsOneWidget);
   });
 
   testWidgets('Delete Transaction flow shows confirmation dialog and confirms delete', (WidgetTester tester) async {

@@ -13,6 +13,12 @@ class MockAuthService implements AuthService {
   @override
   UserProfile? get currentUser => _currentUser;
 
+  /// Helper untuk simulasi status autentikasi di pengujian
+  void setCurrentUser(UserProfile? user) {
+    _currentUser = user;
+    _authStateController.add(user);
+  }
+
   @override
   Future<UserProfile?> signInWithGoogle() async {
     // Simulate realistic network delay for OAuth authentication

@@ -2,8 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:track_finance/core/models/user_profile.dart';
+import 'package:track_finance/core/services/auth_service_provider.dart';
 import 'package:track_finance/features/auth/presentation/screens/login_screen.dart';
 import 'package:track_finance/features/auth/presentation/widgets/tactile_3d_artwork.dart';
+import 'package:track_finance/features/dashboard/presentation/screens/dashboard_screen.dart';
 
 /// Halaman Splash Screen TrackFinance
 /// Menampilkan animasi 3D tactile artwork dan nama aplikasi "TrackFinance"
@@ -26,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _brandingAnimController;
   late Animation<double> _brandingFadeAnimation;
   late Animation<Offset> _brandingSlideAnimation;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -54,16 +58,25 @@ class _SplashScreenState extends State<SplashScreen>
 
     _brandingAnimController.forward();
 
-    // Timer transisi otomatis ke Login Screen
-    _timer = Timer(widget.duration, _navigateToLogin);
+    // Timer transisi otomatis: jika sudah login langsung ke Dashboard, jika belum ke Login
+    _timer = Timer(widget.duration, _navigateToNextScreen);
   }
 
-  void _navigateToLogin() {
-    if (!mounted) return;
+  void _navigateToNextScreen() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    _timer?.cancel();
+
+    // Periksa sesi login yang tersimpan di Firebase Auth
+    final UserProfile? user = AuthServiceProvider.instance.currentUser;
+
+    final Widget targetScreen = user != null
+        ? DashboardScreen(user: user)
+        : const LoginScreen();
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
@@ -94,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
       child: Scaffold(
         backgroundColor: const Color(0xFF1E40AF),
         body: GestureDetector(
-          onTap: _navigateToLogin, // Ketuk untuk langsung lanjut
+          onTap: _navigateToNextScreen, // Ketuk untuk langsung lanjut
           behavior: HitTestBehavior.opaque,
           child: Stack(
             children: [
@@ -161,29 +174,32 @@ class _SplashScreenState extends State<SplashScreen>
                             position: _brandingSlideAnimation,
                             child: FadeTransition(
                               opacity: _brandingFadeAnimation,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Track',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: titleFontSize,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -1.0,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Track',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: titleFontSize,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: -1.0,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Finance',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: titleFontSize,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF93C5FD),
-                                      letterSpacing: -1.0,
+                                    Text(
+                                      'Finance',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: titleFontSize,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF93C5FD),
+                                        letterSpacing: -1.0,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),

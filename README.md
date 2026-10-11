@@ -24,6 +24,9 @@ TrackFinance/
 > 📖 **Dokumentasi Backend Firebase**: Panduan teknis arsitektur, skema Firestore, dan task breakdown disusun per-fitur:
 > - [🔐 Fitur Autentikasi (Google OAuth)](docs/auth/README.md)
 > - [🏷️ Fitur Manajemen Kategori](docs/categories/README.md)
+> - [💰 Fitur Pencatatan Transaksi](docs/transaction/README.md)
+> - [📊 Fitur Laporan Keuangan](docs/report/README.md)
+> - [🔄 Fitur Ekspor & Impor Data (Sync)](docs/sync/README.md)
 
 ## 🚀 Menjalankan Frontend Mobile
 

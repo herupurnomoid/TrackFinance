@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +8,10 @@ import '../../../../core/widgets/animations.dart';
 import '../../../category/presentation/screens/category_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../transaction/presentation/screens/add_transaction_screen.dart';
+import '../../../transaction/data/monthly_summary_model.dart';
 import '../../../transaction/data/transaction_action_result.dart';
+import '../../../transaction/data/transaction_model.dart';
+import '../../../transaction/data/transaction_repository.dart';
 import '../../../export/presentation/screens/export_data_screen.dart';
 import '../../../report/presentation/screens/report_screen.dart';
 import '../../data/dashboard_transaction_model.dart';
@@ -52,22 +56,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Data Store
   late List<DashboardTransaction> _transactions;
 
+  // Realtime Firestore Subscriptions (TX-12)
+  StreamSubscription<List<TransactionModel>>? _txSubscription;
+  StreamSubscription<MonthlySummaryModel?>? _summarySubscription;
+  MonthlySummaryModel? _monthlySummary;
+
   // Scroll: header biru tetap diam (pinned) dan tertutup panel putih saat scroll
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _headerKey = GlobalKey();
   bool _isHeaderCovered = false;
 
+  UserProfile? get _effectiveUser =>
+      widget.user ?? AuthServiceProvider.instance.currentUser;
+
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _currentYear = now.year;
+    _currentMonthIndex = now.month - 1;
     _isLoading = widget.isLoading ?? false;
     _currentDecadeStart = (_currentYear ~/ 10) * 10;
-    _transactions = List.from(DashboardDataStore.initialTransactions);
+    final uid = _effectiveUser?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      _transactions = [];
+    } else {
+      _transactions = List.from(DashboardDataStore.initialTransactions);
+    }
     _scrollController.addListener(_onScroll);
+    _setupStreams();
   }
 
   @override
   void dispose() {
+    _txSubscription?.cancel();
+    _summarySubscription?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
@@ -98,16 +121,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _isLoading = widget.isLoading!;
       });
     }
+    if (widget.user != oldWidget.user) {
+      _setupStreams();
+    }
+  }
+
+  /// Inisialisasi atau pembaruan listener realtime ke Firestore
+  void _setupStreams() {
+    final uid = _effectiveUser?.uid;
+    if (uid == null || uid.isEmpty) return;
+
+    _txSubscription?.cancel();
+
+    if (_activePeriod == DashboardPeriod.hari) {
+      final monthKey =
+          '$_currentYear-${(_currentMonthIndex + 1).toString().padLeft(2, '0')}';
+
+      _txSubscription = TransactionRepository.instance
+          .watchTransactionsByMonth(uid, monthKey)
+          .listen(
+        (list) {
+          if (mounted) {
+            setState(() {
+              _transactions = list.map((m) => m.toDashboardTransaction()).toList();
+            });
+          }
+        },
+        onError: (e) {
+          debugPrint('[DashboardScreen] watchTransactionsByMonth error: $e');
+        },
+      );
+
+      _summarySubscription?.cancel();
+      _summarySubscription = TransactionRepository.instance
+          .watchMonthlySummary(uid, monthKey)
+          .listen(
+        (summary) {
+          if (mounted) {
+            setState(() {
+              _monthlySummary = summary;
+            });
+          }
+        },
+        onError: (e) {
+          debugPrint('[DashboardScreen] watchMonthlySummary error: $e');
+        },
+      );
+    } else {
+      // Periode Minggu, Bulan, atau Tahun:
+      // Ambil seluruh data transaksi pengguna secara realtime agar seluruh data minggu
+      // (termasuk tanggal di awal/akhir minggu yang melintasi batas bulan),
+      // seluruh bulan (Januari s/d Desember), dan seluruh dekade/tahun terakumulasi dengan akurat.
+      _summarySubscription?.cancel();
+      _summarySubscription = null;
+      _monthlySummary = null;
+
+      _txSubscription = TransactionRepository.instance
+          .watchAllTransactions(uid)
+          .listen(
+        (list) {
+          if (mounted) {
+            setState(() {
+              _transactions = list.map((m) => m.toDashboardTransaction()).toList();
+            });
+          }
+        },
+        onError: (e) {
+          debugPrint('[DashboardScreen] watchAllTransactions error: $e');
+        },
+      );
+    }
   }
 
   Future<void> _handleRefresh() async {
     HapticFeedback.lightImpact();
-    // Refresh in-place tanpa mengganti UI dengan skeleton agar layar tidak blank
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (mounted) {
-      setState(() {
-        _transactions = List.from(DashboardDataStore.initialTransactions);
-      });
+    final uid = _effectiveUser?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      _setupStreams();
+    } else {
+      // Refresh in-place tanpa mengganti UI dengan skeleton agar layar tidak blank
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (mounted) {
+        setState(() {
+          _transactions = List.from(DashboardDataStore.initialTransactions);
+        });
+      }
     }
   }
 
@@ -135,6 +233,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Total Pemasukan & Pengeluaran Header (Raw Values for Animated Counter)
   int get _totalIncomeRaw {
+    if ((_activePeriod == DashboardPeriod.hari ||
+            _activePeriod == DashboardPeriod.minggu) &&
+        _monthlySummary != null) {
+      return _monthlySummary!.totalIncome;
+    }
+
     int total = 0;
     final list = _filteredTransactions;
 
@@ -163,6 +267,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   int get _totalExpenseRaw {
+    if ((_activePeriod == DashboardPeriod.hari ||
+            _activePeriod == DashboardPeriod.minggu) &&
+        _monthlySummary != null) {
+      return _monthlySummary!.totalExpense;
+    }
+
     int total = 0;
     final list = _filteredTransactions;
 
@@ -207,6 +317,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _currentMonthIndex = now.month - 1;
       _currentDecadeStart = (now.year ~/ 10) * 10;
     });
+    _setupStreams();
   }
 
   bool get _isPrevDisabled {
@@ -245,6 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     });
+    _setupStreams();
   }
 
   void _handleNextPeriod() {
@@ -267,6 +379,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     });
+    _setupStreams();
   }
 
   void _openTimePickerModal() {
@@ -284,18 +397,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _currentYear = year;
           _currentDecadeStart = (_currentYear ~/ 10) * 10;
         });
+        _setupStreams();
       },
       onSelectMonth: (index) {
         setState(() => _currentMonthIndex = index);
+        _setupStreams();
       },
       onSelectYear: (year) {
         setState(() {
           _currentYear = year;
           _currentDecadeStart = (_currentYear ~/ 10) * 10;
         });
+        _setupStreams();
       },
       onSelectDecade: (decadeStart) {
         setState(() => _currentDecadeStart = decadeStart);
+        _setupStreams();
       },
     );
   }
@@ -321,6 +438,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (shouldLogout == true && mounted) {
+      _txSubscription?.cancel();
+      _summarySubscription?.cancel();
       await AuthServiceProvider.instance.signOut();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -332,7 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ProfileScreen(user: widget.user),
+            ProfileScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -353,7 +472,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            CategoryScreen(user: widget.user),
+            CategoryScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -374,7 +493,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ExportDataScreen(user: widget.user),
+            ExportDataScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -392,10 +511,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _openAddTransaction(BuildContext context) async {
+    final now = DateTime.now();
+    final defaultDate =
+        (_currentYear == now.year && _currentMonthIndex == now.month - 1)
+            ? now
+            : DateTime(
+                _currentYear,
+                _currentMonthIndex + 1,
+                now.day.clamp(1, 28),
+              );
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            AddTransactionScreen(user: widget.user),
+            AddTransactionScreen(
+              user: _effectiveUser,
+              initialDate: defaultDate,
+              initialTime: TimeOfDay.fromDateTime(now),
+            ),
         transitionsBuilder:
             (context, animation, secondaryAnimation, child) {
               return SlideTransition(
@@ -432,7 +564,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            AddTransactionScreen(user: widget.user, transaction: tx),
+            AddTransactionScreen(user: _effectiveUser, transaction: tx),
         transitionsBuilder:
             (context, animation, secondaryAnimation, child) {
               return SlideTransition(
@@ -475,7 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ReportScreen(user: widget.user),
+            ReportScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
@@ -495,7 +627,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String displayName = widget.user?.displayName ?? 'Heru';
+    final String displayName = _effectiveUser?.displayName?.trim().isNotEmpty == true
+        ? _effectiveUser!.displayName!
+        : 'Heru';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -656,6 +790,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 (_currentYear ~/ 10) * 10;
                                           }
                                         });
+                                        _setupStreams();
                                       },
                                     ),
 

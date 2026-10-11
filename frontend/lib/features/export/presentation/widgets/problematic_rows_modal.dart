@@ -112,8 +112,23 @@ class ProblematicRowsModal extends StatelessWidget {
           const SizedBox(height: 16),
 
           // List of Problematic Rows
-          Flexible(
-            child: ListView.separated(
+          if (problematicRows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Tidak ada baris yang bermasalah. Semua data valid!',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView.separated(
               shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
               itemCount: problematicRows.length,

@@ -30,9 +30,35 @@ service cloud.firestore {
           && (!('isLocked' in resource.data) || resource.data.isLocked == false);
       }
 
-      // Subkoleksi lainnya milik pengguna (selain categories)
+      // Subkoleksi Transaksi (TX-14: Strict validation & monetary integrity)
+      match /transactions/{transactionId} {
+        // Hanya pemilik akun yang dapat membaca dokumen transaksi
+        allow read: if isOwner(userId);
+
+        // Validasi pembuatan & pembaruan transaksi
+        allow create, update: if isOwner(userId)
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && (request.resource.data.type == 'expense' || request.resource.data.type == 'income')
+          && request.resource.data.categoryId is string
+          && request.resource.data.date is timestamp;
+
+        // Hanya pemilik akun yang dapat menghapus transaksi
+        allow delete: if isOwner(userId);
+      }
+
+      // Subkoleksi Ringkasan Bulanan (TX-14: Aggregated Cashflow Summaries)
+      match /monthly_summaries/{monthKey} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+
+      // Subkoleksi lainnya milik pengguna (selain categories, transactions, & monthly_summaries)
       match /{subcollection}/{document} {
-        allow read, write: if isOwner(userId) && subcollection != 'categories';
+        allow read, write: if isOwner(userId)
+          && subcollection != 'categories'
+          && subcollection != 'transactions'
+          && subcollection != 'monthly_summaries';
       }
     }
   }

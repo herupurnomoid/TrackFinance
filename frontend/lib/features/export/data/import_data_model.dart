@@ -1,3 +1,5 @@
+import '../../transaction/data/transaction_model.dart';
+
 /// Model Data untuk Pratinjau File Impor dan Validasi CSV
 class ImportTransactionPreview {
   final String category;
@@ -47,6 +49,7 @@ class ImportFileModel {
   final int errorCount;
   final List<ImportTransactionPreview> previews;
   final List<ImportProblematicRow> problematicRows;
+  final List<TransactionModel> validTransactions;
 
   const ImportFileModel({
     required this.fileName,
@@ -56,17 +59,23 @@ class ImportFileModel {
     required this.errorCount,
     required this.previews,
     required this.problematicRows,
+    this.validTransactions = const [],
   });
+
+  bool get hasErrors => errorCount > 0;
+  bool get hasDuplicates => duplicateCount > 0;
+  bool get canImport => validCount > 0;
+  double get totalValidAmount => validTransactions.fold(0.0, (sum, tx) => sum + tx.amount);
 
   /// Data bawaan sesuai referensi mockup: transaksi_oktober.csv (128 baris)
   static ImportFileModel defaultMock() {
-    return const ImportFileModel(
+    return ImportFileModel(
       fileName: 'transaksi_oktober.csv',
       totalRows: 128,
       validCount: 120,
       duplicateCount: 5,
       errorCount: 3,
-      previews: [
+      previews: const [
         ImportTransactionPreview(
           category: 'Makanan & Minuman',
           date: '01 Okt 2024',
@@ -86,7 +95,7 @@ class ImportFileModel {
           isExpense: false,
         ),
       ],
-      problematicRows: [
+      problematicRows: const [
         ImportProblematicRow(
           rowNumber: 42,
           reason: 'Nominal tidak valid atau kosong',
@@ -101,6 +110,56 @@ class ImportFileModel {
           rowNumber: 104,
           reason: 'Kategori tidak dikenali oleh sistem',
           rawData: '104, 2024-10-22, PEMASUKAN, Lain-lain, 250000, freelance',
+        ),
+      ],
+      validTransactions: [
+        TransactionModel(
+          id: 'mock_tx_1',
+          type: 'expense',
+          amount: 21000,
+          categoryId: 'exp-1',
+          categoryName: 'Makanan & Minuman',
+          categoryIconCode: 58737,
+          notes: 'Makan siang',
+          timeStr: '12:00',
+          date: DateTime(2024, 10, 1, 12, 0),
+          dateKey: '2024-10-01',
+          monthKey: '2024-10',
+          year: 2024,
+          month: 9,
+          day: 1,
+        ),
+        TransactionModel(
+          id: 'mock_tx_2',
+          type: 'expense',
+          amount: 35000,
+          categoryId: 'exp-2',
+          categoryName: 'Transportasi',
+          categoryIconCode: 57790,
+          notes: 'Bensin motor',
+          timeStr: '12:00',
+          date: DateTime(2024, 10, 2, 12, 0),
+          dateKey: '2024-10-02',
+          monthKey: '2024-10',
+          year: 2024,
+          month: 9,
+          day: 2,
+        ),
+        TransactionModel(
+          id: 'mock_tx_3',
+          type: 'income',
+          amount: 1500000,
+          categoryId: 'inc-1',
+          categoryName: 'Gaji & Pendapatan',
+          categoryIconCode: 58941,
+          notes: 'Gaji pokok',
+          timeStr: '12:00',
+          date: DateTime(2024, 10, 3, 12, 0),
+          dateKey: '2024-10-03',
+          monthKey: '2024-10',
+          year: 2024,
+          month: 9,
+          day: 3,
         ),
       ],
     );

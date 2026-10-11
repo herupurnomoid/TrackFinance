@@ -136,32 +136,58 @@ class DashboardTransactionsView extends StatelessWidget {
     );
   }
 
-  // 2. Weekly View (Rekap per Minggu di Bulan Ini)
+  // 2. Weekly View (Rekap per Minggu di Bulan Ini, dimulai dari hari Senin)
   Widget _buildWeeklyView() {
-    final filtered = transactions.where((t) =>
-        t.year == currentYear && t.month == currentMonthIndex).toList();
+    final month = currentMonthIndex + 1;
+    final firstDayOfMonth = DateTime(currentYear, month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(currentYear, month);
+    final lastDayOfMonth = DateTime(currentYear, month, daysInMonth);
 
-    // Buat 4 atau 5 minggu untuk bulan aktif
-    final daysInMonth = DateUtils.getDaysInMonth(currentYear, currentMonthIndex + 1);
-    final mShort = DashboardDataStore.monthsShort[currentMonthIndex];
+    // Hari Senin di minggu pertama (mundur ke hari Senin terdekat jika tanggal 1 bukan hari Senin)
+    final daysFromMonday = firstDayOfMonth.weekday - DateTime.monday;
+    final firstMonday = DateTime(
+      firstDayOfMonth.year,
+      firstDayOfMonth.month,
+      firstDayOfMonth.day - daysFromMonday,
+    );
+
+    // Hari Minggu di minggu terakhir (maju ke hari Minggu terdekat jika hari terakhir bukan hari Minggu)
+    final daysToSunday = DateTime.sunday - lastDayOfMonth.weekday;
+    final lastSunday = DateTime(
+      lastDayOfMonth.year,
+      lastDayOfMonth.month,
+      lastDayOfMonth.day + daysToSunday,
+    );
 
     final List<_SummaryItem> weeklyItems = [];
-    int startDay = 1;
+    DateTime currentMonday = firstMonday;
     int weekNum = 1;
 
-    while (startDay <= daysInMonth) {
-      final date = DateTime(currentYear, currentMonthIndex + 1, startDay);
-      final daysToSunday = (7 - date.weekday);
-      int endDay = startDay + daysToSunday;
-      if (endDay > daysInMonth) endDay = daysInMonth;
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
 
-      final startStr = startDay.toString().padLeft(2, '0');
-      final endStr = endDay.toString().padLeft(2, '0');
+    while (!currentMonday.isAfter(lastSunday)) {
+      final weekStart = currentMonday;
+      final weekEnd = DateTime(
+        currentMonday.year,
+        currentMonday.month,
+        currentMonday.day + 6,
+      );
+
+      final startDayStr = weekStart.day.toString().padLeft(2, '0');
+      final startMonthStr = DashboardDataStore.monthsShort[weekStart.month - 1];
+      final endDayStr = weekEnd.day.toString().padLeft(2, '0');
+      final endMonthStr = DashboardDataStore.monthsShort[weekEnd.month - 1];
+
+      final startMidnight = DateTime(weekStart.year, weekStart.month, weekStart.day);
+      final endMidnight = DateTime(weekEnd.year, weekEnd.month, weekEnd.day);
 
       int wIncome = 0;
       int wExpense = 0;
-      for (final tx in filtered) {
-        if (tx.day >= startDay && tx.day <= endDay) {
+
+      for (final tx in transactions) {
+        final txDate = DateTime(tx.year, tx.month + 1, tx.day);
+        if (!txDate.isBefore(startMidnight) && !txDate.isAfter(endMidnight)) {
           if (tx.isIncome) {
             wIncome += tx.amount;
           } else {
@@ -170,15 +196,22 @@ class DashboardTransactionsView extends StatelessWidget {
         }
       }
 
+      final isCurrentWeek = !todayMidnight.isBefore(startMidnight) &&
+          !todayMidnight.isAfter(endMidnight);
+
       weeklyItems.add(_SummaryItem(
         title: 'Minggu $weekNum',
-        subtitle: '$startStr $mShort - $endStr $mShort',
+        subtitle: '$startDayStr $startMonthStr - $endDayStr $endMonthStr',
         income: wIncome,
         expense: wExpense,
-        isActive: false,
+        isActive: isCurrentWeek,
       ));
 
-      startDay = endDay + 1;
+      currentMonday = DateTime(
+        currentMonday.year,
+        currentMonday.month,
+        currentMonday.day + 7,
+      );
       weekNum++;
     }
 

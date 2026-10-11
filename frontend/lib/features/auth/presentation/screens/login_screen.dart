@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import 'package:track_finance/features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../widgets/curved_dome_panel.dart';
@@ -20,6 +22,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = false;
+  bool _hasNavigated = false;
+  StreamSubscription<UserProfile?>? _authSubscription;
   late AnimationController _panelEntranceController;
   late Animation<Offset> _panelSlideAnimation;
   late Animation<double> _panelFadeAnimation;
@@ -27,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+
+    _checkExistingSession();
 
     _panelEntranceController = AnimationController(
       vsync: this,
@@ -51,8 +57,42 @@ class _LoginScreenState extends State<LoginScreen>
     _panelEntranceController.forward();
   }
 
+  void _checkExistingSession() {
+    final current = AuthServiceProvider.instance.currentUser;
+    if (current != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToDashboard(current);
+      });
+      return;
+    }
+
+    _authSubscription = AuthServiceProvider.instance.authStateChanges.listen((user) {
+      if (user != null && mounted) {
+        _navigateToDashboard(user);
+      }
+    });
+  }
+
+  void _navigateToDashboard(UserProfile user) {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    _authSubscription?.cancel();
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            DashboardScreen(user: user),
+        transitionsBuilder:
+            (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _panelEntranceController.dispose();
     super.dispose();
   }
@@ -70,17 +110,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
 
       if (user != null) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                DashboardScreen(user: user),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 300),
-          ),
-        );
+        _navigateToDashboard(user);
       }
     } catch (e) {
       if (!mounted) return;
