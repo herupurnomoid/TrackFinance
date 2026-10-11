@@ -280,5 +280,51 @@ void main() {
       expect(find.textContaining('75.000'), findsWidgets);
       expect(find.textContaining('300.000'), findsWidgets);
     });
+
+    testWidgets('Dashboard does not duplicate transactions when adding a transaction through AddTransactionScreen', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const DashboardScreen(user: testUser),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      // Tap shortcut 'Tambah'
+      await tester.tap(find.text('Tambah'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tambah Transaksi'), findsOneWidget);
+
+      // Enter nominal 50.000
+      final amountField = find.byType(TextField).first;
+      await tester.enterText(amountField, '50000');
+      await tester.pump();
+
+      // Select category "Makanan"
+      await tester.tap(find.text('Makanan'));
+      await tester.pump();
+
+      // Tap 'Simpan Transaksi'
+      final saveButton = find.text('Simpan Transaksi');
+      await tester.tap(saveButton);
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(const Duration(seconds: 1));
+
+      // Kembali ke Dashboard:
+      // 1. Kartu transaksi "Makanan" hanya ada 1 (tidak terduplikasi)
+      expect(find.text('Makanan'), findsOneWidget);
+
+      // 2. Total pengeluaran hari ini adalah -Rp50.000 (1 rekap tanggal + 1 kartu = 2 widgets teks)
+      //    bukan -Rp100.000 (seperti bug duplikasi sebelumnya)
+      expect(find.text('-Rp100.000'), findsNothing);
+      expect(find.text('-Rp50.000'), findsNWidgets(2));
+    });
   });
 }

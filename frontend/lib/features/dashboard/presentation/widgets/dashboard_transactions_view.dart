@@ -36,9 +36,14 @@ class DashboardTransactionsView extends StatelessWidget {
     }
   }
 
+  List<DashboardTransaction> get _uniqueTransactions {
+    final seen = <String>{};
+    return transactions.where((t) => seen.add(t.id)).toList();
+  }
+
   // 1. Daily View (Per Tanggal)
   Widget _buildDailyView() {
-    final filtered = transactions.where((t) =>
+    final filtered = _uniqueTransactions.where((t) =>
         t.year == currentYear && t.month == currentMonthIndex).toList();
 
     if (filtered.isEmpty) {
@@ -185,7 +190,7 @@ class DashboardTransactionsView extends StatelessWidget {
       int wIncome = 0;
       int wExpense = 0;
 
-      for (final tx in transactions) {
+      for (final tx in _uniqueTransactions) {
         final txDate = DateTime(tx.year, tx.month + 1, tx.day);
         if (!txDate.isBefore(startMidnight) && !txDate.isAfter(endMidnight)) {
           if (tx.isIncome) {
@@ -220,7 +225,7 @@ class DashboardTransactionsView extends StatelessWidget {
 
   // 3. Monthly View (12 Bulan dalam currentYear)
   Widget _buildMonthlyView() {
-    final filtered = transactions.where((t) => t.year == currentYear).toList();
+    final filtered = _uniqueTransactions.where((t) => t.year == currentYear).toList();
 
     final List<_SummaryItem> monthlyItems = [];
     for (int m = 0; m < 12; m++) {
@@ -251,8 +256,8 @@ class DashboardTransactionsView extends StatelessWidget {
 
   // 4. Yearly View (Dekade Aktif)
   Widget _buildYearlyView() {
-    final minYear = DashboardDataStore.getMinTransactionYear(transactions);
-    final maxYear = DashboardDataStore.getMaxTransactionYear(transactions);
+    final minYear = DashboardDataStore.getMinTransactionYear(_uniqueTransactions);
+    final maxYear = DashboardDataStore.getMaxTransactionYear(_uniqueTransactions);
 
     final startYear = currentDecadeStart < minYear ? currentDecadeStart : minYear;
     final endYear = (currentDecadeStart + 9) > maxYear ? (currentDecadeStart + 9) : maxYear;
@@ -262,7 +267,7 @@ class DashboardTransactionsView extends StatelessWidget {
       int yIncome = 0;
       int yExpense = 0;
 
-      for (final tx in transactions) {
+      for (final tx in _uniqueTransactions) {
         if (tx.year == y) {
           if (tx.isIncome) {
             yIncome += tx.amount;

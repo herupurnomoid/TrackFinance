@@ -143,7 +143,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         (list) {
           if (mounted) {
             setState(() {
-              _transactions = list.map((m) => m.toDashboardTransaction()).toList();
+              final seen = <String>{};
+              _transactions = list
+                  .map((m) => m.toDashboardTransaction())
+                  .where((t) => seen.add(t.id))
+                  .toList();
             });
           }
         },
@@ -182,7 +186,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         (list) {
           if (mounted) {
             setState(() {
-              _transactions = list.map((m) => m.toDashboardTransaction()).toList();
+              final seen = <String>{};
+              _transactions = list
+                  .map((m) => m.toDashboardTransaction())
+                  .where((t) => seen.add(t.id))
+                  .toList();
             });
           }
         },
@@ -211,9 +219,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Filtered transactions berdasarkan pencarian
   List<DashboardTransaction> get _filteredTransactions {
-    if (_searchQuery.trim().isEmpty) return _transactions;
+    final seen = <String>{};
+    final unique = _transactions.where((item) => seen.add(item.id)).toList();
+    if (_searchQuery.trim().isEmpty) return unique;
     final query = _searchQuery.toLowerCase();
-    return _transactions.where((item) {
+    return unique.where((item) {
       return item.category.toLowerCase().contains(query) ||
           item.meta.toLowerCase().contains(query);
     }).toList();
@@ -551,8 +561,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (result is TransactionActionResult &&
         result.updatedTransaction != null) {
+      final newTx = result.updatedTransaction!;
+      final existingIndex =
+          _transactions.indexWhere((t) => t.id == newTx.id);
       setState(() {
-        _transactions.insert(0, result.updatedTransaction!);
+        if (existingIndex != -1) {
+          _transactions[existingIndex] = newTx;
+        } else {
+          if (_activePeriod != DashboardPeriod.hari ||
+              (newTx.year == _currentYear &&
+                  newTx.month == _currentMonthIndex)) {
+            _transactions.insert(0, newTx);
+          }
+        }
       });
     }
   }
