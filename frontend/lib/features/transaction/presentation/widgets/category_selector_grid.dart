@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../category/data/category_model.dart';
 import 'all_categories_bottom_sheet.dart';
 
 class TransactionCategoryOption {
@@ -18,12 +19,46 @@ class TransactionCategoryOption {
     this.tintColor = const Color(0xFFDBE1FF),
     this.iconColor = AppColors.tactilePrimary,
   });
+
+  /// Konversi dari CategoryItem domain model ke UI Option
+  factory TransactionCategoryOption.fromCategoryItem(CategoryItem item) {
+    return TransactionCategoryOption(
+      id: item.id,
+      name: item.name,
+      icon: item.icon,
+      tintColor: getTintBackground(item.color),
+      iconColor: item.color,
+    );
+  }
+
+  static Color getTintBackground(Color color) {
+    final value = color.toARGB32();
+    if (value == const Color(0xFFDC2626).toARGB32() ||
+        value == const Color(0xFFBA1A1A).toARGB32()) {
+      return const Color(0xFFFFDAD6); // red tint container
+    } else if (value == const Color(0xFF16A34A).toARGB32() ||
+        value == const Color(0xFF007F36).toARGB32()) {
+      return const Color(0xFFDCFCE7); // green tint container
+    } else if (value == const Color(0xFFEA580C).toARGB32()) {
+      return const Color(0xFFFFEDD5); // orange tint container
+    } else if (value == const Color(0xFF9333EA).toARGB32()) {
+      return const Color(0xFFF3E8FF); // purple tint container
+    } else if (value == const Color(0xFF0D9488).toARGB32()) {
+      return const Color(0xFFCCFBF1); // teal tint container
+    } else if (value == const Color(0xFFE11D48).toARGB32()) {
+      return const Color(0xFFFFE4E6); // pink tint container
+    } else if (value == const Color(0xFF1E40AF).toARGB32()) {
+      return const Color(0xFFDDE1FF); // dark blue tint
+    }
+    return const Color(0xFFDBEAFE); // primary blue tint
+  }
 }
 
 class CategorySelectorGrid extends StatelessWidget {
   final bool isExpense;
   final String selectedCategoryId;
   final bool hasError;
+  final List<TransactionCategoryOption>? categories;
   final ValueChanged<TransactionCategoryOption> onSelect;
   final VoidCallback onManageTap;
 
@@ -32,121 +67,32 @@ class CategorySelectorGrid extends StatelessWidget {
     required this.isExpense,
     required this.selectedCategoryId,
     this.hasError = false,
+    this.categories,
     required this.onSelect,
     required this.onManageTap,
   });
 
-  // Top 7 kategori pengeluaran yang paling sering digunakan
-  static const List<TransactionCategoryOption> topExpenseCategories = [
-    TransactionCategoryOption(
-      id: 'cat-food',
-      name: 'Makanan',
-      icon: Icons.restaurant_rounded,
-      tintColor: Color(0xFFFFDAD6),
-      iconColor: Color(0xFFBA1A1A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-trans',
-      name: 'Transport',
-      icon: Icons.two_wheeler_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-shop',
-      name: 'Belanja',
-      icon: Icons.shopping_bag_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-bill',
-      name: 'Tagihan',
-      icon: Icons.receipt_long_rounded,
-      tintColor: Color(0xFFFFDAD6),
-      iconColor: Color(0xFFBA1A1A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-health',
-      name: 'Kesehatan',
-      icon: Icons.medical_services_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-game',
-      name: 'Hiburan',
-      icon: Icons.sports_esports_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-edu',
-      name: 'Pendidikan',
-      icon: Icons.school_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-  ];
+  // Kategori pengeluaran bawaan dari Category Management
+  static List<TransactionCategoryOption> get topExpenseCategories =>
+      DefaultCategories.defaultExpenseCategories
+          .map((c) => TransactionCategoryOption.fromCategoryItem(c))
+          .toList();
 
-  // Top 7 kategori pemasukan yang paling sering digunakan
-  static const List<TransactionCategoryOption> topIncomeCategories = [
-    TransactionCategoryOption(
-      id: 'cat-salary',
-      name: 'Gaji',
-      icon: Icons.payments_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-bonus',
-      name: 'Bonus',
-      icon: Icons.card_giftcard_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-freelance',
-      name: 'Freelance',
-      icon: Icons.laptop_mac_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-invest',
-      name: 'Investasi',
-      icon: Icons.trending_up_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-cashback',
-      name: 'Cashback',
-      icon: Icons.savings_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-sales',
-      name: 'Penjualan',
-      icon: Icons.storefront_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF1E40AF),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-gift',
-      name: 'Hadiah',
-      icon: Icons.redeem_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-  ];
+  // Kategori pemasukan bawaan dari Category Management
+  static List<TransactionCategoryOption> get topIncomeCategories =>
+      DefaultCategories.defaultIncomeCategories
+          .map((c) => TransactionCategoryOption.fromCategoryItem(c))
+          .toList();
 
-  void _openAllCategories(BuildContext context) {
+  void _openAllCategories(
+    BuildContext context,
+    List<TransactionCategoryOption> fullList,
+  ) {
     AllCategoriesBottomSheet.show(
       context,
       isExpense: isExpense,
       selectedCategoryId: selectedCategoryId,
+      categories: fullList,
       onSelect: onSelect,
       onManageTap: onManageTap,
     );
@@ -154,10 +100,10 @@ class CategorySelectorGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topList = isExpense ? topExpenseCategories : topIncomeCategories;
-    final fullList = isExpense
-        ? AllCategoriesBottomSheet.allExpenseCategories
-        : AllCategoriesBottomSheet.allIncomeCategories;
+    final availableCategories = categories ??
+        (isExpense ? topExpenseCategories : topIncomeCategories);
+
+    final topList = availableCategories.take(7).toList();
 
     // Cek apakah kategori yang dipilih berada di luar top 7
     final bool isSelectedInTop7 =
@@ -167,18 +113,18 @@ class CategorySelectorGrid extends StatelessWidget {
     if (isSelectedInTop7 || selectedCategoryId.isEmpty) {
       eighthTile = const TransactionCategoryOption(
         id: 'more',
-        name: 'Lainnya',
+        name: 'Lebih Banyak',
         icon: Icons.more_horiz_rounded,
         tintColor: Color(0xFFDAE2FD),
         iconColor: Color(0xFF434655),
       );
     } else {
       // Tampilkan kategori luar yang sedang dipilih
-      eighthTile = fullList.firstWhere(
+      eighthTile = availableCategories.firstWhere(
         (c) => c.id == selectedCategoryId,
         orElse: () => const TransactionCategoryOption(
           id: 'more',
-          name: 'Lainnya',
+          name: 'Lebih Banyak',
           icon: Icons.more_horiz_rounded,
           tintColor: Color(0xFFDAE2FD),
           iconColor: Color(0xFF434655),
@@ -247,19 +193,20 @@ class CategorySelectorGrid extends StatelessWidget {
             mainAxisSpacing: 10,
             mainAxisExtent: 80, // Tinggi lebih compact agar proporsional
           ),
-          itemCount: 8,
+          itemCount: displayList.length,
           itemBuilder: (context, index) {
             final cat = displayList[index];
             final bool isSelected = cat.id == selectedCategoryId;
+            final bool isLastTile = index == displayList.length - 1;
 
             return Stack(
               clipBehavior: Clip.none,
               children: [
                 PressableScale(
                   onTap: () {
-                    if (index == 7) {
-                      // Klik tile "Lainnya" memunculkan seluruh kategori terdaftar
-                      _openAllCategories(context);
+                    if (isLastTile && (cat.id == 'more' || !isSelectedInTop7)) {
+                      // Klik tile "Lebih Banyak" memunculkan seluruh kategori terdaftar
+                      _openAllCategories(context, availableCategories);
                     } else {
                       onSelect(cat);
                     }
@@ -361,7 +308,7 @@ class CategorySelectorGrid extends StatelessWidget {
                         Text(
                           cat.name,
                           textAlign: TextAlign.center,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.labelSm.copyWith(
                             fontSize: 10.5,

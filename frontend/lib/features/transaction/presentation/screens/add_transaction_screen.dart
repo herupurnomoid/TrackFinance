@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,8 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../category/data/category_model.dart';
+import '../../../category/data/category_repository.dart';
 import '../../../category/presentation/screens/category_screen.dart';
 import '../../../dashboard/data/dashboard_transaction_model.dart';
 import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart';
@@ -14,7 +17,6 @@ import '../../data/transaction_model.dart';
 import '../../data/transaction_repository.dart';
 import '../widgets/add_transaction_skeleton.dart';
 import '../widgets/additional_details_section.dart';
-import '../widgets/all_categories_bottom_sheet.dart';
 import '../widgets/amount_hero_card.dart';
 import '../widgets/category_selector_grid.dart';
 import '../widgets/tactile_3d_button.dart';
@@ -32,6 +34,7 @@ class AddTransactionScreen extends StatefulWidget {
   final DashboardTransaction? transaction;
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
+  final CategoryRepository? categoryRepository;
 
   const AddTransactionScreen({
     super.key,
@@ -41,6 +44,7 @@ class AddTransactionScreen extends StatefulWidget {
     this.transaction,
     this.initialDate,
     this.initialTime,
+    this.categoryRepository,
   });
 
   @override
@@ -62,12 +66,50 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   bool _hasValidationError = false;
   String? _validationErrorMessage;
 
+  late CategoryRepository _categoryRepository;
+  StreamSubscription<List<CategoryItem>>? _categorySub;
+  List<CategoryItem> _expenseCategories =
+      List.from(CategoryRepository.inMemoryExpenseCategories);
+  List<CategoryItem> _incomeCategories =
+      List.from(CategoryRepository.inMemoryIncomeCategories);
+
+  String? get _uid =>
+      widget.user?.uid ?? AuthServiceProvider.instance.currentUser?.uid;
+
   bool get isEditMode => widget.transaction != null;
 
   @override
   void initState() {
     super.initState();
     _isLoading = widget.initialIsLoading;
+    _categoryRepository =
+        widget.categoryRepository ?? CategoryRepository.instance;
+
+    _expenseCategories =
+        List.from(CategoryRepository.inMemoryExpenseCategories);
+    _incomeCategories =
+        List.from(CategoryRepository.inMemoryIncomeCategories);
+
+    final uid = _uid;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        _categoryRepository.seedDefaultCategoriesIfEmpty(uid);
+        _categorySub =
+            _categoryRepository.getCategoriesStream(uid).listen((items) {
+          if (items.isNotEmpty && mounted) {
+            setState(() {
+              _expenseCategories = items.where((c) => c.isExpense).toList();
+              _incomeCategories = items.where((c) => !c.isExpense).toList();
+              _validateSelectedCategory();
+            });
+          }
+        }, onError: (e) {
+          debugPrint('AddTransactionScreen category stream error: $e');
+        });
+      } catch (e) {
+        debugPrint('AddTransactionScreen category setup error: $e');
+      }
+    }
 
     if (widget.transaction != null) {
       final tx = widget.transaction!;
@@ -106,6 +148,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _amountController.addListener(_formatAmountInput);
   }
 
+  void _validateSelectedCategory() {
+    if (_selectedCategoryId.isEmpty) return;
+    final list = _isExpense ? _expenseCategories : _incomeCategories;
+    if (!list.any((c) => c.id == _selectedCategoryId)) {
+      _selectedCategoryId = '';
+    }
+  }
+
   @override
   void didUpdateWidget(covariant AddTransactionScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -114,10 +164,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         _isLoading = widget.initialIsLoading;
       });
     }
+    if (oldWidget.categoryRepository != widget.categoryRepository &&
+        widget.categoryRepository != null) {
+      _categoryRepository = widget.categoryRepository!;
+    }
+    if (oldWidget.user?.uid != widget.user?.uid) {
+      _categorySub?.cancel();
+      final uid = _uid;
+      if (uid != null && uid.isNotEmpty) {
+        _categoryRepository.seedDefaultCategoriesIfEmpty(uid);
+        _categorySub =
+            _categoryRepository.getCategoriesStream(uid).listen((items) {
+          if (items.isNotEmpty && mounted) {
+            setState(() {
+              _expenseCategories = items.where((c) => c.isExpense).toList();
+              _incomeCategories = items.where((c) => !c.isExpense).toList();
+              _validateSelectedCategory();
+            });
+          }
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _categorySub?.cancel();
     _amountController.removeListener(_formatAmountInput);
     _amountController.dispose();
     _noteController.dispose();
@@ -190,18 +262,40 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
 
-  void _openManageCategories() {
-    Navigator.of(context).push(
+  void _openManageCategories() async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CategoryScreen(user: widget.user),
+        builder: (context) => CategoryScreen(
+          user: widget.user,
+          repository: _categoryRepository,
+        ),
       ),
     );
+    if (mounted) {
+      final uid = _uid;
+      if (uid != null && uid.isNotEmpty) {
+        final items = await _categoryRepository.getCategories(uid);
+        if (items.isNotEmpty) {
+          setState(() {
+            _expenseCategories = items.where((c) => c.isExpense).toList();
+            _incomeCategories = items.where((c) => !c.isExpense).toList();
+            _validateSelectedCategory();
+          });
+        }
+      } else {
+        setState(() {
+          _expenseCategories =
+              List.from(CategoryRepository.inMemoryExpenseCategories);
+          _incomeCategories =
+              List.from(CategoryRepository.inMemoryIncomeCategories);
+          _validateSelectedCategory();
+        });
+      }
+    }
   }
 
-  static String _findCategoryId(String categoryName, bool isExpense) {
-    final list = isExpense
-        ? AllCategoriesBottomSheet.allExpenseCategories
-        : AllCategoriesBottomSheet.allIncomeCategories;
+  String _findCategoryId(String categoryName, bool isExpense) {
+    final list = isExpense ? _expenseCategories : _incomeCategories;
     for (final item in list) {
       if (item.name.toLowerCase() == categoryName.toLowerCase()) {
         return item.id;
@@ -213,20 +307,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         return item.id;
       }
     }
-    return isExpense ? 'cat-food' : 'cat-salary';
+    return list.isNotEmpty ? list.first.id : (isExpense ? 'exp-1' : 'inc-1');
   }
 
-  static TransactionCategoryOption _getCategoryOption(
+  TransactionCategoryOption _getCategoryOption(
     String id,
     bool isExpense,
   ) {
-    final list = isExpense
-        ? AllCategoriesBottomSheet.allExpenseCategories
-        : AllCategoriesBottomSheet.allIncomeCategories;
+    final list = isExpense ? _expenseCategories : _incomeCategories;
     for (final item in list) {
-      if (item.id == id) return item;
+      if (item.id == id) {
+        return TransactionCategoryOption.fromCategoryItem(item);
+      }
     }
-    return list.first;
+    if (list.isNotEmpty) {
+      return TransactionCategoryOption.fromCategoryItem(list.first);
+    }
+    return TransactionCategoryOption(
+      id: id.isNotEmpty ? id : (isExpense ? 'exp-1' : 'inc-1'),
+      name: isExpense ? 'Makanan & Minuman' : 'Gaji Pokok',
+      icon: isExpense ? Icons.restaurant_rounded : Icons.payments_rounded,
+      tintColor: const Color(0xFFFFDAD6),
+      iconColor: const Color(0xFFDC2626),
+    );
   }
 
   Future<void> _handleDeleteTransaction() async {
@@ -234,11 +337,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     HapticFeedback.lightImpact();
 
     final catOption = _getCategoryOption(_selectedCategoryId, _isExpense);
+    final categoryName = widget.transaction?.category.isNotEmpty == true
+        ? widget.transaction!.category
+        : catOption.name;
     final amountText = 'Rp ${_amountController.text}';
 
     final confirmed = await TransactionDeleteDialog.show(
       context,
-      categoryName: catOption.name,
+      categoryName: categoryName,
       formattedAmount: amountText,
     );
 
@@ -340,7 +446,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Transaksi ${catOption.name} berhasil dihapus',
+                  'Transaksi $categoryName berhasil dihapus',
                   style: AppTextStyles.labelMd.copyWith(
                     color: AppColors.tactileTextPrimary,
                     fontWeight: FontWeight.w700,
@@ -631,23 +737,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             const SizedBox(height: 18),
 
                             // 3. Category Selector Section (4-Column Squircle Matrix)
-                            StaggeredEntrance(
-                              index: 2,
-                              child: CategorySelectorGrid(
-                                isExpense: _isExpense,
-                                selectedCategoryId: _selectedCategoryId,
-                                hasError: _hasValidationError && _selectedCategoryId.isEmpty,
-                                onSelect: (cat) {
-                                  setState(() {
-                                    _selectedCategoryId = cat.id;
-                                    if (_hasValidationError && _selectedCategoryId.isNotEmpty) {
-                                      _hasValidationError = false;
-                                      _validationErrorMessage = null;
-                                    }
-                                  });
-                                },
-                                onManageTap: _openManageCategories,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final currentCategoryItems = _isExpense
+                                    ? _expenseCategories
+                                    : _incomeCategories;
+                                final currentCategoryOptions = currentCategoryItems
+                                    .map((c) =>
+                                        TransactionCategoryOption.fromCategoryItem(c))
+                                    .toList();
+
+                                return StaggeredEntrance(
+                                  index: 2,
+                                  child: CategorySelectorGrid(
+                                    isExpense: _isExpense,
+                                    selectedCategoryId: _selectedCategoryId,
+                                    categories: currentCategoryOptions,
+                                    hasError: _hasValidationError &&
+                                        _selectedCategoryId.isEmpty,
+                                    onSelect: (cat) {
+                                      setState(() {
+                                        _selectedCategoryId = cat.id;
+                                        if (_hasValidationError &&
+                                            _selectedCategoryId.isNotEmpty) {
+                                          _hasValidationError = false;
+                                          _validationErrorMessage = null;
+                                        }
+                                      });
+                                    },
+                                    onManageTap: _openManageCategories,
+                                  ),
+                                );
+                              },
                             ),
 
                             const SizedBox(height: 18),

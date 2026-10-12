@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../category/data/category_model.dart';
 import 'category_selector_grid.dart';
 
 /// Bottom Sheet untuk menampilkan SELURUH kategori yang terdaftar
-/// ketika user menekan tile "Lainnya".
+/// ketika user menekan tile "Lebih Banyak".
 class AllCategoriesBottomSheet extends StatefulWidget {
   final bool isExpense;
   final String selectedCategoryId;
+  final List<TransactionCategoryOption>? categories;
   final ValueChanged<TransactionCategoryOption> onSelect;
   final VoidCallback onManageTap;
 
@@ -16,6 +18,7 @@ class AllCategoriesBottomSheet extends StatefulWidget {
     super.key,
     required this.isExpense,
     required this.selectedCategoryId,
+    this.categories,
     required this.onSelect,
     required this.onManageTap,
   });
@@ -24,6 +27,7 @@ class AllCategoriesBottomSheet extends StatefulWidget {
     BuildContext context, {
     required bool isExpense,
     required String selectedCategoryId,
+    List<TransactionCategoryOption>? categories,
     required ValueChanged<TransactionCategoryOption> onSelect,
     required VoidCallback onManageTap,
   }) {
@@ -35,180 +39,24 @@ class AllCategoriesBottomSheet extends StatefulWidget {
       builder: (context) => AllCategoriesBottomSheet(
         isExpense: isExpense,
         selectedCategoryId: selectedCategoryId,
+        categories: categories,
         onSelect: onSelect,
         onManageTap: onManageTap,
       ),
     );
   }
 
-  // Daftar lengkap seluruh kategori pengeluaran terdaftar
-  static const List<TransactionCategoryOption> allExpenseCategories = [
-    TransactionCategoryOption(
-      id: 'cat-food',
-      name: 'Makanan',
-      icon: Icons.restaurant_rounded,
-      tintColor: Color(0xFFFFDAD6),
-      iconColor: Color(0xFFBA1A1A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-trans',
-      name: 'Transport',
-      icon: Icons.two_wheeler_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-shop',
-      name: 'Belanja',
-      icon: Icons.shopping_bag_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-bill',
-      name: 'Tagihan',
-      icon: Icons.receipt_long_rounded,
-      tintColor: Color(0xFFFFDAD6),
-      iconColor: Color(0xFFBA1A1A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-health',
-      name: 'Kesehatan',
-      icon: Icons.medical_services_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-game',
-      name: 'Hiburan',
-      icon: Icons.sports_esports_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-edu',
-      name: 'Pendidikan',
-      icon: Icons.school_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-donation',
-      name: 'Donasi & Amal',
-      icon: Icons.volunteer_activism_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-family',
-      name: 'Keluarga',
-      icon: Icons.family_restroom_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-fitness',
-      name: 'Olahraga',
-      icon: Icons.fitness_center_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-travel',
-      name: 'Liburan',
-      icon: Icons.flight_takeoff_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-pets',
-      name: 'Hewan',
-      icon: Icons.pets_rounded,
-      tintColor: Color(0xFFFFDAD6),
-      iconColor: Color(0xFFBA1A1A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-home',
-      name: 'Rumah',
-      icon: Icons.home_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-other-exp',
-      name: 'Lainnya',
-      icon: Icons.more_horiz_rounded,
-      tintColor: Color(0xFFDAE2FD),
-      iconColor: Color(0xFF434655),
-    ),
-  ];
+  // Daftar lengkap seluruh kategori pengeluaran terdaftar dari Category Management
+  static List<TransactionCategoryOption> get allExpenseCategories =>
+      DefaultCategories.defaultExpenseCategories
+          .map((c) => TransactionCategoryOption.fromCategoryItem(c))
+          .toList();
 
-  // Daftar lengkap seluruh kategori pemasukan terdaftar
-  static const List<TransactionCategoryOption> allIncomeCategories = [
-    TransactionCategoryOption(
-      id: 'cat-salary',
-      name: 'Gaji',
-      icon: Icons.payments_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-bonus',
-      name: 'Bonus',
-      icon: Icons.card_giftcard_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-freelance',
-      name: 'Freelance',
-      icon: Icons.laptop_mac_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-invest',
-      name: 'Investasi',
-      icon: Icons.trending_up_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-cashback',
-      name: 'Cashback',
-      icon: Icons.savings_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF3755C3),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-sales',
-      name: 'Penjualan',
-      icon: Icons.storefront_rounded,
-      tintColor: Color(0xFFDDE1FF),
-      iconColor: Color(0xFF1E40AF),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-gift',
-      name: 'Hadiah',
-      icon: Icons.redeem_rounded,
-      tintColor: Color(0xFFDCFCE7),
-      iconColor: Color(0xFF16A34A),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-rent',
-      name: 'Sewa Properti',
-      icon: Icons.apartment_rounded,
-      tintColor: Color(0xFFDBE1FF),
-      iconColor: Color(0xFF004AC6),
-    ),
-    TransactionCategoryOption(
-      id: 'cat-other-inc',
-      name: 'Lainnya',
-      icon: Icons.more_horiz_rounded,
-      tintColor: Color(0xFFDAE2FD),
-      iconColor: Color(0xFF434655),
-    ),
-  ];
+  // Daftar lengkap seluruh kategori pemasukan terdaftar dari Category Management
+  static List<TransactionCategoryOption> get allIncomeCategories =>
+      DefaultCategories.defaultIncomeCategories
+          .map((c) => TransactionCategoryOption.fromCategoryItem(c))
+          .toList();
 
   @override
   State<AllCategoriesBottomSheet> createState() =>
@@ -227,9 +75,10 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final fullList = widget.isExpense
-        ? AllCategoriesBottomSheet.allExpenseCategories
-        : AllCategoriesBottomSheet.allIncomeCategories;
+    final fullList = widget.categories ??
+        (widget.isExpense
+            ? AllCategoriesBottomSheet.allExpenseCategories
+            : AllCategoriesBottomSheet.allIncomeCategories);
 
     final filteredList = fullList.where((cat) {
       if (_searchQuery.isEmpty) return true;

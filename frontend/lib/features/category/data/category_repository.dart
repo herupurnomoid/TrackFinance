@@ -21,6 +21,23 @@ class CategoryRepository {
   @visibleForTesting
   static set instance(CategoryRepository repo) => _instance = repo;
 
+  /// Kategori in-memory fallback ketika pengguna belum login (offline/demo/preview)
+  static final List<CategoryItem> inMemoryExpenseCategories =
+      List.from(DefaultCategories.defaultExpenseCategories);
+  static final List<CategoryItem> inMemoryIncomeCategories =
+      List.from(DefaultCategories.defaultIncomeCategories);
+
+  /// Helper untuk mereset data in-memory saat testing
+  @visibleForTesting
+  static void resetInMemoryCategories() {
+    inMemoryExpenseCategories
+      ..clear()
+      ..addAll(DefaultCategories.defaultExpenseCategories);
+    inMemoryIncomeCategories
+      ..clear()
+      ..addAll(DefaultCategories.defaultIncomeCategories);
+  }
+
   /// Mendapatkan referensi subkoleksi categories milik user tertentu
   CollectionReference<Map<String, dynamic>> _categoryCollection(String uid) {
     return _firestore.collection('users').doc(uid).collection('categories');
@@ -83,17 +100,26 @@ class CategoryRepository {
       return Stream.value(<CategoryItem>[]);
     }
 
-    Query<Map<String, dynamic>> query = _categoryCollection(uid);
-    if (isExpense != null) {
-      query = query.where('isExpense', isEqualTo: isExpense);
-    }
+    try {
+      Query<Map<String, dynamic>> query = _categoryCollection(uid);
+      if (isExpense != null) {
+        query = query.where('isExpense', isEqualTo: isExpense);
+      }
 
-    return query
-        .orderBy('order', descending: false)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CategoryItem.fromFirestore(doc))
-            .toList());
+      return query
+          .orderBy('order', descending: false)
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => CategoryItem.fromFirestore(doc))
+              .toList())
+          .handleError((e) {
+        debugPrint('CategoryRepository getCategoriesStream stream error: $e');
+        return <CategoryItem>[];
+      });
+    } catch (e) {
+      debugPrint('CategoryRepository getCategoriesStream error: $e');
+      return Stream.value(<CategoryItem>[]);
+    }
   }
 
   /// Stream realtime daftar kategori berdasarkan tipe isExpense spesifik (Pengeluaran / Pemasukan)

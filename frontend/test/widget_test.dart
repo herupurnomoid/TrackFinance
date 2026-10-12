@@ -256,8 +256,8 @@ void main() {
     // Verify Category section
     expect(find.text('Kategori'), findsOneWidget);
     expect(find.text('Kelola Kategori & Ikon'), findsOneWidget);
-    expect(find.text('Makanan'), findsOneWidget);
-    expect(find.text('Belanja'), findsOneWidget);
+    expect(find.text('Makanan & Minuman'), findsOneWidget);
+    expect(find.text('Belanja Harian'), findsOneWidget);
 
     // Verify Additional Details
     expect(find.text('Tanggal'), findsOneWidget);
@@ -290,7 +290,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Kas Masuk'), findsOneWidget);
-    expect(find.text('Gaji'), findsOneWidget);
+    expect(find.text('Gaji Pokok'), findsOneWidget);
     expect(find.text('Bonus'), findsOneWidget);
   });
 
@@ -324,14 +324,14 @@ void main() {
     expect(find.byKey(const ValueKey('content')), findsOneWidget);
     expect(find.text('Nominal Transaksi'), findsOneWidget);
 
-    // Test tapping 'Lainnya' opens AllCategoriesBottomSheet
-    expect(find.text('Lainnya'), findsOneWidget);
-    await tester.tap(find.text('Lainnya'));
+    // Test tapping 'Lebih Banyak' opens AllCategoriesBottomSheet
+    expect(find.text('Lebih Banyak'), findsOneWidget);
+    await tester.tap(find.text('Lebih Banyak'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Semua Kategori Pengeluaran'), findsOneWidget);
 
     // Close bottom sheet
-    await tester.tap(find.text('Donasi & Amal'));
+    await tester.tap(find.text('Pendidikan').last);
     await tester.pumpAndSettle();
 
     // Test tapping Tanggal opens TransactionDatePickerModal (Only Date)

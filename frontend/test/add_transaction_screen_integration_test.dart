@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:track_finance/core/models/user_profile.dart';
 import 'package:track_finance/core/theme/app_theme.dart';
+import 'package:track_finance/features/category/data/category_repository.dart';
 import 'package:track_finance/features/transaction/data/transaction_action_result.dart';
 import 'package:track_finance/features/transaction/data/transaction_model.dart';
 import 'package:track_finance/features/transaction/data/transaction_repository.dart';
@@ -20,10 +21,13 @@ void main() {
       photoUrl: null,
     );
 
-    setUp(() {
+    setUp(() async {
       fakeFirestore = FakeFirebaseFirestore();
       repository = TransactionRepository(firestore: fakeFirestore);
       TransactionRepository.instance = repository;
+      final categoryRepo = CategoryRepository(firestore: fakeFirestore);
+      CategoryRepository.instance = categoryRepo;
+      await categoryRepo.seedDefaultCategoriesIfEmpty(testUser.uid);
     });
 
     testWidgets('TX-09: Add Transaction flow invokes TransactionRepository.addTransaction and persists to Firestore', (WidgetTester tester) async {
@@ -66,8 +70,8 @@ void main() {
       await tester.pump();
       expect(find.text('200.000'), findsOneWidget);
 
-      // Pilih kategori "Makanan"
-      await tester.tap(find.text('Makanan'));
+      // Pilih kategori "Makanan & Minuman"
+      await tester.tap(find.text('Makanan & Minuman'));
       await tester.pump();
 
       // Masukkan catatan transaksi

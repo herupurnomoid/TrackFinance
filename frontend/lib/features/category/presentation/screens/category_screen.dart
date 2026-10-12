@@ -39,8 +39,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   bool _isExpenseTab = true;
 
   // Kategori bawaan terisi sejak pertama kali pengguna masuk
-  List<CategoryItem> _expenseCategories = List.from(DefaultCategories.defaultExpenseCategories);
-  List<CategoryItem> _incomeCategories = List.from(DefaultCategories.defaultIncomeCategories);
+  List<CategoryItem> _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
+  List<CategoryItem> _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
 
   // Pesan Toast Floating Feedback
   String? _toastMessage;
@@ -131,16 +131,18 @@ class _CategoryScreenState extends State<CategoryScreen> {
             } else {
               setState(() {
                 if (isExpense) {
-                  _expenseCategories.insert(
-                    _expenseCategories.isEmpty ? 0 : _expenseCategories.length - 1,
+                  CategoryRepository.inMemoryExpenseCategories.insert(
+                    CategoryRepository.inMemoryExpenseCategories.isEmpty ? 0 : CategoryRepository.inMemoryExpenseCategories.length - 1,
                     newCategory,
                   );
+                  _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
                   _isExpenseTab = true;
                 } else {
-                  _incomeCategories.insert(
-                    _incomeCategories.isEmpty ? 0 : _incomeCategories.length - 1,
+                  CategoryRepository.inMemoryIncomeCategories.insert(
+                    CategoryRepository.inMemoryIncomeCategories.isEmpty ? 0 : CategoryRepository.inMemoryIncomeCategories.length - 1,
                     newCategory,
                   );
+                  _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
                   _isExpenseTab = false;
                 }
               });
@@ -186,15 +188,17 @@ class _CategoryScreenState extends State<CategoryScreen> {
             } else {
               setState(() {
                 if (isExpense) {
-                  final index = _expenseCategories.indexWhere((c) => c.id == category.id);
+                  final index = CategoryRepository.inMemoryExpenseCategories.indexWhere((c) => c.id == category.id);
                   if (index != -1) {
-                    _expenseCategories[index] = updated;
+                    CategoryRepository.inMemoryExpenseCategories[index] = updated;
                   }
+                  _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
                 } else {
-                  final index = _incomeCategories.indexWhere((c) => c.id == category.id);
+                  final index = CategoryRepository.inMemoryIncomeCategories.indexWhere((c) => c.id == category.id);
                   if (index != -1) {
-                    _incomeCategories[index] = updated;
+                    CategoryRepository.inMemoryIncomeCategories[index] = updated;
                   }
+                  _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
                 }
               });
             }
@@ -244,9 +248,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
               } else {
                 setState(() {
                   if (category.isExpense) {
-                    _expenseCategories.removeWhere((c) => c.id == category.id);
+                    CategoryRepository.inMemoryExpenseCategories.removeWhere((c) => c.id == category.id);
+                    _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
                   } else {
-                    _incomeCategories.removeWhere((c) => c.id == category.id);
+                    CategoryRepository.inMemoryIncomeCategories.removeWhere((c) => c.id == category.id);
+                    _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
                   }
                 });
               }
@@ -278,9 +284,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
     } else {
       setState(() {
         if (_isExpenseTab) {
-          _expenseCategories.add(newCategory);
+          CategoryRepository.inMemoryExpenseCategories.add(newCategory);
+          _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
         } else {
-          _incomeCategories.add(newCategory);
+          CategoryRepository.inMemoryIncomeCategories.add(newCategory);
+          _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
         }
       });
     }

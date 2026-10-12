@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:track_finance/core/models/user_profile.dart';
 import 'package:track_finance/core/theme/app_theme.dart';
 import 'package:track_finance/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:track_finance/features/category/data/category_repository.dart';
 import 'package:track_finance/features/transaction/data/transaction_model.dart';
 import 'package:track_finance/features/transaction/data/transaction_repository.dart';
 
@@ -27,8 +28,8 @@ void main() {
       id: 'tx_stream_exp_1',
       type: 'expense',
       amount: 150000,
-      categoryId: 'cat-food',
-      categoryName: 'Makanan',
+      categoryId: 'exp-1',
+      categoryName: 'Makanan & Minuman',
       categoryIconCode: Icons.restaurant_rounded.codePoint,
       notes: 'Makan siang',
       timeStr: '12.30',
@@ -44,6 +45,7 @@ void main() {
       fakeFirestore = FakeFirebaseFirestore();
       repository = TransactionRepository(firestore: fakeFirestore);
       TransactionRepository.instance = repository;
+      CategoryRepository.instance = CategoryRepository(firestore: fakeFirestore);
     });
 
     testWidgets('Dashboard renders live data from Firestore and dynamically reacts to mutations', (WidgetTester tester) async {
@@ -64,7 +66,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       // Verifikasi transaksi awal muncul di antarmuka
-      expect(find.text('Makanan'), findsWidgets);
+      expect(find.text('Makanan & Minuman'), findsWidgets);
       expect(find.textContaining('Makan siang'), findsWidgets);
 
       // 3. Tambahkan transaksi pemasukan baru secara realtime di background
@@ -305,8 +307,8 @@ void main() {
       await tester.enterText(amountField, '50000');
       await tester.pump();
 
-      // Select category "Makanan"
-      await tester.tap(find.text('Makanan'));
+      // Select category "Makanan & Minuman"
+      await tester.tap(find.text('Makanan & Minuman'));
       await tester.pump();
 
       // Tap 'Simpan Transaksi'
@@ -318,8 +320,8 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       // Kembali ke Dashboard:
-      // 1. Kartu transaksi "Makanan" hanya ada 1 (tidak terduplikasi)
-      expect(find.text('Makanan'), findsOneWidget);
+      // 1. Kartu transaksi "Makanan & Minuman" hanya ada 1 (tidak terduplikasi)
+      expect(find.text('Makanan & Minuman'), findsOneWidget);
 
       // 2. Total pengeluaran hari ini adalah -Rp50.000 (1 rekap tanggal + 1 kartu = 2 widgets teks)
       //    bukan -Rp100.000 (seperti bug duplikasi sebelumnya)
