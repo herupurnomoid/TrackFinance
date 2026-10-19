@@ -46,3 +46,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Web Dashboard
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/dist-ssr/
+

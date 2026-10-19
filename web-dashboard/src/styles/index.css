@@ -1,0 +1,106 @@
+:root {
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Brand Palette */
+  --primary-blue: #2563EB;
+  --primary-dark: #1E40AF;
+  --navy-deep: #00174B;
+  --navy-gradient: linear-gradient(135deg, #0F172A 0%, #1E40AF 60%, #2563EB 100%);
+  --pale-blue: #DBEAFE;
+  --pale-cyan: #E0F2FE;
+  
+  /* Canvas & Cards */
+  --surface-bg: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --surface-card-subtle: #F1F5F9;
+  --border-light: #E2E8F0;
+  --border-subtle: #F1F5F9;
+
+  /* Typography */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-white: #FFFFFF;
+
+  /* Status & Cashflow */
+  --income-green: #10B981;
+  --income-dark: #006329;
+  --income-bg: #DCFCE7;
+  --income-border: #BBF7D0;
+  
+  --expense-red: #F43F5E;
+  --expense-dark: #93000A;
+  --expense-bg: #FFDAD6;
+  --expense-border: #FECDD3;
+
+  --warning-amber: #F59E0B;
+  --warning-bg: #FEF3C7;
+  --warning-text: #B45309;
+
+  /* Tactile Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 23, 75, 0.05);
+  --shadow-card: 0 10px 25px -5px rgba(0, 23, 75, 0.05), 0 4px 10px -3px rgba(0, 23, 75, 0.03);
+  --shadow-card-hover: 0 20px 30px -8px rgba(0, 23, 75, 0.08), 0 8px 12px -4px rgba(0, 23, 75, 0.04);
+  --shadow-tactile-btn: 0 4px 0 #1D4ED8, 0 6px 14px rgba(37, 99, 235, 0.35);
+  --shadow-google-btn: 0 3px 0 #E2E8F0, 0 6px 16px rgba(15, 23, 42, 0.08);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--surface-bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}

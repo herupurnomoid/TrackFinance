@@ -16,6 +16,10 @@ TrackFinance/
 │   ├── ios/                 # Konfigurasi native iOS
 │   ├── pubspec.yaml         # Dependencies & assets Flutter
 │   └── ...
+├── web-dashboard/           # Versi Website Dashboard Laporan Keuangan (React + Vite)
+│   ├── src/                 # Komponen UI, Firebase Auth & Firestore, Report Analysis Engine
+│   ├── public/              # Aset statis & 3D Tactile Artwork
+│   └── package.json         # Dependensi web (Firebase, Lucide React)
 └── backend/                 # Direktori Backend Service / API (dipersiapkan untuk backend)
     ├── .gitkeep
     └── README.md
@@ -36,6 +40,27 @@ cd frontend
 flutter pub get
 flutter run
 ```
+
+## 🌐 Menjalankan Web Dashboard (Versi Website Laporan)
+
+Untuk menjalankan versi website dashboard laporan keuangan:
+```bash
+cd web-dashboard
+npm install
+npm run dev
+```
+Akses di browser lokal: `http://localhost:5173`
+URL Produksi (Live Firebase Hosting): **https://trackfinance-6ccfd.web.app** (atau https://trackfinance-6ccfd.firebaseapp.com)
+
+Fitur Web Dashboard:
+- **Autentikasi Bersama**: Menggunakan Firebase Auth (Google Sign-In) yang sama dengan aplikasi mobile.
+- **Sinkronisasi Firestore Realtime**: Terhubung langsung ke `users/{uid}/monthly_summaries` dan `users/{uid}/transactions`.
+- **Indikator Kesehatan Finansial**: Skor 0–100, label status (*Sangat Sehat*, *Waspada*, *Defisit*), rasio tabungan, dan rekomendasi cerdas.
+- **Grafik Tren Arus Kas Harian**: Diagram batang interaktif per tanggal membandingkan pemasukan dan pengeluaran harian lengkap dengan hover tooltip.
+- **Struktur & Alokasi Kategori**: Diagram Donut interaktif dan daftar urutan kategori (Pengeluaran & Pemasukan).
+- **Selector Periode Interaktif**: Modal pemilihan bulan dan tahun dinamis.
+- **Sistem Logout Aman**: Dialog konfirmasi logout akun.
+
 
 ## 📱 Fitur Saat Ini (Prototype Phase)
 - **Halaman Login OAuth Google**: Presisi sesuai referensi desain UI (Claymorphism 3D Icon, Plus Jakarta Sans, Authentic Google Button, dan Security Badge).
