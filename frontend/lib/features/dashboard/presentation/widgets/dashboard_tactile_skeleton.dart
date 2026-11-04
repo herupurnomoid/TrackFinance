@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_shimmer.dart';
+import 'dashboard_overlap_layout.dart';
 
 /// Shimmer Skeleton Loading untuk Dashboard Modern Tactile Finance
 /// Memberikan efek gelombang kilau cahaya halus di atas tata letak layout yang presisi.
@@ -80,8 +81,8 @@ class DashboardTactileSkeleton extends StatelessWidget {
           ),
 
           // 2. Content Panel Skeleton Overlapping Header
-          Transform.translate(
-            offset: const Offset(0, -24 - 48),
+          DashboardOverlapLayout(
+            topOverlap: 24 + 48,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),

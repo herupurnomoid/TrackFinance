@@ -15,6 +15,7 @@ import '../../../transaction/data/transaction_repository.dart';
 import '../../../export/presentation/screens/export_data_screen.dart';
 import '../../../report/presentation/screens/report_screen.dart';
 import '../../data/dashboard_transaction_model.dart';
+import '../widgets/dashboard_overlap_layout.dart';
 import '../widgets/dashboard_search_and_filter.dart';
 import '../widgets/dashboard_shortcuts_row.dart';
 import '../widgets/dashboard_tactile_header.dart';
@@ -775,38 +776,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
 
-                          // 2. Content Panel Overlapping Header (-24px margin-top + offset pemanjangan header)
-                          Transform.translate(
-                            offset: const Offset(0, -24 - _headerExtension),
-                            child: Container(
-                              width: double.infinity,
-                              constraints: BoxConstraints(
-                                minHeight: MediaQuery.of(context).size.height,
-                              ),
-                              decoration: const BoxDecoration(
-                                color: Color(
-                                  0xFFF1F5F9,
-                                ), // Slate 100 App Canvas
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(28),
-                                  topRight: Radius.circular(28),
+                          // 2. Content Panel Overlapping Header
+                          // Menggunakan DashboardOverlapLayout agar ukuran layout yang dilaporkan
+                          // ke Column disesuaikan (child.height - topOverlap), sehingga panel
+                          // menutup sempurna hingga dasar scroll view tanpa meninggalkan celah 72px.
+                          DashboardOverlapLayout(
+                            topOverlap: 24 + _headerExtension,
+                            child: ClipRect(
+                              // Potong bayangan bawah agar tidak ada garis bayangan horizontal
+                              // melintang yang membuat latar belakang tampak "belang".
+                              clipper: const TopOnlyShadowClipper(),
+                              child: Container(
+                                width: double.infinity,
+                                constraints: BoxConstraints(
+                                  minHeight:
+                                      MediaQuery.of(context).size.height +
+                                      (24 + _headerExtension),
                                 ),
-                                // Bayangan tepi atas agar panel terasa "naik" menutupi header
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x290F172A),
-                                    blurRadius: 24,
-                                    offset: Offset(0, -6),
+                                decoration: const BoxDecoration(
+                                  color: Color(
+                                    0xFFF1F5F9,
+                                  ), // Slate 100 App Canvas
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(28),
+                                    topRight: Radius.circular(28),
                                   ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  20,
-                                  16,
-                                  32,
+                                  // Bayangan tepi atas agar panel terasa "naik" menutupi header
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color(0x290F172A),
+                                      blurRadius: 24,
+                                      offset: Offset(0, -6),
+                                    ),
+                                  ],
                                 ),
+                                child: Padding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    16,
+                                    20,
+                                    16,
+                                    32 +
+                                        MediaQuery.of(context).padding.bottom +
+                                        24,
+                                  ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -868,7 +880,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ),
-                        ],
+                        ),
+                      ],
                       ),
               ),
             ),
