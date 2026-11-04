@@ -108,7 +108,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
 
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 280),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -130,8 +130,24 @@ class _ExportDataScreenState extends State<ExportDataScreen>
 
     if (_currentUser != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _updateTransactionEstimates();
+        _initAfterTransition();
       });
+    }
+  }
+
+  void _initAfterTransition() {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation != null && !animation.isCompleted) {
+      void listener(AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          animation.removeStatusListener(listener);
+          _updateTransactionEstimates();
+        }
+      }
+      animation.addStatusListener(listener);
+    } else {
+      _updateTransactionEstimates();
     }
   }
 
@@ -648,31 +664,17 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                 // 1. Tactile Header with Glassmorphic Back Button (Fixed Top Header)
                 _buildHeader(context),
 
-                // 2. Raised Content Panel (Menimpa Header sebesar 20px seperti Halaman Tambah Transaksi & Kategori)
+                // 2. Main Content Canvas (seperti Halaman Profil)
                 Expanded(
-                  child: Container(
-                    transform: Matrix4.translationValues(0.0, -20.0, 0.0),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFAF8FF),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(28),
-                        topRight: Radius.circular(28),
+                  child: RefreshIndicator(
+                    onRefresh: _handleRefresh,
+                    color: const Color(0xFF2563EB),
+                    backgroundColor: Colors.white,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
                       ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(28),
-                        topRight: Radius.circular(28),
-                      ),
-                      child: RefreshIndicator(
-                        onRefresh: _handleRefresh,
-                        color: const Color(0xFF2563EB),
-                        backgroundColor: Colors.white,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 300),
                             switchInCurve: Curves.easeOutCubic,
@@ -708,8 +710,8 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                                           AnimatedSwitcher(
                                             duration: const Duration(milliseconds: 250),
                                             child: _isImportTab
-                                                ? _buildImportContent()
-                                                : _buildExportContent(),
+                                                ? RepaintBoundary(child: _buildImportContent())
+                                                : RepaintBoundary(child: _buildExportContent()),
                                           ),
                                         ],
                                       ),
@@ -719,8 +721,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                         ),
                       ),
                     ),
-                  ),
-                ),
               ],
             ),
 
@@ -793,7 +793,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 36),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

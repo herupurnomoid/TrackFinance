@@ -179,7 +179,6 @@ class DefaultCategories {
           name: 'Makanan & Minuman',
           icon: Icons.restaurant_rounded,
           isExpense: true,
-          color: Color(0xFFDC2626), // Red
           order: 1,
         ),
         const CategoryItem(
@@ -187,7 +186,6 @@ class DefaultCategories {
           name: 'Transportasi',
           icon: Icons.two_wheeler_rounded,
           isExpense: true,
-          color: Color(0xFF2563EB), // Blue
           order: 2,
         ),
         const CategoryItem(
@@ -195,7 +193,6 @@ class DefaultCategories {
           name: 'Belanja Harian',
           icon: Icons.shopping_bag_rounded,
           isExpense: true,
-          color: Color(0xFF16A34A), // Green
           order: 3,
         ),
         const CategoryItem(
@@ -203,7 +200,6 @@ class DefaultCategories {
           name: 'Tagihan & Pulsa',
           icon: Icons.receipt_long_rounded,
           isExpense: true,
-          color: Color(0xFFDC2626), // Red
           order: 4,
         ),
         const CategoryItem(
@@ -211,7 +207,6 @@ class DefaultCategories {
           name: 'Kesehatan',
           icon: Icons.medical_services_rounded,
           isExpense: true,
-          color: Color(0xFF16A34A), // Green
           order: 5,
         ),
         const CategoryItem(
@@ -219,7 +214,6 @@ class DefaultCategories {
           name: 'Hiburan Seru',
           icon: Icons.sports_esports_rounded,
           isExpense: true,
-          color: Color(0xFF2563EB), // Blue
           order: 6,
         ),
         const CategoryItem(
@@ -227,7 +221,6 @@ class DefaultCategories {
           name: 'Pendidikan',
           icon: Icons.school_rounded,
           isExpense: true,
-          color: Color(0xFF1E40AF), // Dark Blue
           order: 7,
         ),
         const CategoryItem(
@@ -235,7 +228,6 @@ class DefaultCategories {
           name: 'Lainnya',
           icon: Icons.more_horiz_rounded,
           isExpense: true,
-          color: Color(0xFF2563EB),
           isLocked: true, // Kategori bawaan sistem terkunci
           order: 8,
         ),
@@ -248,7 +240,6 @@ class DefaultCategories {
           name: 'Gaji Pokok',
           icon: Icons.payments_rounded,
           isExpense: false,
-          color: Color(0xFF16A34A), // Green
           order: 1,
         ),
         const CategoryItem(
@@ -256,7 +247,6 @@ class DefaultCategories {
           name: 'Bonus',
           icon: Icons.card_giftcard_rounded,
           isExpense: false,
-          color: Color(0xFF2563EB), // Blue
           order: 2,
         ),
         const CategoryItem(
@@ -264,7 +254,6 @@ class DefaultCategories {
           name: 'Investasi',
           icon: Icons.trending_up_rounded,
           isExpense: false,
-          color: Color(0xFF16A34A), // Green
           order: 3,
         ),
         const CategoryItem(
@@ -272,7 +261,6 @@ class DefaultCategories {
           name: 'Penjualan',
           icon: Icons.storefront_rounded,
           isExpense: false,
-          color: Color(0xFF1E40AF), // Dark Blue
           order: 4,
         ),
         const CategoryItem(
@@ -280,7 +268,6 @@ class DefaultCategories {
           name: 'Freelance',
           icon: Icons.laptop_mac_rounded,
           isExpense: false,
-          color: Color(0xFF2563EB), // Blue
           order: 5,
         ),
         const CategoryItem(
@@ -288,7 +275,6 @@ class DefaultCategories {
           name: 'Lainnya',
           icon: Icons.more_horiz_rounded,
           isExpense: false,
-          color: Color(0xFF16A34A),
           isLocked: true, // Kategori bawaan sistem terkunci
           order: 6,
         ),

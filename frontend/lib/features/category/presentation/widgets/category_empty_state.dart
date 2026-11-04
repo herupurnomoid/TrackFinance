@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 class CategoryEmptyState extends StatelessWidget {
   final bool isExpense;
   final VoidCallback onAddCategory;
-  final Function(String name, IconData icon, Color color) onAddQuickCategory;
+  final Function(String name, IconData icon) onAddQuickCategory;
 
   const CategoryEmptyState({
     super.key,
@@ -33,15 +33,15 @@ class CategoryEmptyState extends StatelessWidget {
 
     // Starter suggestions
     final quickSuggestions = isExpense
-        ? [
-            (name: 'Makanan & Minuman', icon: Icons.restaurant_rounded, color: const Color(0xFFDC2626)),
-            (name: 'Transportasi', icon: Icons.directions_car_rounded, color: const Color(0xFF2563EB)),
-            (name: 'Belanja', icon: Icons.shopping_bag_rounded, color: const Color(0xFF16A34A)),
+        ? const [
+            (name: 'Makanan & Minuman', icon: Icons.restaurant_rounded),
+            (name: 'Transportasi', icon: Icons.directions_car_rounded),
+            (name: 'Belanja', icon: Icons.shopping_bag_rounded),
           ]
-        : [
-            (name: 'Gaji Pokok', icon: Icons.payments_rounded, color: const Color(0xFF16A34A)),
-            (name: 'Investasi', icon: Icons.trending_up_rounded, color: const Color(0xFF2563EB)),
-            (name: 'Bonus', icon: Icons.card_giftcard_rounded, color: const Color(0xFF1E40AF)),
+        : const [
+            (name: 'Gaji Pokok', icon: Icons.payments_rounded),
+            (name: 'Investasi', icon: Icons.trending_up_rounded),
+            (name: 'Bonus', icon: Icons.card_giftcard_rounded),
           ];
 
     return Container(
@@ -242,7 +242,7 @@ class CategoryEmptyState extends StatelessWidget {
               return Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => onAddQuickCategory(item.name, item.icon, item.color),
+                  onTap: () => onAddQuickCategory(item.name, item.icon),
                   borderRadius: BorderRadius.circular(999),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -267,7 +267,7 @@ class CategoryEmptyState extends StatelessWidget {
                         Icon(
                           item.icon,
                           size: 16,
-                          color: item.color,
+                          color: const Color(0xFF004AC6),
                         ),
                         const SizedBox(width: 6),
                         Text(

@@ -174,11 +174,11 @@ class _LoginScreenState extends State<LoginScreen>
                     child: FadeTransition(
                       opacity: _panelFadeAnimation,
                       child: CurvedDomePanel(
-                        domeHeight: 28.0,
+                        borderRadius: 28.0,
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
                             24.0,
-                            12.0,
+                            28.0,
                             24.0,
                             bottomPadding > 0 ? bottomPadding + 16.0 : 32.0,
                           ),

@@ -200,7 +200,7 @@ void main() {
           body: CategoryEmptyState(
             isExpense: false,
             onAddCategory: () {},
-            onAddQuickCategory: (_, _, _) {},
+            onAddQuickCategory: (_, _) {},
           ),
         ),
       ),
@@ -766,7 +766,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const ReportScreen(initialMonthIndex: 8), // September 2026 = Kosong
+        home: const ReportScreen(
+          initialYear: 2026,
+          initialMonthIndex: 8,
+        ), // September 2026 = Kosong
       ),
     );
 
@@ -814,6 +817,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.lightTheme,
         home: const ReportScreen(
+          initialYear: 2026,
           initialMonthIndex: 9, // Oktober 2026
           initialIsExpenseTab: true, // Keluar
         ),
@@ -825,11 +829,11 @@ void main() {
     // Header & Filter
     expect(find.text('Okt 2026'), findsOneWidget);
 
-    // Card 1: Tren Keuangan (Populated Keluar)
+    // Card 1: Tren Keuangan (Dual Line Chart Default 6jt scale)
     expect(find.text('Tren Keuangan'), findsOneWidget);
-    expect(find.text('120k'), findsOneWidget);
-    expect(find.text('80k'), findsOneWidget);
-    expect(find.text('40k'), findsOneWidget);
+    expect(find.text('6jt'), findsOneWidget);
+    expect(find.text('4jt'), findsOneWidget);
+    expect(find.text('2jt'), findsOneWidget);
     expect(find.text('01'), findsOneWidget);
     expect(find.text('02'), findsOneWidget);
     expect(find.text('05'), findsOneWidget);
@@ -867,6 +871,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.lightTheme,
         home: const ReportScreen(
+          initialYear: 2026,
           initialMonthIndex: 9, // Oktober 2026
           initialIsExpenseTab: false, // Masuk
         ),
@@ -925,6 +930,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.lightTheme,
         home: const ReportScreen(
+          initialYear: 2026,
           initialMonthIndex: 9,
           initialIsExpenseTab: true,
         ),
@@ -961,7 +967,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const ReportScreen(initialMonthIndex: 8),
+        home: const ReportScreen(
+          initialYear: 2026,
+          initialMonthIndex: 8,
+        ),
       ),
     );
 
@@ -1035,6 +1044,31 @@ void main() {
 
     // Back to dashboard
     expect(find.text('Cari transaksi...'), findsOneWidget);
+  });
+
+  testWidgets('Report screen defaults to current month and year today when not specified', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final now = DateTime.now();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    final expectedLabel = '${months[now.month - 1]} ${now.year}';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const ReportScreen(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify filter pill defaults to current month and year
+    expect(find.text(expectedLabel), findsOneWidget);
   });
 
   testWidgets('Edit Transaction screen pre-populates data and renders edit UI', (WidgetTester tester) async {

@@ -23,6 +23,7 @@ class DashboardTactileHeader extends StatefulWidget {
   final VoidCallback? onLogout;
   final bool isFilterActive;
   final VoidCallback? onResetToToday;
+  final double bottomExtension;
 
   const DashboardTactileHeader({
     super.key,
@@ -39,6 +40,7 @@ class DashboardTactileHeader extends StatefulWidget {
     this.onLogout,
     this.isFilterActive = false,
     this.onResetToToday,
+    this.bottomExtension = 0.0,
   });
 
   @override
@@ -100,27 +102,32 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
 
   @override
   Widget build(BuildContext context) {
+    // Jika header dipanjangkan ke bawah untuk menutup celah di balik panel konten,
+    // ratakan sudut bawah agar background menutup sempurna dari ujung ke ujung.
+    final effectiveBorderRadius = widget.bottomExtension > 0
+        ? BorderRadius.zero
+        : const BorderRadius.only(
+            bottomLeft: Radius.circular(28),
+            bottomRight: Radius.circular(28),
+          );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _currentTimeOfDay.skyGradientColors.first
-                .withValues(alpha: 0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: effectiveBorderRadius,
+        boxShadow: widget.bottomExtension > 0
+            ? null
+            : [
+                BoxShadow(
+                  color: _currentTimeOfDay.skyGradientColors.first
+                      .withValues(alpha: 0.25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
+        borderRadius: effectiveBorderRadius,
         child: Stack(
           children: [
             // 1. Background Animasi Waktu Dinamis (Pagi, Siang, Sore, Malam)
@@ -141,7 +148,14 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
             SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 38),
+                // Tambahkan tinggi dari dalam header: konten turun, sementara
+                // latar langit tetap menutup area atas dan bawah tanpa celah samping.
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  34,
+                  20,
+                  44 + widget.bottomExtension,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

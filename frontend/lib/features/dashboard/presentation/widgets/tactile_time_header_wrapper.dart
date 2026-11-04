@@ -10,6 +10,7 @@ class TactileTimeHeaderWrapper extends StatelessWidget {
   final double? height;
   final BorderRadius? borderRadius;
   final EdgeInsetsGeometry? padding;
+  final bool animateBackground;
 
   const TactileTimeHeaderWrapper({
     super.key,
@@ -17,6 +18,7 @@ class TactileTimeHeaderWrapper extends StatelessWidget {
     this.height,
     this.borderRadius,
     this.padding,
+    this.animateBackground = false,
   });
 
   @override
@@ -46,17 +48,20 @@ class TactileTimeHeaderWrapper extends StatelessWidget {
         borderRadius: effectiveBorderRadius,
         child: Stack(
           children: [
-            // 1. Animasi Langit Waktu Dinamis (Pagi, Siang, Sore, Malam)
+            // 1. Animasi / Latar Langit Waktu Dinamis (Pagi, Siang, Sore, Malam)
             Positioned.fill(
               child: HeaderTimeBackground(
                 timeOfDay: time,
+                animate: animateBackground,
               ),
             ),
 
-            // 2. Tekstur Garis Diagonal Taktil Halus
+            // 2. Tekstur Garis Diagonal Taktil Halus (dicache dalam GPU layer)
             Positioned.fill(
-              child: const CustomPaint(
-                painter: HeaderHatchPainter(),
+              child: const RepaintBoundary(
+                child: CustomPaint(
+                  painter: HeaderHatchPainter(),
+                ),
               ),
             ),
 

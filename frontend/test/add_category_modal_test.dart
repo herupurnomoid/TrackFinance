@@ -13,7 +13,7 @@ void main() {
       CategoryItem? categoryToEdit,
       bool initialIsExpense = true,
       List<String> existingNames = const [],
-      required FutureOr<void> Function(String name, IconData icon, Color color, bool isExpense) onSave,
+      required FutureOr<void> Function(String name, IconData icon, bool isExpense) onSave,
       VoidCallback? onDelete,
     }) {
       return MaterialApp(
@@ -52,7 +52,7 @@ void main() {
         buildModalHarness(
           initialIsExpense: true,
           existingNames: const ['Makanan', 'Gaji'],
-          onSave: (_, _, _, _) {},
+          onSave: (_, _, _) {},
         ),
       );
 
@@ -62,6 +62,7 @@ void main() {
       expect(find.text('Tambah Kategori'), findsOneWidget);
       expect(find.text('Simpan Kategori'), findsOneWidget);
       expect(find.text('Hapus'), findsNothing);
+      expect(find.text('Warna ikon'), findsNothing);
     });
 
     testWidgets('Renders Edit Category mode and displays category details & delete button', (WidgetTester tester) async {
@@ -85,7 +86,7 @@ void main() {
           categoryToEdit: editCat,
           initialIsExpense: true,
           existingNames: const ['Makanan', 'Hobi & Game'],
-          onSave: (_, _, _, _) {},
+          onSave: (_, _, _) {},
           onDelete: () {
             deleteTriggered = true;
           },
@@ -98,6 +99,7 @@ void main() {
       expect(find.text('Edit Kategori'), findsOneWidget);
       expect(find.text('Simpan Perubahan'), findsOneWidget);
       expect(find.text('Hapus'), findsOneWidget);
+      expect(find.text('Warna ikon'), findsNothing);
       expect(find.text('Hobi & Game'), findsWidgets);
 
       // Tap delete button
@@ -115,7 +117,7 @@ void main() {
         buildModalHarness(
           initialIsExpense: true,
           existingNames: const ['Makanan & Minuman', 'Transportasi'],
-          onSave: (_, _, _, _) {},
+          onSave: (_, _, _) {},
         ),
       );
 
@@ -142,7 +144,7 @@ void main() {
         buildModalHarness(
           initialIsExpense: true,
           existingNames: const [],
-          onSave: (name, icon, color, isExpense) async {
+          onSave: (name, icon, isExpense) async {
             saved = true;
             await completer.future;
           },
@@ -186,12 +188,11 @@ void main() {
         buildModalHarness(
           initialIsExpense: true,
           existingNames: const [],
-          onSave: (name, icon, color, isExpense) async {
+          onSave: (name, icon, isExpense) async {
             final newCat = CategoryItem(
               id: 'cat-new-09',
               name: name,
               icon: icon,
-              color: color,
               isExpense: isExpense,
               isCustom: true,
               order: 1,

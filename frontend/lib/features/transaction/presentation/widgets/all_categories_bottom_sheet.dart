@@ -316,7 +316,9 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
                                         width: 36,
                                         height: 36,
                                         decoration: BoxDecoration(
-                                          color: cat.tintColor,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : cat.tintColor,
                                           borderRadius:
                                               BorderRadius.circular(11),
                                         ),

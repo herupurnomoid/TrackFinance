@@ -20,15 +20,11 @@ class DashboardTactileSkeleton extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               color: Color(0xFF2563EB),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 38),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 38 + 48),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -85,7 +81,7 @@ class DashboardTactileSkeleton extends StatelessWidget {
 
           // 2. Content Panel Skeleton Overlapping Header
           Transform.translate(
-            offset: const Offset(0, -24),
+            offset: const Offset(0, -24 - 48),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),

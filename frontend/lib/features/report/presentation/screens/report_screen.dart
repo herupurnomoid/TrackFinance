@@ -26,16 +26,16 @@ import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart
 /// - Transisi halus, animasi interaktif bar tooltip & donut, serta skeleton loading.
 class ReportScreen extends StatefulWidget {
   final UserProfile? user;
-  final int initialYear;
-  final int initialMonthIndex; // 0-based: 8 = September, 9 = Oktober
+  final int? initialYear;
+  final int? initialMonthIndex; // 0-based: 0 = Jan, 1 = Feb, ..., 11 = Des
   final bool initialIsExpenseTab;
   final bool initialIsLoading;
 
   const ReportScreen({
     super.key,
     this.user,
-    this.initialYear = 2026,
-    this.initialMonthIndex = 9, // Default Oktober 2026 dengan data
+    this.initialYear,
+    this.initialMonthIndex,
     this.initialIsExpenseTab = true, // Default Keluar
     this.initialIsLoading = false,
   });
@@ -76,13 +76,14 @@ class _ReportScreenState extends State<ReportScreen>
   void initState() {
     super.initState();
     _isLoading = widget.initialIsLoading;
-    _currentYear = widget.initialYear;
-    _currentMonthIndex = widget.initialMonthIndex;
+    final now = DateTime.now();
+    _currentYear = widget.initialYear ?? now.year;
+    _currentMonthIndex = widget.initialMonthIndex ?? (now.month - 1);
     _isExpenseMode = widget.initialIsExpenseTab;
 
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 250),
     );
 
     _fadeAnimation = CurvedAnimation(
@@ -101,7 +102,25 @@ class _ReportScreenState extends State<ReportScreen>
     );
 
     _fadeController.forward();
-    _loadReportData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initAfterTransition();
+    });
+  }
+
+  void _initAfterTransition() {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation != null && !animation.isCompleted) {
+      void listener(AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          animation.removeStatusListener(listener);
+          _loadReportData();
+        }
+      }
+      animation.addStatusListener(listener);
+    } else {
+      _loadReportData();
+    }
   }
 
   @override
@@ -267,39 +286,25 @@ class _ReportScreenState extends State<ReportScreen>
         backgroundColor: const Color(0xFFF1F5F9),
         body: Column(
           children: [
-            // 1. Header Waktu Dinamis Tactile Skeuomorphic (Fixed Top Header)
+            // 1. Header Waktu Dinamis Tactile Skeuomorphic (seperti Halaman Profil)
             _buildHeader(context),
 
-            // 2. Raised Content Panel (Menimpa Header sebesar 20px seperti Halaman Tambah Transaksi & Kategori)
+            // 2. Main Content Canvas
             Expanded(
-              child: Container(
-                transform: Matrix4.translationValues(0.0, -20.0, 0.0),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9), // Slate 100 Canvas
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
+              child: RefreshIndicator(
+                onRefresh: _handleRefresh,
+                color: const Color(0xFF2563EB),
+                backgroundColor: Colors.white,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    topRight: Radius.circular(28),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    20,
+                    16,
+                    MediaQuery.of(context).padding.bottom + 28,
                   ),
-                  child: RefreshIndicator(
-                    onRefresh: _handleRefresh,
-                    color: const Color(0xFF2563EB),
-                    backgroundColor: Colors.white,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        20,
-                        16,
-                        MediaQuery.of(context).padding.bottom + 28,
-                      ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: _isLoading
@@ -318,48 +323,54 @@ class _ReportScreenState extends State<ReportScreen>
                                       const SizedBox(height: 16),
 
                                       // Kartu 1: Tren Keuangan (Empty / Populated Keluar / Populated Masuk)
-                                      ReportTrendCard(
-                                        isEmpty: _isMonthEmpty,
-                                        isExpenseMode: _isExpenseMode,
-                                        expenseTotal: _currentExpenseTotal,
-                                        incomeTotal: _currentIncomeTotal,
-                                        dailyTrends: _reportData != null
-                                            ? _reportData!.dailyTrends
-                                            : (_isMonthEmpty ? const [] : ReportDataStore.oktoberDailyTrends),
+                                      RepaintBoundary(
+                                        child: ReportTrendCard(
+                                          isEmpty: _isMonthEmpty,
+                                          isExpenseMode: _isExpenseMode,
+                                          expenseTotal: _currentExpenseTotal,
+                                          incomeTotal: _currentIncomeTotal,
+                                          dailyTrends: _reportData != null
+                                              ? _reportData!.dailyTrends
+                                              : (_isMonthEmpty ? const [] : ReportDataStore.oktoberDailyTrends),
+                                        ),
                                       ),
 
                                       const SizedBox(height: 16),
 
                                       // Kartu 2: Struktur Transaksi (Donut Chart & List Kategori)
-                                      ReportStructureCard(
-                                        isEmpty: _isMonthEmpty,
-                                        totalAmount: _structureTotalAmount,
-                                        isExpenseTab: _isExpenseMode,
-                                        onTabChanged: _handleTabChanged,
-                                        categoryItems: _reportData != null
-                                            ? (_isExpenseMode
-                                                ? _reportData!.expenseCategories
-                                                : _reportData!.incomeCategories)
-                                            : null,
+                                      RepaintBoundary(
+                                        child: ReportStructureCard(
+                                          isEmpty: _isMonthEmpty,
+                                          totalAmount: _structureTotalAmount,
+                                          isExpenseTab: _isExpenseMode,
+                                          onTabChanged: _handleTabChanged,
+                                          categoryItems: _reportData != null
+                                              ? (_isExpenseMode
+                                                  ? _reportData!.expenseCategories
+                                                  : _reportData!.incomeCategories)
+                                              : null,
+                                        ),
                                       ),
 
                                       const SizedBox(height: 16),
 
                                       // Kartu 3: Indikator Kesehatan (Gauge Track & Skor)
-                                      ReportHealthCard(
-                                        isEmpty: _isMonthEmpty,
-                                        isExpenseMode: _isExpenseMode,
-                                        healthScore: _isMonthEmpty
-                                            ? null
-                                            : (_reportData != null
-                                                ? _reportData!.healthScore.toDouble()
-                                                : (_isExpenseMode ? -100.0 : 95.0)),
-                                        score: _reportData?.healthScore,
-                                        savingsRate: _reportData?.savingsRate,
-                                        healthStatus: _reportData?.healthStatus,
-                                        recommendation: _reportData?.healthRecommendation,
-                                        incomeTotal: _currentIncomeTotal,
-                                        expenseTotal: _currentExpenseTotal,
+                                      RepaintBoundary(
+                                        child: ReportHealthCard(
+                                          isEmpty: _isMonthEmpty,
+                                          isExpenseMode: _isExpenseMode,
+                                          healthScore: _isMonthEmpty
+                                              ? null
+                                              : (_reportData != null
+                                                  ? _reportData!.healthScore.toDouble()
+                                                  : (_isExpenseMode ? -100.0 : 95.0)),
+                                          score: _reportData?.healthScore,
+                                          savingsRate: _reportData?.savingsRate,
+                                          healthStatus: _reportData?.healthStatus,
+                                          recommendation: _reportData?.healthRecommendation,
+                                          incomeTotal: _currentIncomeTotal,
+                                          expenseTotal: _currentExpenseTotal,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -369,8 +380,6 @@ class _ReportScreenState extends State<ReportScreen>
                     ),
                   ),
                 ),
-              ),
-            ),
           ],
         ),
       ),
@@ -383,7 +392,7 @@ class _ReportScreenState extends State<ReportScreen>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 36),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

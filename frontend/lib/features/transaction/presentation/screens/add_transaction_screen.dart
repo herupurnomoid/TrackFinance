@@ -92,23 +92,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     final uid = _uid;
     if (uid != null && uid.isNotEmpty) {
-      try {
-        _categoryRepository.seedDefaultCategoriesIfEmpty(uid);
-        _categorySub =
-            _categoryRepository.getCategoriesStream(uid).listen((items) {
-          if (items.isNotEmpty && mounted) {
-            setState(() {
-              _expenseCategories = items.where((c) => c.isExpense).toList();
-              _incomeCategories = items.where((c) => !c.isExpense).toList();
-              _validateSelectedCategory();
-            });
-          }
-        }, onError: (e) {
-          debugPrint('AddTransactionScreen category stream error: $e');
-        });
-      } catch (e) {
-        debugPrint('AddTransactionScreen category setup error: $e');
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _setupCategoryStreamAfterTransition();
+      });
     }
 
     if (widget.transaction != null) {
@@ -146,6 +132,46 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     }
 
     _amountController.addListener(_formatAmountInput);
+  }
+
+  void _setupCategoryStreamAfterTransition() {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation != null && !animation.isCompleted) {
+      void listener(AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          animation.removeStatusListener(listener);
+          _initCategoryRepository();
+        }
+      }
+      animation.addStatusListener(listener);
+    } else {
+      _initCategoryRepository();
+    }
+  }
+
+  void _initCategoryRepository() {
+    if (!mounted) return;
+    final uid = _uid;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        _categoryRepository.seedDefaultCategoriesIfEmpty(uid);
+        _categorySub ??=
+            _categoryRepository.getCategoriesStream(uid).listen((items) {
+          if (items.isNotEmpty && mounted) {
+            setState(() {
+              _expenseCategories = items.where((c) => c.isExpense).toList();
+              _incomeCategories = items.where((c) => !c.isExpense).toList();
+              _validateSelectedCategory();
+            });
+          }
+        }, onError: (e) {
+          debugPrint('AddTransactionScreen category stream error: $e');
+        });
+      } catch (e) {
+        debugPrint('AddTransactionScreen category setup error: $e');
+      }
+    }
   }
 
   void _validateSelectedCategory() {
@@ -327,8 +353,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       id: id.isNotEmpty ? id : (isExpense ? 'exp-1' : 'inc-1'),
       name: isExpense ? 'Makanan & Minuman' : 'Gaji Pokok',
       icon: isExpense ? Icons.restaurant_rounded : Icons.payments_rounded,
-      tintColor: const Color(0xFFFFDAD6),
-      iconColor: const Color(0xFFDC2626),
+      tintColor: const Color(0xFFDBE1FF),
+      iconColor: const Color(0xFF004AC6),
     );
   }
 
@@ -669,42 +695,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       backgroundColor: const Color(0xFFF2F3FF), // surface-container-low
       body: Column(
         children: [
-          // 1. Header Baru Waktu Dinamis (rounded-b-[28px])
+          // 1. Header Card Waktu Dinamis (seperti Halaman Profil)
           _buildHeaderBar(),
 
-          // 2. Raised Content Panel (Menimpa Header sebesar 20px seperti halaman Kategori)
+          // 2. Main Content Canvas
           Expanded(
-            child: Container(
-              transform: Matrix4.translationValues(0.0, -20.0, 0.0),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF2F3FF),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
+            child: RefreshIndicator(
+              onRefresh: _handleRefresh,
+              color: AppColors.tactilePrimary,
+              backgroundColor: Colors.white,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  topRight: Radius.circular(28),
-                ),
-                child: RefreshIndicator(
-                  onRefresh: _handleRefresh,
-                  color: AppColors.tactilePrimary,
-                  backgroundColor: Colors.white,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
-                      child: _isLoading
-                          ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
-                          : Column(
-                              key: const ValueKey('content'),
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  child: _isLoading
+                      ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
+                      : Column(
+                          key: const ValueKey('content'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             // Interactive Error Alert Toast (if validation failed)
                             if (_hasValidationError) ...[
                               _buildErrorToast(),
@@ -725,12 +737,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             // 2. Elevated Nominal Card with Carved Inset Well
                             StaggeredEntrance(
                               index: 1,
-                              child: AmountHeroCard(
-                                controller: _amountController,
-                                isExpense: _isExpense,
-                                hasError: _hasValidationError && currentAmount <= 0,
-                                onQuickAdd: _handleQuickAdd,
-                                onClear: _handleClearAmount,
+                              child: RepaintBoundary(
+                                child: AmountHeroCard(
+                                  controller: _amountController,
+                                  isExpense: _isExpense,
+                                  hasError: _hasValidationError && currentAmount <= 0,
+                                  onQuickAdd: _handleQuickAdd,
+                                  onClear: _handleClearAmount,
+                                ),
                               ),
                             ),
 
@@ -749,23 +763,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                                 return StaggeredEntrance(
                                   index: 2,
-                                  child: CategorySelectorGrid(
-                                    isExpense: _isExpense,
-                                    selectedCategoryId: _selectedCategoryId,
-                                    categories: currentCategoryOptions,
-                                    hasError: _hasValidationError &&
-                                        _selectedCategoryId.isEmpty,
-                                    onSelect: (cat) {
-                                      setState(() {
-                                        _selectedCategoryId = cat.id;
-                                        if (_hasValidationError &&
-                                            _selectedCategoryId.isNotEmpty) {
-                                          _hasValidationError = false;
-                                          _validationErrorMessage = null;
-                                        }
-                                      });
-                                    },
-                                    onManageTap: _openManageCategories,
+                                  child: RepaintBoundary(
+                                    child: CategorySelectorGrid(
+                                      isExpense: _isExpense,
+                                      selectedCategoryId: _selectedCategoryId,
+                                      categories: currentCategoryOptions,
+                                      hasError: _hasValidationError &&
+                                          _selectedCategoryId.isEmpty,
+                                      onSelect: (cat) {
+                                        setState(() {
+                                          _selectedCategoryId = cat.id;
+                                          if (_hasValidationError &&
+                                              _selectedCategoryId.isNotEmpty) {
+                                            _hasValidationError = false;
+                                            _validationErrorMessage = null;
+                                          }
+                                        });
+                                      },
+                                      onManageTap: _openManageCategories,
+                                    ),
                                   ),
                                 );
                               },
@@ -776,14 +792,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             // 4. Date & Time Elevated Blocks & Recessed Note Well
                             StaggeredEntrance(
                               index: 3,
-                              child: AdditionalDetailsSection(
-                                selectedDate: _selectedDate,
-                                selectedTime: _selectedTime,
-                                noteController: _noteController,
-                                onDateChanged: (d) =>
-                                    setState(() => _selectedDate = d),
-                                onTimeChanged: (t) =>
-                                    setState(() => _selectedTime = t),
+                              child: RepaintBoundary(
+                                child: AdditionalDetailsSection(
+                                  selectedDate: _selectedDate,
+                                  selectedTime: _selectedTime,
+                                  noteController: _noteController,
+                                  onDateChanged: (d) =>
+                                      setState(() => _selectedDate = d),
+                                  onTimeChanged: (t) =>
+                                      setState(() => _selectedTime = t),
+                                ),
                               ),
                             ),
 
@@ -800,21 +818,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               ),
             ),
           ),
-        ),
+        ],
       ),
-    ],
-  ),
-);
-}
+    );
+  }
 
   /// Fixed Top Header Bar dengan gradien waktu dinamis, tombol kembali frosted, dan rounded-b-[28px]
-  /// Mengadopsi layout dan dimensi luas yang seragam dengan Halaman Kategori dan Ekspor
+  /// Mengadopsi layout bersih seperti Halaman Profil
   Widget _buildHeaderBar() {
     return TactileTimeHeaderWrapper(
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 36),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

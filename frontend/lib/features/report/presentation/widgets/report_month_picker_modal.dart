@@ -6,21 +6,21 @@ import 'package:google_fonts/google_fonts.dart';
 /// Sesuai referensi visual tactile skeuomorphic dengan stepper navigasi tahun,
 /// grid tombol bulan 3x4, preview rentang tanggal dinamis, dan tombol CTA 'Terapkan'.
 class ReportMonthPickerModal extends StatefulWidget {
-  final int initialYear;
-  final int initialMonthIndex; // 0-based: 0 = Jan, 8 = Sep, 9 = Okt, dsb.
+  final int? initialYear;
+  final int? initialMonthIndex; // 0-based: 0 = Jan, 8 = Sep, 9 = Okt, dsb.
   final void Function(int year, int monthIndex) onApply;
 
   const ReportMonthPickerModal({
     super.key,
-    required this.initialYear,
-    required this.initialMonthIndex,
+    this.initialYear,
+    this.initialMonthIndex,
     required this.onApply,
   });
 
   static Future<void> show(
     BuildContext context, {
-    required int initialYear,
-    required int initialMonthIndex,
+    int? initialYear,
+    int? initialMonthIndex,
     required void Function(int year, int monthIndex) onApply,
   }) {
     return showModalBottomSheet(
@@ -62,8 +62,9 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
   @override
   void initState() {
     super.initState();
-    _selectedYear = widget.initialYear;
-    _selectedMonthIndex = widget.initialMonthIndex;
+    final now = DateTime.now();
+    _selectedYear = widget.initialYear ?? now.year;
+    _selectedMonthIndex = widget.initialMonthIndex ?? (now.month - 1);
   }
 
   /// Menghitung hari terakhir bulan yang dipilih secara akurat (termasuk tahun kabisat)

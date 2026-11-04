@@ -17,9 +17,8 @@ class CategoryGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tentukan warna container tint dan warna icon
-    final iconColor = category.color;
-    final containerBg = _getTintBackground(iconColor);
+    const iconColor = Color(0xFF004AC6);
+    const containerBg = Color(0xFFDBEAFE);
 
     return PressableScale(
       onTap: onTap,
@@ -145,28 +144,6 @@ class CategoryGridItem extends StatelessWidget {
           ),
         ),
       );
-  }
-
-  Color _getTintBackground(Color color) {
-    final value = color.toARGB32();
-    if (value == const Color(0xFFDC2626).toARGB32() ||
-        value == const Color(0xFFBA1A1A).toARGB32()) {
-      return const Color(0xFFFFDAD6); // red tint container
-    } else if (value == const Color(0xFF16A34A).toARGB32() ||
-        value == const Color(0xFF007F36).toARGB32()) {
-      return const Color(0xFFDCFCE7); // green tint container
-    } else if (value == const Color(0xFFEA580C).toARGB32()) {
-      return const Color(0xFFFFEDD5); // orange tint container
-    } else if (value == const Color(0xFF9333EA).toARGB32()) {
-      return const Color(0xFFF3E8FF); // purple tint container
-    } else if (value == const Color(0xFF0D9488).toARGB32()) {
-      return const Color(0xFFCCFBF1); // teal tint container
-    } else if (value == const Color(0xFFE11D48).toARGB32()) {
-      return const Color(0xFFFFE4E6); // pink tint container
-    } else if (value == const Color(0xFF1E40AF).toARGB32()) {
-      return const Color(0xFFDDE1FF); // dark blue tint
-    }
-    return const Color(0xFFDBEAFE); // primary blue tint
   }
 }
 

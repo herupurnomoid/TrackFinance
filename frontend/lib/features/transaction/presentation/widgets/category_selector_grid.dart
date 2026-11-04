@@ -17,7 +17,7 @@ class TransactionCategoryOption {
     required this.name,
     required this.icon,
     this.tintColor = const Color(0xFFDBE1FF),
-    this.iconColor = AppColors.tactilePrimary,
+    this.iconColor = const Color(0xFF004AC6),
   });
 
   /// Konversi dari CategoryItem domain model ke UI Option
@@ -26,31 +26,13 @@ class TransactionCategoryOption {
       id: item.id,
       name: item.name,
       icon: item.icon,
-      tintColor: getTintBackground(item.color),
-      iconColor: item.color,
+      tintColor: const Color(0xFFDBE1FF),
+      iconColor: const Color(0xFF004AC6),
     );
   }
 
-  static Color getTintBackground(Color color) {
-    final value = color.toARGB32();
-    if (value == const Color(0xFFDC2626).toARGB32() ||
-        value == const Color(0xFFBA1A1A).toARGB32()) {
-      return const Color(0xFFFFDAD6); // red tint container
-    } else if (value == const Color(0xFF16A34A).toARGB32() ||
-        value == const Color(0xFF007F36).toARGB32()) {
-      return const Color(0xFFDCFCE7); // green tint container
-    } else if (value == const Color(0xFFEA580C).toARGB32()) {
-      return const Color(0xFFFFEDD5); // orange tint container
-    } else if (value == const Color(0xFF9333EA).toARGB32()) {
-      return const Color(0xFFF3E8FF); // purple tint container
-    } else if (value == const Color(0xFF0D9488).toARGB32()) {
-      return const Color(0xFFCCFBF1); // teal tint container
-    } else if (value == const Color(0xFFE11D48).toARGB32()) {
-      return const Color(0xFFFFE4E6); // pink tint container
-    } else if (value == const Color(0xFF1E40AF).toARGB32()) {
-      return const Color(0xFFDDE1FF); // dark blue tint
-    }
-    return const Color(0xFFDBEAFE); // primary blue tint
+  static Color getTintBackground([Color? color]) {
+    return const Color(0xFFDBE1FF);
   }
 }
 
@@ -282,7 +264,7 @@ class CategorySelectorGrid extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: cat.tintColor,
+                            color: isSelected ? Colors.white : cat.tintColor,
                             borderRadius: BorderRadius.circular(11),
                             boxShadow: [
                               BoxShadow(

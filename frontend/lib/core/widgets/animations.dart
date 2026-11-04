@@ -65,13 +65,24 @@ class _StaggeredEntranceState extends State<StaggeredEntrance>
       animation: _controller,
       child: widget.child,
       builder: (context, child) {
+        if (_controller.isCompleted) {
+          return child!;
+        }
+        final fade = _fade.value;
+        if (fade <= 0.01) {
+          return const SizedBox.shrink();
+        }
         final t = _slide.value;
+        final translated = Transform.translate(
+          offset: Offset(0, (1 - t) * widget.offsetY),
+          child: child,
+        );
+        if (fade >= 0.99) {
+          return translated;
+        }
         return Opacity(
-          opacity: _fade.value,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * widget.offsetY),
-            child: Transform.scale(scale: 0.96 + 0.04 * t, child: child),
-          ),
+          opacity: fade,
+          child: translated,
         );
       },
     );

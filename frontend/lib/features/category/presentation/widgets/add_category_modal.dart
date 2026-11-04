@@ -10,7 +10,7 @@ class AddCategoryModal extends StatefulWidget {
   final CategoryItem? categoryToEdit;
   final bool initialIsExpense;
   final List<String> existingNames;
-  final FutureOr<void> Function(String name, IconData icon, Color color, bool isExpense) onSave;
+  final FutureOr<void> Function(String name, IconData icon, bool isExpense) onSave;
   final VoidCallback? onDelete;
 
   const AddCategoryModal({
@@ -30,7 +30,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
   late bool _isExpense;
   late TextEditingController _nameController;
   late IconData _selectedIcon;
-  late Color _selectedColor;
   String? _errorMessage;
   bool _isSaving = false;
 
@@ -56,18 +55,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
     Icons.category_rounded,
   ];
 
-  // 8 Pilihan Warna Tactile Keuangan Modern
-  final List<({Color color, Color bgTint, String name})> _colorOptions = const [
-    (color: Color(0xFF2563EB), bgTint: Color(0xFFDBEAFE), name: 'Biru'),
-    (color: Color(0xFF16A34A), bgTint: Color(0xFFDCFCE7), name: 'Hijau'),
-    (color: Color(0xFFDC2626), bgTint: Color(0xFFFFDAD6), name: 'Merah'),
-    (color: Color(0xFFEA580C), bgTint: Color(0xFFFFEDD5), name: 'Oranye'),
-    (color: Color(0xFF9333EA), bgTint: Color(0xFFF3E8FF), name: 'Ungu'),
-    (color: Color(0xFF0D9488), bgTint: Color(0xFFCCFBF1), name: 'Teal'),
-    (color: Color(0xFFE11D48), bgTint: Color(0xFFFFE4E6), name: 'Pink'),
-    (color: Color(0xFF1E40AF), bgTint: Color(0xFFDDE1FF), name: 'Biru Tua'),
-  ];
-
   bool get _isEditMode => widget.categoryToEdit != null;
 
   @override
@@ -78,12 +65,10 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
       _isExpense = edit.isExpense;
       _nameController = TextEditingController(text: edit.name);
       _selectedIcon = edit.icon;
-      _selectedColor = edit.color;
     } else {
       _isExpense = widget.initialIsExpense;
       _nameController = TextEditingController();
       _selectedIcon = _availableIcons.first;
-      _selectedColor = _isExpense ? const Color(0xFFDC2626) : const Color(0xFF16A34A);
     }
 
     _nameController.addListener(_validateName);
@@ -121,13 +106,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
     super.dispose();
   }
 
-  Color _getBgTint(Color color) {
-    for (final opt in _colorOptions) {
-      if (opt.color.toARGB32() == color.toARGB32()) return opt.bgTint;
-    }
-    return const Color(0xFFDBEAFE);
-  }
-
   Future<void> _submit() async {
     if (_isSaving) return;
 
@@ -143,7 +121,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
     });
 
     try {
-      final saveResult = widget.onSave(name, _selectedIcon, _selectedColor, _isExpense);
+      final saveResult = widget.onSave(name, _selectedIcon, _isExpense);
       if (saveResult is Future) {
         await saveResult;
       }
@@ -265,13 +243,13 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                       color: const Color(0xFFE2E8F0),
                       width: 1.0,
                     ),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: _selectedColor.withValues(alpha: 0.20),
+                        color: Color(0x1F2563EB),
                         blurRadius: 18,
-                        offset: const Offset(0, 8),
+                        offset: Offset(0, 8),
                       ),
-                      const BoxShadow(
+                      BoxShadow(
                         color: Color(0x0A0F172A),
                         blurRadius: 4,
                         offset: Offset(0, 2),
@@ -285,13 +263,13 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: _getBgTint(_selectedColor),
+                          color: const Color(0xFFDBEAFE),
                           borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
-                              color: _selectedColor.withValues(alpha: 0.2),
+                              color: Color(0x242563EB),
                               blurRadius: 6,
-                              offset: const Offset(0, 2),
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
@@ -299,7 +277,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                           child: Icon(
                             _selectedIcon,
                             size: 24,
-                            color: _selectedColor,
+                            color: const Color(0xFF004AC6),
                           ),
                         ),
                       ),
@@ -462,9 +440,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                             ? null
                             : () => setState(() {
                                   _isExpense = true;
-                                  if (_selectedColor == const Color(0xFF16A34A)) {
-                                    _selectedColor = const Color(0xFFDC2626);
-                                  }
                                 }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -602,9 +577,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                             ? null
                             : () => setState(() {
                                   _isExpense = false;
-                                  if (_selectedColor == const Color(0xFFDC2626)) {
-                                    _selectedColor = const Color(0xFF16A34A);
-                                  }
                                 }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -789,12 +761,12 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                           duration: const Duration(milliseconds: 150),
                           decoration: BoxDecoration(
                             gradient: isSelected
-                                ? LinearGradient(
+                                ? const LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.white,
-                                      _getBgTint(_selectedColor),
+                                      Color(0xFFDBEAFE),
                                     ],
                                   )
                                 : const LinearGradient(
@@ -808,7 +780,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
-                                  ? _selectedColor
+                                  ? const Color(0xFF004AC6)
                                   : const Color(0xFFE2E8F0),
                               width: isSelected ? 1.5 : 1.0,
                             ),
@@ -820,7 +792,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                                       offset: const Offset(0, -1),
                                     ),
                                     BoxShadow(
-                                      color: _selectedColor.withValues(alpha: 0.28),
+                                      color: const Color(0xFF004AC6).withValues(alpha: 0.25),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
@@ -843,7 +815,7 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                               icon,
                               size: 20,
                               color: isSelected
-                                  ? _selectedColor
+                                  ? const Color(0xFF004AC6)
                                   : const Color(0xFF475569),
                             ),
                           ),
@@ -851,61 +823,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                       );
                     },
                   ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Field 4: Warna Ikon (8 Lingkaran Warna Tactile)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Warna ikon',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: _colorOptions.map((opt) {
-                    final isSelected = _selectedColor.toARGB32() == opt.color.toARGB32();
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColor = opt.color),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: opt.color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.white, width: 2)
-                              : null,
-                          boxShadow: [
-                            BoxShadow(
-                              color: opt.color.withValues(alpha: isSelected ? 0.45 : 0.20),
-                              blurRadius: isSelected ? 8 : 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: isSelected
-                            ? const Center(
-                                child: Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : null,
-                      ),
-                    );
-                  }).toList(),
                 ),
               ],
             ),

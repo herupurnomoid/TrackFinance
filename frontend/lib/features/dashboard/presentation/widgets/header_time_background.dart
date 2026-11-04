@@ -12,10 +12,12 @@ import 'header_time_theme.dart';
 /// - Malam 🌙 : Langit malam berbintang, bulan sabit, bintang jatuh & aurora misterius
 class HeaderTimeBackground extends StatefulWidget {
   final DashboardTimeOfDay timeOfDay;
+  final bool animate;
 
   const HeaderTimeBackground({
     super.key,
     required this.timeOfDay,
+    this.animate = true,
   });
 
   @override
@@ -34,10 +36,27 @@ class _HeaderTimeBackgroundState extends State<HeaderTimeBackground>
       vsync: this,
       duration: const Duration(milliseconds: 12000),
     );
-    if (!kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (!widget.animate ||
+        (!kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST'))) {
       _animController.value = 0.5;
     } else {
       _animController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HeaderTimeBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate != oldWidget.animate) {
+      if (widget.animate &&
+          !(!kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST'))) {
+        if (!_animController.isAnimating) {
+          _animController.repeat();
+        }
+      } else {
+        _animController.stop();
+        _animController.value = 0.5;
+      }
     }
   }
 
@@ -49,6 +68,19 @@ class _HeaderTimeBackgroundState extends State<HeaderTimeBackground>
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.animate) {
+      return RepaintBoundary(
+        key: ValueKey('static_${widget.timeOfDay}'),
+        child: CustomPaint(
+          painter: _TimeSkyPainter(
+            timeOfDay: widget.timeOfDay,
+            progress: 0.5,
+          ),
+          size: Size.infinite,
+        ),
+      );
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 650),
       switchInCurve: Curves.easeInOut,

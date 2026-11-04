@@ -66,6 +66,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey _headerKey = GlobalKey();
   bool _isHeaderCovered = false;
 
+  /// Tambahan panjang vertikal untuk layer header bertema waktu agar memanjang
+  /// ke bawah di balik content panel. Ini menghilangkan celah samping (corner gap)
+  /// akibat lengkungan sudut radius (28px) tanpa mengubah posisi visual konten ataupun
+  /// efek transisi scroll/waktu yang sudah ada.
+  static const double _headerExtension = 48.0;
+
   UserProfile? get _effectiveUser =>
       widget.user ?? AuthServiceProvider.instance.currentUser;
 
@@ -107,7 +113,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final h = _headerHeight;
     if (h <= 0) return;
     final topInset = MediaQuery.of(context).padding.top;
-    final covered = _scrollController.offset >= (h - 24 - topInset);
+    final covered =
+        _scrollController.offset >= (h - 24 - _headerExtension - topInset);
     if (covered != _isHeaderCovered) {
       setState(() => _isHeaderCovered = covered);
     }
@@ -460,6 +467,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openProfile(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             ProfileScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -471,7 +481,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     curve: Curves.easeOutCubic,
                   ),
                 ),
-            child: child,
+            child: RepaintBoundary(child: child),
           );
         },
       ),
@@ -481,6 +491,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openCategories(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             CategoryScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -492,7 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     curve: Curves.easeOutCubic,
                   ),
                 ),
-            child: child,
+            child: RepaintBoundary(child: child),
           );
         },
       ),
@@ -502,6 +515,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openExport(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             ExportDataScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -513,7 +529,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     curve: Curves.easeOutCubic,
                   ),
                 ),
-            child: child,
+            child: RepaintBoundary(child: child),
           );
         },
       ),
@@ -532,6 +548,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             AddTransactionScreen(
               user: _effectiveUser,
@@ -551,7 +570,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         curve: Curves.easeOutCubic,
                       ),
                     ),
-                child: child,
+                child: RepaintBoundary(child: child),
               );
             },
       ),
@@ -584,6 +603,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ) async {
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             AddTransactionScreen(user: _effectiveUser, transaction: tx),
         transitionsBuilder:
@@ -599,7 +621,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         curve: Curves.easeOutCubic,
                       ),
                     ),
-                child: child,
+                child: RepaintBoundary(child: child),
               );
             },
       ),
@@ -627,6 +649,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openReports(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 240),
         pageBuilder: (context, animation, secondaryAnimation) =>
             ReportScreen(user: _effectiveUser),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -638,7 +663,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     curve: Curves.easeOutCubic,
                   ),
                 ),
-            child: child,
+            child: RepaintBoundary(child: child),
           );
         },
       ),
@@ -719,6 +744,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onLogout: _handleLogout,
                                 isFilterActive: _isFilterActive,
                                 onResetToToday: _handleResetToToday,
+                                bottomExtension: _headerExtension,
                               ),
                             ),
                             builder: (context, child) {
@@ -727,26 +753,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   : 0.0;
                               final offset = rawOffset < 0 ? 0.0 : rawOffset;
                               final h = _headerHeight;
-                              final progress = h > 0
-                                  ? (offset / h).clamp(0.0, 1.0)
-                                  : 0.0;
+                              // Gunakan tinggi visual asli header agar kurva progres transisi
+                              // scroll (fade & scale) tetap 100% presisi identik dengan aslinya
+                              final visualH = (h - _headerExtension)
+                                  .clamp(1.0, double.infinity);
+                              final progress =
+                                  (offset / visualH).clamp(0.0, 1.0);
                               return Transform.translate(
+                                // Pertahankan header pinned saat scroll. Ruang
+                                // tambahan kini dibuat di dalam header agar
+                                // latarnya tidak ikut tertarik menjauhi bagian atas.
                                 offset: Offset(0, offset),
                                 child: Opacity(
+                                  // Efek transisi fade halus saat scroll tanpa mengubah lebar (scale)
+                                  // agar header tetap menempel penuh pada tepi layar kiri & kanan
+                                  // dan tidak memunculkan celah samping berwarna background aplikasi.
                                   opacity: 1 - (progress * 0.55),
-                                  child: Transform.scale(
-                                    scale: 1 - (progress * 0.06),
-                                    alignment: Alignment.topCenter,
-                                    child: child,
-                                  ),
+                                  child: child,
                                 ),
                               );
                             },
                           ),
 
-                          // 2. Content Panel Overlapping Header (-24px margin-top)
+                          // 2. Content Panel Overlapping Header (-24px margin-top + offset pemanjangan header)
                           Transform.translate(
-                            offset: const Offset(0, -24),
+                            offset: const Offset(0, -24 - _headerExtension),
                             child: Container(
                               width: double.infinity,
                               constraints: BoxConstraints(

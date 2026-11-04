@@ -4,10 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/report_data_model.dart';
 
 /// Kartu Tren Keuangan Modern Tactile
-/// Mendukung 3 Kondisi:
-/// 1. Kondisi Kosong (Empty State): Placard 'Belum ada transaksi' & sumbu Y 75k..0
-/// 2. Kondisi Pengeluaran (Keluar): Bar chart merah tunggal (skala 120k)
-/// 3. Kondisi Pemasukan (Masuk): Bar chart ganda merah & hijau (skala 6jt) dengan tooltip aktif
+/// Menampilkan grafik garis ganda (dual-line chart) untuk pengeluaran (merah)
+/// dan pemasukan (hijau) secara default tanpa filter, dilengkapi area gradasi,
+/// knots titik transaksi, dan tooltip interaktif.
 class ReportTrendCard extends StatefulWidget {
   final int expenseTotal;
   final int incomeTotal;
@@ -209,7 +208,7 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
                     ),
                     child: const Center(
                       child: Icon(
-                        Icons.bar_chart_rounded,
+                        Icons.show_chart_rounded,
                         size: 20,
                         color: Color(0xFF737686),
                       ),
@@ -233,9 +232,7 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
     );
   }
 
-  static double _calculateDynamicMaxScale(int highest, bool isIncome) {
-    if (highest <= 120000 && !isIncome) return 120000.0;
-    if (highest <= 6000000 && isIncome) return 6000000.0;
+  static double _calculateDynamicMaxScale(int highest) {
     if (highest <= 100000) return 120000.0;
     if (highest <= 500000) return 600000.0;
     if (highest <= 1000000) return 1200000.0;
@@ -257,12 +254,30 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
     return val.toInt().toString();
   }
 
-  /// Tampilan Grafik Terisi (Populated State)
+  void _handleTouch(double localX, double plotWidth, int count) {
+    if (count == 0) return;
+    final double clampedX = localX.clamp(0.0, plotWidth);
+    final double fraction = count <= 1 ? 0.0 : clampedX / plotWidth;
+    final int index = (fraction * (count - 1)).round().clamp(0, count - 1);
+    if (_selectedBarIndex != index) {
+      HapticFeedback.selectionClick();
+      setState(() {
+        _selectedBarIndex = index;
+      });
+    }
+  }
+
+  /// Tampilan Grafik Terisi (Populated State - Dual Line Chart Default)
   Widget _buildPopulatedChartArea() {
     final trends = widget.dailyTrends ?? ReportDataStore.oktoberDailyTrends;
-    final isIncome = !widget.isExpenseMode;
 
-    // Sumbu Y labels & skala adaptif (REP-10)
+    // Hitung nilai tertinggi dari gabungan pemasukan & pengeluaran tanpa filter
+    int highest = 0;
+    for (final t in trends) {
+      if (t.expense > highest) highest = t.expense;
+      if (t.income > highest) highest = t.income;
+    }
+
     final double maxScale;
     final List<String> yLabels;
 
@@ -270,205 +285,199 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
         identical(widget.dailyTrends, ReportDataStore.oktoberDailyTrends);
 
     if (isDefaultOktober) {
-      maxScale = isIncome ? 6000000.0 : 120000.0;
-      yLabels = isIncome
-          ? ['6jt', '4jt', '2jt', '0']
-          : ['120k', '80k', '40k', '0'];
+      maxScale = 6000000.0;
+      yLabels = ['6jt', '4jt', '2jt', '0'];
+    } else if (highest <= 0) {
+      maxScale = 120000.0;
+      yLabels = ['120k', '80k', '40k', '0'];
     } else {
-      int highest = 0;
-      for (final t in trends) {
-        if (t.expense > highest) highest = t.expense;
-        if (t.income > highest) highest = t.income;
-      }
-      if (highest <= 0) {
-        maxScale = isIncome ? 6000000.0 : 120000.0;
-        yLabels = isIncome
-            ? ['6jt', '4jt', '2jt', '0']
-            : ['120k', '80k', '40k', '0'];
-      } else {
-        maxScale = _calculateDynamicMaxScale(highest, isIncome);
-        yLabels = [
-          _formatYTick(maxScale),
-          _formatYTick(maxScale * 2 / 3),
-          _formatYTick(maxScale / 3),
-          '0',
-        ];
-      }
+      maxScale = _calculateDynamicMaxScale(highest);
+      yLabels = [
+        _formatYTick(maxScale),
+        _formatYTick(maxScale * 2 / 3),
+        _formatYTick(maxScale / 3),
+        '0',
+      ];
     }
-    const double maxBarHeight = 116.0;
 
-    return SizedBox(
-      key: ValueKey('populated_chart_${widget.isExpenseMode}'),
-      height: 196,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Grid Putus-putus Sumbu Y
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: yLabels.map((lbl) => _YAxisGridRow(label: lbl)).toList(),
-          ),
+    return LayoutBuilder(
+      key: const ValueKey('populated_line_chart'),
+      builder: (context, constraints) {
+        final double fullWidth = constraints.maxWidth;
+        const double leftMargin = 36.0;
+        const double rightMargin = 8.0;
+        final double plotWidth = (fullWidth - leftMargin - rightMargin).clamp(10.0, fullWidth);
+        const double plotHeight = 126.0;
+        const double topMargin = 8.0;
+        final int count = trends.length;
 
-          // Container Bar Chart Interaktif
-          Positioned(
-            left: 36,
-            right: 8,
-            top: 10,
-            bottom: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(trends.length, (idx) {
-                final item = trends[idx];
-                final isSelected = _selectedBarIndex == idx;
+        return SizedBox(
+          height: 196,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Grid Putus-putus Sumbu Y
+              Positioned(
+                left: 0,
+                right: 0,
+                top: topMargin,
+                height: plotHeight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: yLabels.map((lbl) => _YAxisGridRow(label: lbl)).toList(),
+                ),
+              ),
 
-                // Perhitungan tinggi bar dengan clamping
-                final double expHeight = ((item.expense / maxScale) * maxBarHeight)
-                    .clamp(isIncome ? 2.0 : 6.0, maxBarHeight);
-                final double incHeight = ((item.income / maxScale) * maxBarHeight)
-                    .clamp(0.0, maxBarHeight);
-
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedBarIndex = _selectedBarIndex == idx ? null : idx;
-                    });
-                  },
+              // 2. Dual Line Chart Interaktif (Canvas Hijau & Merah)
+              Positioned(
+                left: leftMargin,
+                right: rightMargin,
+                top: topMargin,
+                height: plotHeight,
+                child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // Tooltip melayang jika dipilih
-                      if (isSelected && isIncome && item.income > 0)
-                        _buildFloatingTooltip(
-                          dateStr: item.fullDateStr,
-                          amountStr: ReportDataStore.formatCurrency(
-                            item.income,
+                  onTapDown: (details) {
+                    _handleTouch(details.localPosition.dx, plotWidth, count);
+                  },
+                  onPanUpdate: (details) {
+                    _handleTouch(details.localPosition.dx, plotWidth, count);
+                  },
+                  child: TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 650),
+                    curve: Curves.easeOutCubic,
+                    tween: Tween<double>(begin: 0.0, end: 1.0),
+                    builder: (context, progress, child) {
+                      return CustomPaint(
+                        size: Size(plotWidth, plotHeight),
+                        painter: _LineChartPainter(
+                          trends: trends,
+                          maxScale: maxScale,
+                          selectedIndex: _selectedBarIndex,
+                          progress: progress,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // 3. Tooltip Melayang di Titik Terpilih
+              if (_selectedBarIndex != null && _selectedBarIndex! < count) ...[
+                Builder(
+                  builder: (context) {
+                    final selectedItem = trends[_selectedBarIndex!];
+                    final double selX = count <= 1
+                        ? plotWidth / 2
+                        : (_selectedBarIndex! / (count - 1)) * plotWidth;
+                    final double absX = leftMargin + selX;
+                    const double tooltipWidth = 114.0;
+                    final double tooltipLeft = (absX - tooltipWidth / 2)
+                        .clamp(4.0, fullWidth - tooltipWidth - 4.0);
+
+                    final String dateStr = selectedItem.fullDateStr;
+                    final String? incomeStr = selectedItem.income > 0
+                        ? ReportDataStore.formatCurrency(
+                            selectedItem.income,
                             showSign: true,
                             isIncome: true,
-                          ),
-                        )
-                      else if (isSelected && !isIncome)
-                        _buildFloatingTooltip(
-                          dateStr: item.fullDateStr,
-                          amountStr: ReportDataStore.formatCurrency(
-                            item.expense,
+                          )
+                        : null;
+                    final String? expenseStr = selectedItem.expense > 0
+                        ? ReportDataStore.formatCurrency(
+                            selectedItem.expense,
                             showSign: true,
                             isIncome: false,
+                          )
+                        : null;
+
+                    return Positioned(
+                      left: tooltipLeft,
+                      top: 0,
+                      width: tooltipWidth,
+                      child: _buildFloatingTooltip(
+                        dateStr: dateStr,
+                        incomeStr: incomeStr,
+                        expenseStr: expenseStr,
+                      ),
+                    );
+                  },
+                ),
+              ],
+
+              // 4. Label Tanggal Sumbu X
+              Positioned(
+                left: leftMargin,
+                right: rightMargin,
+                bottom: 2,
+                height: 24,
+                child: Stack(
+                  children: List.generate(count, (idx) {
+                    final item = trends[idx];
+                    final bool isSelected = _selectedBarIndex == idx;
+                    final bool showAll = count <= 10;
+                    final int step = (count / 6).ceil().clamp(1, 10);
+                    final bool shouldShow = showAll ||
+                        (idx % step == 0) ||
+                        (idx == count - 1) ||
+                        isSelected;
+
+                    if (!shouldShow) return const SizedBox.shrink();
+
+                    final double x = count <= 1
+                        ? plotWidth / 2
+                        : (idx / (count - 1)) * plotWidth;
+
+                    const double labelWidth = 32.0;
+                    final double labelLeft = (x - labelWidth / 2)
+                        .clamp(0.0, plotWidth - labelWidth);
+
+                    return Positioned(
+                      left: labelLeft,
+                      width: labelWidth,
+                      top: 4,
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedBarIndex = _selectedBarIndex == idx ? null : idx;
+                          });
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Text(
+                          item.dayStr,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            color: isSelected
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFF64748B),
                           ),
-                        )
-                      else
-                        const SizedBox(height: 38), // placeholder penyeimbang spasi
-
-                      // Batang Grafik
-                      SizedBox(
-                        height: maxBarHeight,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            // Batang Pengeluaran (Merah)
-                            TweenAnimationBuilder<double>(
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeOutCubic,
-                              tween: Tween<double>(begin: 0, end: expHeight),
-                              builder: (context, val, child) {
-                                return Container(
-                                  width: isIncome ? 10 : 14,
-                                  height: val,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Color(0xFFEF4444),
-                                        Color(0xFFDC2626),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color(0x33DC2626),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-
-                            // Batang Pemasukan (Hijau) hanya muncul pada mode Masuk
-                            if (isIncome && item.income > 0) ...[
-                              const SizedBox(width: 4),
-                              TweenAnimationBuilder<double>(
-                                duration: const Duration(milliseconds: 700),
-                                curve: Curves.easeOutCubic,
-                                tween: Tween<double>(begin: 0, end: incHeight),
-                                builder: (context, val, child) {
-                                  return Container(
-                                    width: 10,
-                                    height: val,
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Color(0xFF16A34A),
-                                          Color(0xFF006329),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: Color(0x3316A34A),
-                                          blurRadius: 4,
-                                          offset: Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
                         ),
                       ),
-
-                      const SizedBox(height: 6),
-
-                      // Label Tanggal (X-Axis)
-                      Text(
-                        item.dayStr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: isSelected
-                              ? const Color(0xFF0F172A)
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
+                    );
+                  }),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   /// Tooltip Tactile Melayang (e.g. 01 Okt +Rp 4.500.000)
+  /// Tooltip Tactile Melayang (menampilkan pemasukan hijau & pengeluaran merah)
   Widget _buildFloatingTooltip({
     required String dateStr,
-    required String amountStr,
+    String? incomeStr,
+    String? expenseStr,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
@@ -496,16 +505,39 @@ class _ReportTrendCardState extends State<ReportTrendCard> {
                   color: const Color(0xFF64748B),
                 ),
               ),
-              Text(
-                amountStr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: widget.isExpenseMode
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF006329),
+              if (incomeStr != null) ...[
+                const SizedBox(height: 1),
+                Text(
+                  incomeStr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF16A34A),
+                  ),
                 ),
-              ),
+              ],
+              if (expenseStr != null) ...[
+                const SizedBox(height: 1),
+                Text(
+                  expenseStr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+              if (incomeStr == null && expenseStr == null) ...[
+                const SizedBox(height: 1),
+                Text(
+                  'Rp 0',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -611,4 +643,241 @@ class _TrianglePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _LineChartPainter extends CustomPainter {
+  final List<ReportDailyTrendItem> trends;
+  final double maxScale;
+  final int? selectedIndex;
+  final double progress;
+
+  _LineChartPainter({
+    required this.trends,
+    required this.maxScale,
+    required this.selectedIndex,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (trends.isEmpty) return;
+
+    final int count = trends.length;
+    final double safeMaxScale = maxScale <= 0 ? 1.0 : maxScale;
+
+    // Helper to calculate X and Y
+    double getX(int index) {
+      if (count <= 1) return size.width / 2;
+      return (index / (count - 1)) * size.width;
+    }
+
+    double getY(int amount) {
+      if (amount <= 0) return size.height;
+      final double fraction = ((amount / safeMaxScale).clamp(0.0, 1.0)) * progress;
+      final double rawY = (1.0 - fraction) * size.height;
+      return rawY.clamp(4.0, size.height - 4.0);
+    }
+
+    // Build data points
+    final List<Offset> expensePoints = [];
+    final List<Offset> incomePoints = [];
+
+    for (int i = 0; i < count; i++) {
+      final x = getX(i);
+      final item = trends[i];
+      expensePoints.add(Offset(x, getY(item.expense)));
+      incomePoints.add(Offset(x, getY(item.income)));
+    }
+
+    // 1. Draw Vertical Indicator Guideline at selectedIndex
+    if (selectedIndex != null && selectedIndex! >= 0 && selectedIndex! < count) {
+      final double selX = getX(selectedIndex!);
+      final guidelinePaint = Paint()
+        ..color = const Color(0xFF94A3B8).withValues(alpha: 0.6)
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke;
+
+      // Dashed vertical line
+      const double dashHeight = 4.0;
+      const double dashSpace = 3.0;
+      double startY = 0;
+      while (startY < size.height) {
+        canvas.drawLine(
+          Offset(selX, startY),
+          Offset(selX, (startY + dashHeight).clamp(0.0, size.height)),
+          guidelinePaint,
+        );
+        startY += dashHeight + dashSpace;
+      }
+    }
+
+    // 2. Draw Income Line & Gradient (Selalu Ditampilkan Secara Default)
+    final incomePath = _createSmoothPath(incomePoints);
+
+    // Area fill
+    final incomeArea = _createAreaPath(incomePath, incomePoints, size.height);
+    final incomeGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFF16A34A).withValues(alpha: 0.22),
+        const Color(0xFF16A34A).withValues(alpha: 0.0),
+      ],
+    );
+    final incomeAreaPaint = Paint()
+      ..shader = incomeGradient.createShader(Offset.zero & size)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(incomeArea, incomeAreaPaint);
+
+    // Stroke
+    final incomeStrokePaint = Paint()
+      ..color = const Color(0xFF16A34A)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(incomePath, incomeStrokePaint);
+
+    // 3. Draw Expense Line & Gradient (Selalu Ditampilkan Secara Default)
+    final expensePath = _createSmoothPath(expensePoints);
+
+    // Area fill
+    final expenseArea = _createAreaPath(expensePath, expensePoints, size.height);
+    final expenseGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        const Color(0xFFDC2626).withValues(alpha: 0.20),
+        const Color(0xFFDC2626).withValues(alpha: 0.0),
+      ],
+    );
+    final expenseAreaPaint = Paint()
+      ..shader = expenseGradient.createShader(Offset.zero & size)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(expenseArea, expenseAreaPaint);
+
+    // Stroke
+    final expenseStrokePaint = Paint()
+      ..color = const Color(0xFFDC2626)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(expensePath, expenseStrokePaint);
+
+    // 4. Draw Knots / Data points (Hijau & Merah)
+    final bool showAllKnots = count <= 12;
+
+    for (int i = 0; i < count; i++) {
+      final bool isSelected = selectedIndex == i;
+      if (!showAllKnots && !isSelected) continue;
+
+      final bool hasIncome = trends[i].income > 0;
+      final bool hasExpense = trends[i].expense > 0;
+
+      // Income knot
+      if (hasIncome || isSelected) {
+        _drawKnot(
+          canvas: canvas,
+          center: incomePoints[i],
+          color: const Color(0xFF16A34A),
+          isSelected: isSelected && hasIncome,
+        );
+      }
+
+      // Expense knot
+      if (hasExpense || isSelected) {
+        _drawKnot(
+          canvas: canvas,
+          center: expensePoints[i],
+          color: const Color(0xFFDC2626),
+          isSelected: isSelected && hasExpense,
+        );
+      }
+    }
+  }
+
+  void _drawKnot({
+    required Canvas canvas,
+    required Offset center,
+    required Color color,
+    required bool isSelected,
+  }) {
+    if (isSelected) {
+      // Outer glow / shadow
+      final shadowPaint = Paint()
+        ..color = color.withValues(alpha: 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawCircle(center, 7, shadowPaint);
+
+      // Outer ring
+      final outerRingPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, 5.5, outerRingPaint);
+
+      // Inner dot
+      final innerDotPaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, 3.5, innerDotPaint);
+    } else {
+      // Regular knot
+      final dotPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, 3.0, dotPaint);
+
+      final borderPaint = Paint()
+        ..color = color
+        ..strokeWidth = 1.8
+        ..style = PaintingStyle.stroke;
+      canvas.drawCircle(center, 3.0, borderPaint);
+    }
+  }
+
+  Path _createSmoothPath(List<Offset> points) {
+    final path = Path();
+    if (points.isEmpty) return path;
+    path.moveTo(points[0].dx, points[0].dy);
+    if (points.length == 1) return path;
+    if (points.length == 2) {
+      path.lineTo(points[1].dx, points[1].dy);
+      return path;
+    }
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = i > 0 ? points[i - 1] : points[i];
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final p3 = i < points.length - 2 ? points[i + 2] : p2;
+
+      final cp1x = p1.dx + (p2.dx - p0.dx) / 6;
+      final cp1y = p1.dy + (p2.dy - p0.dy) / 6;
+      final cp2x = p2.dx - (p3.dx - p1.dx) / 6;
+      final cp2y = p2.dy - (p3.dy - p1.dy) / 6;
+
+      path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.dx, p2.dy);
+    }
+
+    return path;
+  }
+
+  Path _createAreaPath(Path linePath, List<Offset> points, double bottomY) {
+    final areaPath = Path.from(linePath);
+    if (points.isNotEmpty) {
+      areaPath.lineTo(points.last.dx, bottomY);
+      areaPath.lineTo(points.first.dx, bottomY);
+      areaPath.close();
+    }
+    return areaPath;
+  }
+
+  @override
+  bool shouldRepaint(covariant _LineChartPainter oldDelegate) {
+    return oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.progress != progress ||
+        oldDelegate.maxScale != maxScale ||
+        oldDelegate.trends != trends;
+  }
 }

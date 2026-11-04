@@ -57,6 +57,31 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     final uid = _uid;
     if (uid != null && uid.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initAfterTransition();
+      });
+    }
+  }
+
+  void _initAfterTransition() {
+    if (!mounted) return;
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation != null && !animation.isCompleted) {
+      void listener(AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          animation.removeStatusListener(listener);
+          _seedCategories();
+        }
+      }
+      animation.addStatusListener(listener);
+    } else {
+      _seedCategories();
+    }
+  }
+
+  void _seedCategories() {
+    final uid = _uid;
+    if (uid != null && uid.isNotEmpty) {
       _repository.seedDefaultCategoriesIfEmpty(uid);
     }
   }
@@ -114,13 +139,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
         return AddCategoryModal(
           initialIsExpense: _isExpenseTab,
           existingNames: existingNames,
-          onSave: (name, icon, color, isExpense) async {
+          onSave: (name, icon, isExpense) async {
             final uid = _uid;
             final newCategory = CategoryItem(
               id: 'cat-${DateTime.now().millisecondsSinceEpoch}',
               name: name,
               icon: icon,
-              color: color,
               isExpense: isExpense,
               isCustom: true,
               order: (isExpense ? _expenseCategories.length : _incomeCategories.length) + 1,
@@ -174,11 +198,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
           categoryToEdit: category,
           initialIsExpense: category.isExpense,
           existingNames: existingNames,
-          onSave: (name, icon, color, isExpense) async {
+          onSave: (name, icon, isExpense) async {
             final updated = category.copyWith(
               name: name,
               icon: icon,
-              color: color,
               isExpense: isExpense,
             );
 
@@ -267,13 +290,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  void _addQuickCategory(String name, IconData icon, Color color) async {
+  void _addQuickCategory(String name, IconData icon) async {
     final uid = _uid;
     final newCategory = CategoryItem(
       id: 'quick-${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       icon: icon,
-      color: color,
       isExpense: _isExpenseTab,
       isCustom: true,
       order: (_isExpenseTab ? _expenseCategories.length : _incomeCategories.length) + 1,
@@ -314,22 +336,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 // 1. Header Baru (Gradasi Biru rounded-b-[28px])
                 _buildHeader(context),
 
-                // 2. Raised Content Panel (Menimpa Header sebesar 24px)
+                // 2. Main Content Canvas (seperti Halaman Profil)
                 Expanded(
-                  child: Container(
-                    transform: Matrix4.translationValues(0.0, -24.0, 0.0),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(28),
-                        topRight: Radius.circular(28),
-                      ),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
                     ),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
                       child: _isLoading
                           ? const CategorySkeleton(key: ValueKey('skeleton'))
                           : StreamBuilder<List<CategoryItem>>(
@@ -419,7 +432,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
                             ),
                     ),
                   ),
-                ),
               ],
             ),
 
@@ -484,7 +496,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 36),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -701,22 +713,27 @@ class _CategoryScreenState extends State<CategoryScreen> {
       itemBuilder: (context, index) {
         if (index == categories.length) {
           // Tombol Tambah di akhir grid
-          return CategoryAddTile(
-            onTap: _openAddModal,
+          return RepaintBoundary(
+            child: CategoryAddTile(
+              onTap: _openAddModal,
+            ),
           );
         }
 
         final cat = categories[index];
-        return CategoryGridItem(
-          category: cat,
-          onTap: () => _handleCategoryClick(cat),
+        return RepaintBoundary(
+          child: CategoryGridItem(
+            category: cat,
+            onTap: () => _handleCategoryClick(cat),
+          ),
         );
       },
     );
   }
 
   Widget _buildBudgetTipsCard() {
-    return Container(
+    return RepaintBoundary(
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -796,6 +813,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
