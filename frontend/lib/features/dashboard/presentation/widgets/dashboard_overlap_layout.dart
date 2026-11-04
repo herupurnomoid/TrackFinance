@@ -62,6 +62,27 @@ class RenderDashboardOverlapLayout extends RenderShiftedBox {
     final BoxParentData childParentData = child!.parentData! as BoxParentData;
     childParentData.offset = Offset(0, -_topOverlap);
   }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    // Luaskan batas vertikal hit test ke atas sebesar _topOverlap agar
+    // komponen di area overlap atas (seperti 4 tombol shortcut pintasan)
+    // dapat menerima sentuhan/klik pengguna secara instan dan responsif.
+    final hitBounds = Rect.fromLTWH(
+      0,
+      -_topOverlap,
+      size.width,
+      size.height + _topOverlap,
+    );
+    if (hitBounds.contains(position)) {
+      if (hitTestChildren(result, position: position) ||
+          hitTestSelf(position)) {
+        result.add(BoxHitTestEntry(this, position));
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 /// Clipper yang memotong bayangan (shadow) di bagian bawah kontainer (y >= height),

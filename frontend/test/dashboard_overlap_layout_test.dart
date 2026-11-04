@@ -70,5 +70,49 @@ void main() {
       // Bottom must be clipped exactly at size.height (600.0) so no bottom shadow bleeds
       expect(clipRect.bottom, equals(600.0));
     });
+
+    testWidgets('DashboardOverlapLayout correctly handles hit testing in top overlap area', (tester) async {
+      bool tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                Container(height: 200, color: Colors.blue),
+                DashboardOverlapLayout(
+                  topOverlap: 72.0,
+                  child: Container(
+                    height: 300,
+                    color: Colors.green,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          key: const ValueKey('shortcut_button'),
+                          onTap: () => tapped = true,
+                          child: Container(
+                            height: 50,
+                            width: 100,
+                            color: Colors.red,
+                            child: const Text('Tambah'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Tap button in the overlap region
+      await tester.tap(find.byKey(const ValueKey('shortcut_button')));
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
   });
 }
