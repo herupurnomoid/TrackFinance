@@ -122,7 +122,7 @@ void main() {
       expect(find.text('Kopi Spesial'), findsNothing);
     });
 
-    testWidgets('Tapping Kelola Kategori & Ikon navigates to CategoryScreen and refreshes categories', (WidgetTester tester) async {
+    testWidgets('Tapping Kelola in all categories sheet navigates to CategoryScreen and refreshes categories', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.625;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -135,8 +135,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap 'Kelola Kategori & Ikon'
-      await tester.tap(find.text('Kelola Kategori & Ikon'));
+      // Tap 'Lebih Banyak' then 'Kelola'
+      await tester.tap(find.text('Lebih Banyak'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Kelola'));
       await tester.pumpAndSettle();
 
       // Verify CategoryScreen is opened

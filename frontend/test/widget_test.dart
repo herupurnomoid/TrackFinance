@@ -255,7 +255,7 @@ void main() {
 
     // Verify Category section
     expect(find.text('Kategori'), findsOneWidget);
-    expect(find.text('Kelola Kategori & Ikon'), findsOneWidget);
+    expect(find.text('Kelola Kategori & Ikon'), findsNothing);
     expect(find.text('Makanan & Minuman'), findsOneWidget);
     expect(find.text('Belanja Harian'), findsOneWidget);
 

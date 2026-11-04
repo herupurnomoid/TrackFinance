@@ -42,7 +42,7 @@ class CategorySelectorGrid extends StatelessWidget {
   final bool hasError;
   final List<TransactionCategoryOption>? categories;
   final ValueChanged<TransactionCategoryOption> onSelect;
-  final VoidCallback onManageTap;
+  final VoidCallback? onManageTap;
 
   const CategorySelectorGrid({
     super.key,
@@ -51,7 +51,7 @@ class CategorySelectorGrid extends StatelessWidget {
     this.hasError = false,
     this.categories,
     required this.onSelect,
-    required this.onManageTap,
+    this.onManageTap,
   });
 
   // Kategori pengeluaran bawaan dari Category Management
@@ -76,7 +76,7 @@ class CategorySelectorGrid extends StatelessWidget {
       selectedCategoryId: selectedCategoryId,
       categories: fullList,
       onSelect: onSelect,
-      onManageTap: onManageTap,
+      onManageTap: onManageTap ?? () {},
     );
   }
 
@@ -337,83 +337,6 @@ class CategorySelectorGrid extends StatelessWidget {
               ],
             );
           },
-        ),
-
-        const SizedBox(height: 12),
-
-        // Action Pill Banner: Kelola Kategori & Ikon
-        PressableScale(
-          onTap: onManageTap,
-          scaleFactor: 0.98,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDBE1FF).withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFDBE1FF),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-                const BoxShadow(
-                  color: Colors.white,
-                  blurRadius: 0,
-                  offset: Offset(0, -1),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFF0F172A).withValues(alpha: 0.06),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.settings_rounded,
-                          size: 18,
-                          color: AppColors.tactilePrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Kelola Kategori & Ikon',
-                      style: AppTextStyles.labelMd.copyWith(
-                        color: AppColors.tactilePrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: AppColors.tactilePrimary,
-                ),
-              ],
-            ),
-          ),
         ),
       ],
     );

@@ -159,13 +159,6 @@ class AddTransactionSkeleton extends StatelessWidget {
             );
           },
         ),
-        const SizedBox(height: 12),
-        // Kelola Banner Skeleton
-        ShimmerBox(
-          width: double.infinity,
-          height: 46,
-          borderRadius: BorderRadius.circular(16),
-        ),
       ],
     );
   }
