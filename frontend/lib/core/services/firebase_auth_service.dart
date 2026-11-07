@@ -78,7 +78,15 @@ class FirebaseAuthService implements AuthService {
 
       if (firebaseUser != null) {
         // 4. Sinkronisasi dokumen profil ke Cloud Firestore (users/{uid})
-        await _syncUserProfileToFirestore(firebaseUser);
+        // Dibatasi timeout: saat offline, penulisan Firestore tidak pernah selesai
+        // (menunggu ACK server) sehingga login akan menggantung tanpa batas.
+        // Penulisan tetap diantrekan Firestore dan tersinkron saat koneksi kembali.
+        await _syncUserProfileToFirestore(firebaseUser).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => debugPrint(
+            'FirebaseAuthService _syncUserProfileToFirestore timeout (offline?)',
+          ),
+        );
       }
 
       return _mapFirebaseUser(firebaseUser);

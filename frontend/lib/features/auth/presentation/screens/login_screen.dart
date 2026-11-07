@@ -97,6 +97,29 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  /// Menerjemahkan error sign in menjadi pesan yang mudah dipahami pengguna.
+  /// Error jaringan (DNS gagal, offline, timeout) dikenali dari kode/isi pesan
+  /// FirebaseAuthException (`network-request-failed`) maupun PlatformException
+  /// Google Sign-In (`network_error`, ApiException 7).
+  String _friendlySignInError(Object e) {
+    final text = e.toString().toLowerCase();
+    const networkHints = [
+      'network-request-failed',
+      'network_error',
+      'network error',
+      'apiexception: 7',
+      'unable to resolve host',
+      'unknownhost',
+      'timeout',
+      'unavailable',
+      'socketexception',
+    ];
+    if (networkHints.any(text.contains)) {
+      return 'Tidak dapat terhubung ke server. Periksa koneksi internet perangkat lalu coba lagi.';
+    }
+    return 'Gagal melakukan sign in: $e';
+  }
+
   Future<void> _handleGoogleSignIn() async {
     if (_isLoading) return;
 
@@ -116,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal melakukan sign in: $e'),
+          content: Text(_friendlySignInError(e)),
           backgroundColor: const Color(0xFFBA1A1A),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

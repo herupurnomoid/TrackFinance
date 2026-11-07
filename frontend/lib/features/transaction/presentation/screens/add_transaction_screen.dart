@@ -290,11 +290,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _openManageCategories() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CategoryScreen(
-          user: widget.user,
-          repository: _categoryRepository,
-        ),
+      PageRouteBuilder(
+        opaque: true,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            CategoryScreen(
+              user: widget.user,
+              repository: _categoryRepository,
+            ),
       ),
     );
     if (mounted) {
@@ -710,7 +714,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
+                  duration: Duration.zero,
                   child: _isLoading
                       ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
                       : Column(
@@ -724,27 +728,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             ],
 
                             // 1. Segmented Control Switch: Pengeluaran vs Pemasukan
-                            StaggeredEntrance(
-                              index: 0,
-                              child: TransactionTypeSwitch(
-                                isExpense: _isExpense,
-                                onChanged: _handleTypeChanged,
-                              ),
+                            TransactionTypeSwitch(
+                              isExpense: _isExpense,
+                              onChanged: _handleTypeChanged,
                             ),
 
                             const SizedBox(height: 16),
 
                             // 2. Elevated Nominal Card with Carved Inset Well
-                            StaggeredEntrance(
-                              index: 1,
-                              child: RepaintBoundary(
-                                child: AmountHeroCard(
-                                  controller: _amountController,
-                                  isExpense: _isExpense,
-                                  hasError: _hasValidationError && currentAmount <= 0,
-                                  onQuickAdd: _handleQuickAdd,
-                                  onClear: _handleClearAmount,
-                                ),
+                            RepaintBoundary(
+                              child: AmountHeroCard(
+                                controller: _amountController,
+                                isExpense: _isExpense,
+                                hasError: _hasValidationError && currentAmount <= 0,
+                                onQuickAdd: _handleQuickAdd,
+                                onClear: _handleClearAmount,
                               ),
                             ),
 
@@ -761,27 +759,24 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                         TransactionCategoryOption.fromCategoryItem(c))
                                     .toList();
 
-                                return StaggeredEntrance(
-                                  index: 2,
-                                  child: RepaintBoundary(
-                                    child: CategorySelectorGrid(
-                                      isExpense: _isExpense,
-                                      selectedCategoryId: _selectedCategoryId,
-                                      categories: currentCategoryOptions,
-                                      hasError: _hasValidationError &&
-                                          _selectedCategoryId.isEmpty,
-                                      onSelect: (cat) {
-                                        setState(() {
-                                          _selectedCategoryId = cat.id;
-                                          if (_hasValidationError &&
-                                              _selectedCategoryId.isNotEmpty) {
-                                            _hasValidationError = false;
-                                            _validationErrorMessage = null;
-                                          }
-                                        });
-                                      },
-                                      onManageTap: _openManageCategories,
-                                    ),
+                                return RepaintBoundary(
+                                  child: CategorySelectorGrid(
+                                    isExpense: _isExpense,
+                                    selectedCategoryId: _selectedCategoryId,
+                                    categories: currentCategoryOptions,
+                                    hasError: _hasValidationError &&
+                                        _selectedCategoryId.isEmpty,
+                                    onSelect: (cat) {
+                                      setState(() {
+                                        _selectedCategoryId = cat.id;
+                                        if (_hasValidationError &&
+                                            _selectedCategoryId.isNotEmpty) {
+                                          _hasValidationError = false;
+                                          _validationErrorMessage = null;
+                                        }
+                                      });
+                                    },
+                                    onManageTap: _openManageCategories,
                                   ),
                                 );
                               },
@@ -790,28 +785,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                             const SizedBox(height: 18),
 
                             // 4. Date & Time Elevated Blocks & Recessed Note Well
-                            StaggeredEntrance(
-                              index: 3,
-                              child: RepaintBoundary(
-                                child: AdditionalDetailsSection(
-                                  selectedDate: _selectedDate,
-                                  selectedTime: _selectedTime,
-                                  noteController: _noteController,
-                                  onDateChanged: (d) =>
-                                      setState(() => _selectedDate = d),
-                                  onTimeChanged: (t) =>
-                                      setState(() => _selectedTime = t),
-                                ),
+                            RepaintBoundary(
+                              child: AdditionalDetailsSection(
+                                selectedDate: _selectedDate,
+                                selectedTime: _selectedTime,
+                                noteController: _noteController,
+                                onDateChanged: (d) =>
+                                    setState(() => _selectedDate = d),
+                                onTimeChanged: (t) =>
+                                    setState(() => _selectedTime = t),
                               ),
                             ),
 
                             const SizedBox(height: 24),
 
                             // 5. Sticky-like Action Area: 3D Button + Trust Info
-                            StaggeredEntrance(
-                              index: 4,
-                              child: _buildBottomActionArea(isFormValid),
-                            ),
+                            _buildBottomActionArea(isFormValid),
                           ],
                         ),
                 ),
@@ -988,13 +977,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  /// Sticky-like Action Area: 3D Button + Trust Info Footer
+  /// Sticky-like Action Area: 3D Button (Warna Biru Konsisten, Abu-abu jika belum valid)
   Widget _buildBottomActionArea(bool isFormValid) {
     return Column(
       children: [
-        // 3D Skeuomorphic CTA Button
+        // 3D Skeuomorphic CTA Button: Konsisten warna biru saat aktif, abu-abu saat belum bisa diklik
         Tactile3DButton(
-          onTap: _handleSaveTransaction,
+          onTap: isFormValid ? _handleSaveTransaction : null,
           isEnabled: isFormValid,
           isLoading: _isSaving,
           text: _isSaved
@@ -1003,47 +992,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           icon: _isSaved
               ? Icons.check_circle_rounded
               : (isEditMode ? Icons.check_rounded : Icons.check_circle_rounded),
-          gradientColors: _isSaved
-              ? const [
-                  Color(0xFF16A34A),
-                  Color(0xFF15803D),
-                ]
-              : const [
-                  Color(0xFF2563EB),
-                  Color(0xFF1E40AF),
-                ],
+          gradientColors: const [
+            Color(0xFF2563EB),
+            Color(0xFF1E40AF),
+          ],
           height: 52,
           borderRadius: 18,
-        ),
-
-        const SizedBox(height: 14),
-
-        // Synchronized Wallet Status Note
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.verified_user_rounded,
-              size: 16,
-              color: AppColors.tactileGreen,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                isEditMode
-                    ? 'Perubahan akan otomatis terbarui di laporan'
-                    : 'Data tersinkron otomatis ke dompet utama',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.bodySm.copyWith(
-                  color: const Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );

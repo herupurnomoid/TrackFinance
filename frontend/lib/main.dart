@@ -49,15 +49,31 @@ class TrackFinanceApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: initialRoute,
+      onGenerateRoute: (settings) {
+        final instantScreens = <String, WidgetBuilder>{
+          '/category': (context) => const CategoryScreen(),
+          '/add-transaction': (context) => const AddTransactionScreen(),
+          '/export': (context) => const ExportDataScreen(),
+          '/report': (context) => const ReportScreen(),
+        };
+
+        if (instantScreens.containsKey(settings.name)) {
+          return PageRouteBuilder(
+            settings: settings,
+            opaque: true,
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                instantScreens[settings.name]!(context),
+          );
+        }
+        return null;
+      },
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/category': (context) => const CategoryScreen(),
-        '/add-transaction': (context) => const AddTransactionScreen(),
-        '/export': (context) => const ExportDataScreen(),
-        '/report': (context) => const ReportScreen(),
       },
     );
   }

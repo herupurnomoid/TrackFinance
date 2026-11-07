@@ -32,13 +32,19 @@ class ReportHealthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Penentuan Label Badge & Warna
+    // Penentuan Label Badge & Warna berdasarkan Tingkat Kesehatan Finansial:
+    // - Sehat / Sangat Sehat: HIJAU
+    // - Waspada: KUNING
+    // - Minus / Kritis / Defisit: MERAH
+    // - Kosong: ABU-ABU
     final String badgeLabel;
     final Color badgeBg;
     final Color badgeText;
     final String scoreDisplay;
     final Color scoreColor;
     final double targetPercent;
+    final LinearGradient trackGradient;
+    final Color knobColor;
 
     if (isEmpty) {
       badgeLabel = 'Belum ada data';
@@ -47,6 +53,10 @@ class ReportHealthCard extends StatelessWidget {
       scoreDisplay = 'Skor: -';
       scoreColor = const Color(0xFF737686);
       targetPercent = 0.0;
+      trackGradient = const LinearGradient(
+        colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+      );
+      knobColor = const Color(0xFFC3C6D7);
     } else if (healthScore == -100.0 || (healthScore != null && healthScore! < 0)) {
       badgeLabel = 'Minus Kritis';
       badgeBg = const Color(0xFFFFDAD6);
@@ -54,6 +64,10 @@ class ReportHealthCard extends StatelessWidget {
       scoreDisplay = 'Skor: -100.0%';
       scoreColor = const Color(0xFFDC2626);
       targetPercent = 0.0;
+      trackGradient = const LinearGradient(
+        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+      );
+      knobColor = const Color(0xFFDC2626);
     } else if (healthScore == 95.0 && score == null && healthStatus == null) {
       badgeLabel = 'Sehat';
       badgeBg = const Color(0xFFDCFCE7);
@@ -61,25 +75,52 @@ class ReportHealthCard extends StatelessWidget {
       scoreDisplay = 'Skor: 95.0%';
       scoreColor = const Color(0xFF006329);
       targetPercent = 0.95;
+      trackGradient = const LinearGradient(
+        colors: [Color(0xFF16A34A), Color(0xFF006329)],
+      );
+      knobColor = const Color(0xFF006329);
     } else {
       final effectiveScore = score ?? (healthScore?.round() ?? 75);
-      final effectiveStatus = healthStatus ?? (isExpenseMode ? 'Minus Kritis' : 'Sehat');
+      final effectiveStatus = healthStatus ??
+          (effectiveScore >= 75
+              ? 'Sehat'
+              : (effectiveScore >= 50
+                  ? 'Waspada'
+                  : (isExpenseMode ? 'Minus Kritis' : 'Sehat')));
 
-      if (effectiveStatus == 'Sangat Sehat' || effectiveStatus == 'Sehat') {
+      final isHealthy = effectiveStatus.contains('Sehat');
+      final isWarning = effectiveStatus.contains('Waspada');
+
+      if (isHealthy) {
+        // Indikator Sehat -> Hijau
         badgeLabel = effectiveStatus;
         badgeBg = const Color(0xFFDCFCE7);
         badgeText = const Color(0xFF006329);
         scoreColor = const Color(0xFF006329);
-      } else if (effectiveStatus == 'Waspada') {
+        trackGradient = const LinearGradient(
+          colors: [Color(0xFF16A34A), Color(0xFF006329)],
+        );
+        knobColor = const Color(0xFF006329);
+      } else if (isWarning) {
+        // Indikator Waspada -> Kuning / Amber
         badgeLabel = effectiveStatus;
         badgeBg = const Color(0xFFFEF3C7);
         badgeText = const Color(0xFFB45309);
         scoreColor = const Color(0xFFD97706);
+        trackGradient = const LinearGradient(
+          colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+        );
+        knobColor = const Color(0xFFD97706);
       } else {
+        // Indikator Minus / Kritis / Defisit -> Merah
         badgeLabel = effectiveStatus;
         badgeBg = const Color(0xFFFFDAD6);
         badgeText = const Color(0xFF93000A);
         scoreColor = const Color(0xFFDC2626);
+        trackGradient = const LinearGradient(
+          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+        );
+        knobColor = const Color(0xFFDC2626);
       }
 
       scoreDisplay = savingsRate != null
@@ -205,19 +246,7 @@ class ReportHealthCard extends StatelessWidget {
                                   width: totalWidth * currentPercent,
                                   height: 12,
                                   decoration: BoxDecoration(
-                                    gradient: isExpenseMode
-                                        ? const LinearGradient(
-                                            colors: [
-                                              Color(0xFFEF4444),
-                                              Color(0xFFDC2626),
-                                            ],
-                                          )
-                                        : const LinearGradient(
-                                            colors: [
-                                              Color(0xFF16A34A),
-                                              Color(0xFF006329),
-                                            ],
-                                          ),
+                                    gradient: trackGradient,
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                 ),
@@ -252,11 +281,7 @@ class ReportHealthCard extends StatelessWidget {
                                   width: 10,
                                   height: 10,
                                   decoration: BoxDecoration(
-                                    color: isEmpty
-                                        ? const Color(0xFFC3C6D7)
-                                        : (isExpenseMode
-                                            ? const Color(0xFFDC2626)
-                                            : const Color(0xFF006329)),
+                                    color: knobColor,
                                     shape: BoxShape.circle,
                                   ),
                                 ),

@@ -1,33 +1,40 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_text_styles.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
 
-/// Modal Bottom Sheet Khusus Pemilihan Tanggal.
-/// Mengadopsi Soft Skeuomorphism 7-kolom kalender tactile.
+/// Modal Bottom Sheet untuk Pemilihan Tanggal, Bulan, dan Tahun pada Tambah/Edit Transaksi.
+/// Mengadopsi three-wheel scroller picker (Tanggal, Bulan & Tahun) yang konsisten
+/// dengan halaman Laporan dan Ekspor/Impor: tipografi jernih, masker gradasi fade,
+/// lensa sorot seleksi tengah halus, tombol Batal dan tombol tactile CTA 'Terapkan'.
 class TransactionDatePickerModal extends StatefulWidget {
   final DateTime initialDate;
   final ValueChanged<DateTime> onConfirm;
+  final String title;
 
   const TransactionDatePickerModal({
     super.key,
     required this.initialDate,
     required this.onConfirm,
+    this.title = 'Pilih Tanggal',
   });
 
   static Future<void> show(
     BuildContext context, {
     required DateTime initialDate,
     required ValueChanged<DateTime> onConfirm,
+    String title = 'Pilih Tanggal',
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0xFF0F172A).withValues(alpha: 0.45),
+      barrierColor: const Color(0x73131B2E), // on-surface/45
       builder: (context) => TransactionDatePickerModal(
         initialDate: initialDate,
         onConfirm: onConfirm,
+        title: title,
       ),
     );
   }
@@ -39,458 +46,556 @@ class TransactionDatePickerModal extends StatefulWidget {
 
 class _TransactionDatePickerModalState
     extends State<TransactionDatePickerModal> {
-  late DateTime _selectedDate;
-  late DateTime _displayedMonth;
+  late int _selectedYear;
+  late int _selectedMonthIndex; // 0-based: 0 = Jan .. 11 = Des
+  late int _selectedDay; // 1-based: 1 .. 31
 
-  static const List<String> _monthNames = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
+  late FixedExtentScrollController _dayController;
+  late FixedExtentScrollController _monthController;
+  late FixedExtentScrollController _yearController;
+
+  static const int _minYear = 2020;
+  static const int _maxYear = 2035;
+  late final List<int> _years = List.generate(
+    _maxYear - _minYear + 1,
+    (index) => _minYear + index,
+  );
+
+  static const List<String> _monthsShort = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
     'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-  ];
-
-  static const List<String> _dayHeaders = [
-    'Sen',
-    'Sel',
-    'Rab',
-    'Kam',
-    'Jum',
-    'Sab',
-    'Min',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
   ];
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate;
-    _displayedMonth =
-        DateTime(widget.initialDate.year, widget.initialDate.month, 1);
+    final init = widget.initialDate;
+    _selectedYear = init.year.clamp(_minYear, _maxYear);
+    _selectedMonthIndex = (init.month - 1).clamp(0, 11);
+    final maxDays = _daysInSelectedMonth;
+    _selectedDay = init.day.clamp(1, maxDays);
+
+    final initialYearIndex =
+        (_selectedYear - _minYear).clamp(0, _years.length - 1);
+    _dayController =
+        FixedExtentScrollController(initialItem: _selectedDay - 1);
+    _monthController =
+        FixedExtentScrollController(initialItem: _selectedMonthIndex);
+    _yearController =
+        FixedExtentScrollController(initialItem: initialYearIndex);
   }
 
-  void _previousMonth() {
-    setState(() {
-      _displayedMonth = DateTime(
-        _displayedMonth.year,
-        _displayedMonth.month - 1,
-        1,
-      );
-    });
+  @override
+  void dispose() {
+    _dayController.dispose();
+    _monthController.dispose();
+    _yearController.dispose();
+    super.dispose();
   }
 
-  void _nextMonth() {
+  int get _daysInSelectedMonth =>
+      DateUtils.getDaysInMonth(_selectedYear, _selectedMonthIndex + 1);
+
+  void _adjustSelectedDay() {
+    final maxDays = _daysInSelectedMonth;
+    if (_selectedDay > maxDays) {
+      _selectedDay = maxDays;
+    }
+    if (_dayController.hasClients && _dayController.selectedItem >= maxDays) {
+      _dayController.jumpToItem(maxDays - 1);
+    }
+  }
+
+  void _handleSelectDay(int day) {
+    HapticFeedback.lightImpact();
     setState(() {
-      _displayedMonth = DateTime(
-        _displayedMonth.year,
-        _displayedMonth.month + 1,
-        1,
-      );
+      _selectedDay = day;
     });
+    final index = day - 1;
+    if (_dayController.hasClients && _dayController.selectedItem != index) {
+      _dayController.animateToItem(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _handleSelectMonth(int index) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedMonthIndex = index;
+      _adjustSelectedDay();
+    });
+    if (_monthController.hasClients && _monthController.selectedItem != index) {
+      _monthController.animateToItem(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _handleSelectYear(int year) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedYear = year;
+      _adjustSelectedDay();
+    });
+    final index = (_selectedYear - _minYear).clamp(0, _years.length - 1);
+    if (_yearController.hasClients && _yearController.selectedItem != index) {
+      _yearController.animateToItem(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _handleApply() {
+    HapticFeedback.mediumImpact();
+    final picked =
+        DateTime(_selectedYear, _selectedMonthIndex + 1, _selectedDay);
+    widget.onConfirm(picked);
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final daysInMonth = DateUtils.getDaysInMonth(
-      _displayedMonth.year,
-      _displayedMonth.month,
-    );
-    final firstDayWeekday = _displayedMonth.weekday; // 1 = Mon, 7 = Sun
-    final leadingEmptyCount = firstDayWeekday - 1;
-
-    final monthTitle =
-        '${_monthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}';
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Color(0x300F172A),
+            color: Color(0x260F172A),
             blurRadius: 32,
-            offset: Offset(0, -8),
+            offset: Offset(0, -6),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.15),
-                        blurRadius: 1,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Title
-              Text(
-                'Pilih Tanggal',
-                style: AppTextStyles.headlineSm.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.tactileTextPrimary,
-                  fontSize: 18,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Month Navigation Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildNavButton(
-                    icon: Icons.chevron_left_rounded,
-                    onTap: _previousMonth,
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 18,
-                        color: AppColors.tactilePrimary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        monthTitle,
-                        style: AppTextStyles.headlineSm.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.tactileTextPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildNavButton(
-                    icon: Icons.chevron_right_rounded,
-                    onTap: _nextMonth,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Calendar Grid Box
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Day of Week Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: _dayHeaders.map((day) {
-                        final isSun = day == 'Min';
-                        return SizedBox(
-                          width: 36,
-                          child: Text(
-                            day,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.labelSm.copyWith(
-                              color: isSun
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFF64748B),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Month Dates Matrix
-                    GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7,
-                        mainAxisSpacing: 6,
-                        crossAxisSpacing: 4,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemCount: leadingEmptyCount + daysInMonth,
-                      itemBuilder: (context, index) {
-                        if (index < leadingEmptyCount) {
-                          return const SizedBox();
-                        }
-                        final dayNumber = index - leadingEmptyCount + 1;
-                        final cellDate = DateTime(
-                          _displayedMonth.year,
-                          _displayedMonth.month,
-                          dayNumber,
-                        );
-
-                        final isSelected = cellDate.year == _selectedDate.year &&
-                            cellDate.month == _selectedDate.month &&
-                            cellDate.day == _selectedDate.day;
-
-                        return _buildDateCell(
-                          dayNumber: dayNumber,
-                          isSelected: isSelected,
-                          onTap: () {
-                            setState(() {
-                              _selectedDate = cellDate;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Action Buttons: Batal & Pilih Tanggal
-              Row(
-                children: [
-                  // Tombol Batal
-                  Expanded(
-                    child: PressableScale(
-                      onTap: () => Navigator.of(context).pop(),
-                      scaleFactor: 0.95,
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.white,
-                              Color(0xFFF8FAFC),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: const Color(0xFFE2E8F0),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            const BoxShadow(
-                              color: Colors.white,
-                              blurRadius: 0,
-                              offset: Offset(0, -1),
-                            ),
-                            BoxShadow(
-                              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Batal',
-                            style: AppTextStyles.labelLg.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.tactileTextPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // Tombol Pilih
-                  Expanded(
-                    child: PressableScale(
-                      onTap: () {
-                        widget.onConfirm(_selectedDate);
-                        Navigator.of(context).pop();
-                      },
-                      scaleFactor: 0.95,
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFF2563EB),
-                              Color(0xFF1E40AF),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-                              blurRadius: 14,
-                              offset: const Offset(0, 5),
-                            ),
-                            BoxShadow(
-                              color: const Color(0xFF1E40AF).withValues(alpha: 0.25),
-                              blurRadius: 3,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Pilih',
-                            style: AppTextStyles.labelLg.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 20,
       ),
-    );
-  }
-
-  Widget _buildNavButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: onTap,
-      scaleFactor: 0.92,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Color(0xFFF8FAFC),
-            ],
-          ),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. Drag Indicator Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: AppColors.tactileTextPrimary,
-        ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // 2. Header Bar: Ikon + Judul + Badge Hari Ini / Tahun Ini
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.calendar_month_rounded,
+                      size: 19,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // 3. Wheel Scroller Picker (Tanggal, Bulan, Tahun)
+          _buildScrollerPicker(),
+
+          const SizedBox(height: 20),
+
+          // 4. Action Buttons: Batal & Terapkan
+          _buildActionButtons(),
+        ],
       ),
     );
   }
 
-  Widget _buildDateCell({
-    required int dayNumber,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: onTap,
-      scaleFactor: 0.90,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: isSelected
-              ? const LinearGradient(
+  /// Tiga Roda Scroller Polosan & Clean (Tanggal, Bulan, Tahun)
+  Widget _buildScrollerPicker() {
+    return SizedBox(
+      height: 190,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Kolom Header Label & Roda Scroller
+          Column(
+            children: [
+              // Header Label Kolom
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: Text(
+                          'TANGGAL',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Center(
+                        child: Text(
+                          'BULAN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Center(
+                        child: Text(
+                          'TAHUN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Roda Scroller (Tanggal, Bulan, Tahun)
+              Expanded(
+                child: Row(
+                  children: [
+                    // Kolom Roda Tanggal
+                    Expanded(
+                      flex: 2,
+                      child: CupertinoPicker(
+                        scrollController: _dayController,
+                        itemExtent: 46,
+                        diameterRatio: 2.2,
+                        squeeze: 1.0,
+                        useMagnifier: false,
+                        selectionOverlay: const SizedBox.shrink(),
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedDay = index + 1;
+                          });
+                        },
+                        children: List.generate(_daysInSelectedMonth, (index) {
+                          final day = index + 1;
+                          final isSelected = day == _selectedDay;
+                          final dayStr = day.toString().padLeft(2, '0');
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleSelectDay(day),
+                            child: Center(
+                              child: Text(
+                                dayStr,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isSelected ? 22 : 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: isSelected ? -0.3 : -0.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    // Kolom Roda Bulan
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _monthController,
+                        itemExtent: 46,
+                        diameterRatio: 2.2,
+                        squeeze: 1.0,
+                        useMagnifier: false,
+                        selectionOverlay: const SizedBox.shrink(),
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedMonthIndex = index;
+                            _adjustSelectedDay();
+                          });
+                        },
+                        children: List.generate(12, (index) {
+                          final isSelected = index == _selectedMonthIndex;
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleSelectMonth(index),
+                            child: Center(
+                              child: Text(
+                                _monthsShort[index],
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isSelected ? 22 : 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: isSelected ? -0.3 : -0.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    // Kolom Roda Tahun
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _yearController,
+                        itemExtent: 46,
+                        diameterRatio: 2.2,
+                        squeeze: 1.0,
+                        useMagnifier: false,
+                        selectionOverlay: const SizedBox.shrink(),
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedYear = _years[index];
+                            _adjustSelectedDay();
+                          });
+                        },
+                        children: List.generate(_years.length, (index) {
+                          final year = _years[index];
+                          final isSelected = year == _selectedYear;
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleSelectYear(year),
+                            child: Center(
+                              child: Text(
+                                '$year',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isSelected ? 22 : 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: isSelected ? -0.3 : -0.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Masker Gradasi Atas (Top Fade)
+          Positioned(
+            top: 24,
+            left: 0,
+            right: 0,
+            height: 38,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Masker Gradasi Bawah (Bottom Fade)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 38,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tombol Aksi: Batal & Terapkan
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        // Tombol Batal
+        Expanded(
+          flex: 2,
+          child: PressableScale(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+            scaleFactor: 0.95,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  'Batal',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // Tombol Terapkan (Tactile Gradient Blue)
+        Expanded(
+          flex: 3,
+          child: PressableScale(
+            onTap: _handleApply,
+            scaleFactor: 0.95,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     Color(0xFF2563EB),
                     Color(0xFF1D4ED8),
                   ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Color(0xFFF8FAFC),
-                  ],
                 ),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF1D4ED8)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: const [
                   BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.40),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
+                    color: Color(0x402563EB),
+                    blurRadius: 14,
+                    offset: Offset(0, 4),
                   ),
                 ],
-        ),
-        child: Center(
-          child: Text(
-            dayNumber.toString(),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.tactileTextPrimary,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Terapkan',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

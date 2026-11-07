@@ -31,8 +31,16 @@ import '../widgets/header_time_theme.dart';
 class DashboardScreen extends StatefulWidget {
   final UserProfile? user;
   final bool? isLoading;
+  final int? initialYear;
+  final int? initialMonthIndex;
 
-  const DashboardScreen({super.key, this.user, this.isLoading});
+  const DashboardScreen({
+    super.key,
+    this.user,
+    this.isLoading,
+    this.initialYear,
+    this.initialMonthIndex,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -65,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Scroll: header biru tetap diam (pinned) dan tertutup panel putih saat scroll
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _headerKey = GlobalKey();
-  bool _isHeaderCovered = false;
+  final ValueNotifier<bool> _isHeaderCoveredNotifier = ValueNotifier<bool>(false);
 
   /// Tambahan panjang vertikal untuk layer header bertema waktu agar memanjang
   /// ke bawah di balik content panel. Ini menghilangkan celah samping (corner gap)
@@ -80,11 +88,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _currentYear = now.year;
-    _currentMonthIndex = now.month - 1;
+    final uid = _effectiveUser?.uid;
+    _currentYear = widget.initialYear ??
+        ((uid != null && uid.isNotEmpty) ? now.year : 2026);
+    _currentMonthIndex = widget.initialMonthIndex ??
+        ((uid != null && uid.isNotEmpty) ? (now.month - 1) : 9);
     _isLoading = widget.isLoading ?? false;
     _currentDecadeStart = (_currentYear ~/ 10) * 10;
-    final uid = _effectiveUser?.uid;
     if (uid != null && uid.isNotEmpty) {
       _transactions = [];
     } else {
@@ -101,6 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
+    _isHeaderCoveredNotifier.dispose();
     super.dispose();
   }
 
@@ -116,8 +127,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final topInset = MediaQuery.of(context).padding.top;
     final covered =
         _scrollController.offset >= (h - 24 - _headerExtension - topInset);
-    if (covered != _isHeaderCovered) {
-      setState(() => _isHeaderCovered = covered);
+    if (covered != _isHeaderCoveredNotifier.value) {
+      _isHeaderCoveredNotifier.value = covered;
     }
   }
 
@@ -320,20 +331,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool get _isFilterActive {
     final now = DateTime.now();
+    final uid = _effectiveUser?.uid;
+    final defaultMonth = (uid != null && uid.isNotEmpty) ? (now.month - 1) : 9;
+    final defaultYear = (uid != null && uid.isNotEmpty) ? now.year : 2026;
     return _activePeriod == DashboardPeriod.bulan ||
         _activePeriod == DashboardPeriod.tahun ||
-        _currentYear != now.year ||
-        _currentMonthIndex != (now.month - 1);
+        _currentYear != defaultYear ||
+        _currentMonthIndex != defaultMonth;
   }
 
   void _handleResetToToday() {
     HapticFeedback.mediumImpact();
     setState(() {
       final now = DateTime.now();
+      final uid = _effectiveUser?.uid;
       _activePeriod = DashboardPeriod.hari;
-      _currentYear = now.year;
-      _currentMonthIndex = now.month - 1;
-      _currentDecadeStart = (now.year ~/ 10) * 10;
+      _currentYear = (uid != null && uid.isNotEmpty) ? now.year : 2026;
+      _currentMonthIndex = (uid != null && uid.isNotEmpty) ? (now.month - 1) : 9;
+      _currentDecadeStart = (_currentYear ~/ 10) * 10;
     });
     _setupStreams();
   }
@@ -493,22 +508,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             CategoryScreen(user: _effectiveUser),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: RepaintBoundary(child: child),
-          );
-        },
       ),
     );
   }
@@ -517,22 +520,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             ExportDataScreen(user: _effectiveUser),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: RepaintBoundary(child: child),
-          );
-        },
       ),
     );
   }
@@ -550,30 +541,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             AddTransactionScreen(
               user: _effectiveUser,
               initialDate: defaultDate,
               initialTime: TimeOfDay.fromDateTime(now),
             ),
-        transitionsBuilder:
-            (context, animation, secondaryAnimation, child) {
-              return SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: const Offset(0, 1),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                    ),
-                child: RepaintBoundary(child: child),
-              );
-            },
       ),
     );
 
@@ -605,26 +580,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final result = await Navigator.of(context).push<dynamic>(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             AddTransactionScreen(user: _effectiveUser, transaction: tx),
-        transitionsBuilder:
-            (context, animation, secondaryAnimation, child) {
-              return SlideTransition(
-                position:
-                    Tween<Offset>(
-                      begin: const Offset(0, 1),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                    ),
-                child: RepaintBoundary(child: child),
-              );
-            },
       ),
     );
 
@@ -651,22 +610,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ReportScreen(user: _effectiveUser),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: RepaintBoundary(child: child),
-          );
-        },
+            ReportScreen(
+              user: _effectiveUser,
+              initialYear: _currentYear,
+              initialMonthIndex: _currentMonthIndex,
+              initialIsLoading:
+                  _effectiveUser?.uid != null && _effectiveUser!.uid.isNotEmpty,
+            ),
       ),
     );
   }
@@ -678,18 +631,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? _effectiveUser!.displayName!
         : 'Heru';
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: _isHeaderCovered
-            ? Brightness.dark
-            : Brightness.light,
-        statusBarBrightness: _isHeaderCovered
-            ? Brightness.light
-            : Brightness.dark,
-        systemNavigationBarColor: const Color(0xFFF1F5F9),
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isHeaderCoveredNotifier,
+      builder: (context, isHeaderCovered, scaffoldChild) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isHeaderCovered
+                ? Brightness.dark
+                : Brightness.light,
+            statusBarBrightness: isHeaderCovered
+                ? Brightness.light
+                : Brightness.dark,
+            systemNavigationBarColor: const Color(0xFFF1F5F9),
+            systemNavigationBarIconBrightness: Brightness.dark,
+          ),
+          child: scaffoldChild!,
+        );
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         body: AnimatedContainer(
@@ -727,25 +686,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           // 1. Header Card (pinned): digeser balik sebesar offset scroll
                           // sehingga tetap diam, lalu tertutup panel putih di bawahnya.
+                          // Diisolasi dengan RepaintBoundary agar animasi background/sapaan
+                          // tidak memicu repaint pada content panel atau transaction list.
                           AnimatedBuilder(
                             animation: _scrollController,
-                            child: KeyedSubtree(
-                              key: _headerKey,
-                              child: DashboardTactileHeader(
-                                userName: displayName,
-                                periodLabel: _periodLabel,
-                                totalIncomeValue: _totalIncomeRaw,
-                                totalExpenseValue: _totalExpenseRaw,
-                                isPrevDisabled: _isPrevDisabled,
-                                isNextDisabled: _isNextDisabled,
-                                onOpenPicker: _openTimePickerModal,
-                                onPrev: _handlePrevPeriod,
-                                onNext: _handleNextPeriod,
-                                onProfileTap: () => _openProfile(context),
-                                onLogout: _handleLogout,
-                                isFilterActive: _isFilterActive,
-                                onResetToToday: _handleResetToToday,
-                                bottomExtension: _headerExtension,
+                            child: RepaintBoundary(
+                              child: KeyedSubtree(
+                                key: _headerKey,
+                                child: DashboardTactileHeader(
+                                  userName: displayName,
+                                  periodLabel: _periodLabel,
+                                  totalIncomeValue: _totalIncomeRaw,
+                                  totalExpenseValue: _totalExpenseRaw,
+                                  isPrevDisabled: _isPrevDisabled,
+                                  isNextDisabled: _isNextDisabled,
+                                  onOpenPicker: _openTimePickerModal,
+                                  onPrev: _handlePrevPeriod,
+                                  onNext: _handleNextPeriod,
+                                  onProfileTap: () => _openProfile(context),
+                                  onLogout: _handleLogout,
+                                  isFilterActive: _isFilterActive,
+                                  onResetToToday: _handleResetToToday,
+                                  bottomExtension: _headerExtension,
+                                ),
                               ),
                             ),
                             builder: (context, child) {
@@ -753,25 +716,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? _scrollController.offset
                                   : 0.0;
                               final offset = rawOffset < 0 ? 0.0 : rawOffset;
-                              final h = _headerHeight;
-                              // Gunakan tinggi visual asli header agar kurva progres transisi
-                              // scroll (fade & scale) tetap 100% presisi identik dengan aslinya
-                              final visualH = (h - _headerExtension)
-                                  .clamp(1.0, double.infinity);
-                              final progress =
-                                  (offset / visualH).clamp(0.0, 1.0);
                               return Transform.translate(
-                                // Pertahankan header pinned saat scroll. Ruang
-                                // tambahan kini dibuat di dalam header agar
-                                // latarnya tidak ikut tertarik menjauhi bagian atas.
                                 offset: Offset(0, offset),
-                                child: Opacity(
-                                  // Efek transisi fade halus saat scroll tanpa mengubah lebar (scale)
-                                  // agar header tetap menempel penuh pada tepi layar kiri & kanan
-                                  // dan tidak memunculkan celah samping berwarna background aplikasi.
-                                  opacity: 1 - (progress * 0.55),
-                                  child: child,
-                                ),
+                                child: child,
                               );
                             },
                           ),
@@ -782,100 +729,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           // menutup sempurna hingga dasar scroll view tanpa meninggalkan celah 72px.
                           DashboardOverlapLayout(
                             topOverlap: 24 + _headerExtension,
-                            child: ClipRect(
-                              // Potong bayangan bawah agar tidak ada garis bayangan horizontal
-                              // melintang yang membuat latar belakang tampak "belang".
-                              clipper: const TopOnlyShadowClipper(),
-                              child: Container(
-                                width: double.infinity,
-                                constraints: BoxConstraints(
-                                  minHeight:
-                                      MediaQuery.of(context).size.height +
-                                      (24 + _headerExtension),
-                                ),
-                                decoration: const BoxDecoration(
-                                  color: Color(
-                                    0xFFF1F5F9,
-                                  ), // Slate 100 App Canvas
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(28),
-                                    topRight: Radius.circular(28),
+                            child: RepaintBoundary(
+                              child: ClipRect(
+                                // Potong bayangan bawah agar tidak ada garis bayangan horizontal
+                                // melintang yang membuat latar belakang tampak "belang".
+                                clipper: const TopOnlyShadowClipper(),
+                                child: Container(
+                                  width: double.infinity,
+                                  constraints: BoxConstraints(
+                                    minHeight:
+                                        MediaQuery.of(context).size.height +
+                                        (24 + _headerExtension),
                                   ),
-                                  // Bayangan tepi atas agar panel terasa "naik" menutupi header
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Color(0x290F172A),
-                                      blurRadius: 24,
-                                      offset: Offset(0, -6),
+                                  decoration: const BoxDecoration(
+                                    color: Color(
+                                      0xFFF1F5F9,
+                                    ), // Slate 100 App Canvas
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(28),
+                                      topRight: Radius.circular(28),
                                     ),
-                                  ],
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.fromLTRB(
-                                    16,
-                                    20,
-                                    16,
-                                    32 +
-                                        MediaQuery.of(context).padding.bottom +
-                                        24,
-                                  ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 3. Empat Tombol Pintasan (Tambah, Kategori, Ekspor/Impor, Laporan)
-                                    DashboardShortcutsRow(
-                                      onAdd: () => _openAddTransaction(context),
-                                      onCategory: () =>
-                                          _openCategories(context),
-                                      onExportImport: () =>
-                                          _openExport(context),
-                                      onReports: () => _openReports(context),
-                                    ),
-                                    const SizedBox(height: 14),
-
-                                    // 4. Sunken Search Box & 5. Period Filter Pills
-                                    DashboardSearchAndFilter(
-                                      searchController: _searchController,
-                                      activePeriod: _activePeriod,
-                                      onSearchChanged: (query) {
-                                        setState(() => _searchQuery = query);
-                                      },
-                                      onPeriodChanged: (period) {
-                                        setState(() {
-                                          _activePeriod = period;
-                                          if (period == DashboardPeriod.hari) {
-                                            final now = DateTime.now();
-                                            _currentYear = now.year;
-                                            _currentMonthIndex = now.month - 1;
-                                            _currentDecadeStart =
-                                                (_currentYear ~/ 10) * 10;
-                                          } else if (period == DashboardPeriod.tahun) {
-                                            _currentDecadeStart =
-                                                (_currentYear ~/ 10) * 10;
-                                          }
-                                        });
-                                        _setupStreams();
-                                      },
-                                    ),
-
-                                    // Banner & Button "Kembali ke Hari Ini" saat filter bulan/tahun aktif
-                                    if (_isFilterActive) ...[
-                                      const SizedBox(height: 12),
-                                      _buildReturnToTodayBanner(),
+                                    // Bayangan tepi atas agar panel terasa "naik" menutupi header
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color(0x290F172A),
+                                        blurRadius: 24,
+                                        offset: Offset(0, -6),
+                                      ),
                                     ],
-
-                                    const SizedBox(height: 16),
-
-                                    // 6. Grouped Transactions List
-                                    DashboardTransactionsView(
-                                      period: _activePeriod,
-                                      transactions: _filteredTransactions,
-                                      currentYear: _currentYear,
-                                      currentMonthIndex: _currentMonthIndex,
-                                      currentDecadeStart: _currentDecadeStart,
-                                      onTransactionTap: (tx) => _openEditTransaction(context, tx),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                      16,
+                                      20,
+                                      16,
+                                      32 +
+                                          MediaQuery.of(context).padding.bottom +
+                                          24,
                                     ),
-                                  ],
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // 3. Empat Tombol Pintasan (Tambah, Kategori, Ekspor/Impor, Laporan)
+                                      DashboardShortcutsRow(
+                                        onAdd: () => _openAddTransaction(context),
+                                        onCategory: () =>
+                                            _openCategories(context),
+                                        onExportImport: () =>
+                                            _openExport(context),
+                                        onReports: () => _openReports(context),
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // 4. Sunken Search Box & 5. Period Filter Pills
+                                      DashboardSearchAndFilter(
+                                        searchController: _searchController,
+                                        activePeriod: _activePeriod,
+                                        onSearchChanged: (query) {
+                                          setState(() => _searchQuery = query);
+                                        },
+                                        onPeriodChanged: (period) {
+                                          setState(() {
+                                            _activePeriod = period;
+                                            if (period == DashboardPeriod.hari) {
+                                              final now = DateTime.now();
+                                              _currentYear = now.year;
+                                              _currentMonthIndex = now.month - 1;
+                                              _currentDecadeStart =
+                                                  (_currentYear ~/ 10) * 10;
+                                            } else if (period == DashboardPeriod.tahun) {
+                                              _currentDecadeStart =
+                                                  (_currentYear ~/ 10) * 10;
+                                            }
+                                          });
+                                          _setupStreams();
+                                        },
+                                      ),
+
+                                      // Banner & Button "Kembali ke Hari Ini" saat filter bulan/tahun aktif
+                                      if (_isFilterActive) ...[
+                                        const SizedBox(height: 12),
+                                        _buildReturnToTodayBanner(),
+                                      ],
+
+                                      const SizedBox(height: 16),
+
+                                      // 6. Grouped Transactions List
+                                      DashboardTransactionsView(
+                                        period: _activePeriod,
+                                        transactions: _filteredTransactions,
+                                        currentYear: _currentYear,
+                                        currentMonthIndex: _currentMonthIndex,
+                                        currentDecadeStart: _currentDecadeStart,
+                                        onTransactionTap: (tx) => _openEditTransaction(context, tx),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

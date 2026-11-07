@@ -131,14 +131,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Transaksi di rentang default Oktober ada 2
-      expect(find.text('2 transaksi'), findsOneWidget);
+      // Transaction count pill badge is removed across all periods
+      expect(find.text('2 transaksi'), findsNothing);
 
       // Switch to Bulan
       await tester.tap(find.text('Bulan'));
       await tester.pumpAndSettle();
 
-      expect(find.text('2 transaksi'), findsOneWidget);
+      expect(find.text('2 transaksi'), findsNothing);
     });
 
     testWidgets('Export execution calls export pipeline and displays success dialog (SYNC-06)', (tester) async {

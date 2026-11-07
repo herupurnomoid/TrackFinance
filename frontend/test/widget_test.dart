@@ -127,13 +127,13 @@ void main() {
 
     await tester.pump(const Duration(seconds: 1));
 
-    // Verify header and instruction
+    // Verify header
     expect(find.text('Kategori'), findsOneWidget);
-    expect(find.text('Ketuk kategori untuk mengubah atau menghapus'), findsOneWidget);
+    expect(find.text('Ketuk kategori untuk mengubah atau menghapus'), findsNothing);
 
     // Verify tabs
-    expect(find.textContaining('Pengeluaran (8)'), findsOneWidget);
-    expect(find.textContaining('Pemasukan (6)'), findsOneWidget);
+    expect(find.text('Pengeluaran'), findsOneWidget);
+    expect(find.text('Pemasukan'), findsOneWidget);
 
     // Verify default expense categories
     expect(find.text('Makanan & Minuman'), findsOneWidget);
@@ -144,8 +144,8 @@ void main() {
     // Verify add category tile
     expect(find.text('Tambah'), findsOneWidget);
 
-    // Verify budget tips card
-    expect(find.text('Tips Manajemen Anggaran'), findsOneWidget);
+    // Verify budget tips card is removed
+    expect(find.text('Tips Manajemen Anggaran'), findsNothing);
 
     // Test tab switch to Pemasukan
     await tester.tap(find.textContaining('Pemasukan'));
@@ -348,7 +348,9 @@ void main() {
     await tester.tap(find.text('Waktu'));
     await tester.pumpAndSettle();
     expect(find.text('Pilih Waktu'), findsOneWidget);
-    expect(find.text('WAKTU TRANSAKSI (WIB)'), findsOneWidget);
+    expect(find.text('JAM'), findsOneWidget);
+    expect(find.text('MENIT'), findsOneWidget);
+    expect(find.text('WAKTU TRANSAKSI (WIB)'), findsNothing);
 
     // Close time picker
     await tester.tap(find.text('Batal'));
@@ -513,8 +515,8 @@ void main() {
     expect(find.text('Sampai'), findsOneWidget);
     expect(find.text('09 Okt 2026'), findsOneWidget);
 
-    // Verify Clean Transaction Pill Badge
-    expect(find.text('9 transaksi'), findsOneWidget);
+    // Verify Transaction Count Badge is removed
+    expect(find.text('9 transaksi'), findsNothing);
 
     // Verify Format Selector
     expect(find.text('Format'), findsOneWidget);
@@ -537,13 +539,13 @@ void main() {
     // Test Tapping "Bulan" period tab
     await tester.tap(find.text('Bulan'));
     await tester.pumpAndSettle();
-    expect(find.text('24 transaksi'), findsOneWidget);
+    expect(find.text('24 transaksi'), findsNothing);
     expect(find.text('Oktober 2026'), findsOneWidget);
 
     // Test Switching back to "Rentang"
     await tester.tap(find.text('Rentang'));
     await tester.pumpAndSettle();
-    expect(find.text('9 transaksi'), findsOneWidget);
+    expect(find.text('9 transaksi'), findsNothing);
 
     // Test Executing Export
     await tester.tap(find.text('Ekspor CSV'));
@@ -590,8 +592,8 @@ void main() {
     // Verify Month Selector Card ("Oktober 2026")
     expect(find.text('Oktober 2026'), findsOneWidget);
 
-    // Verify Transaction Count Badge ("24 transaksi")
-    expect(find.text('24 transaksi'), findsOneWidget);
+    // Verify Transaction Count Badge is removed
+    expect(find.text('24 transaksi'), findsNothing);
 
     // Verify Format Section (PDF selected, CSV unselected)
     expect(find.text('Format'), findsOneWidget);
@@ -601,14 +603,16 @@ void main() {
     // Verify Bottom CTA Button ("Ekspor PDF")
     expect(find.text('Ekspor PDF'), findsOneWidget);
 
-    // Test Tapping "Oktober 2026" opens MonthPickerModal
+    // Test Tapping "Oktober 2026" opens MonthPickerModal (ReportMonthPickerModal scroller)
     await tester.tap(find.text('Oktober 2026'));
     await tester.pumpAndSettle();
-    expect(find.text('2026'), findsOneWidget);
-    expect(find.text('September'), findsOneWidget);
+    expect(find.text('2026'), findsWidgets);
+    expect(find.text('Sep'), findsOneWidget);
 
-    // Select "September"
-    await tester.tap(find.text('September'));
+    // Select "Sep" and tap "Terapkan"
+    await tester.tap(find.text('Sep'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
     expect(find.text('September 2026'), findsOneWidget);
 
@@ -660,8 +664,8 @@ void main() {
     // Verify Year Selector Card ("Tahun 2026")
     expect(find.text('Tahun 2026'), findsOneWidget);
 
-    // Verify Transaction Count Badge ("288 transaksi")
-    expect(find.text('288 transaksi'), findsOneWidget);
+    // Verify Transaction Count Badge is removed
+    expect(find.text('288 transaksi'), findsNothing);
 
     // Verify Format Section (PDF selected, CSV unselected)
     expect(find.text('Format'), findsOneWidget);
@@ -677,8 +681,10 @@ void main() {
     expect(find.textContaining('Pilih Tahun'), findsOneWidget);
     expect(find.text('2025'), findsOneWidget);
 
-    // Select "2025"
+    // Select "2025" and tap "Terapkan"
     await tester.tap(find.text('2025'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
     expect(find.text('Tahun 2025'), findsOneWidget);
 
@@ -981,34 +987,25 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify MonthPickerModal is displayed
-    expect(find.text('2026'), findsOneWidget);
-    expect(find.text('Rentang Terpilih'), findsOneWidget);
-    expect(find.text('1 Sep - 30 Sep 2026'), findsOneWidget);
+    expect(find.text('Pilih Periode'), findsOneWidget);
+    expect(find.text('2026'), findsWidgets);
     expect(find.text('Terapkan'), findsOneWidget);
-
-    // Tap next year button (chevron_right_rounded)
-    await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-    await tester.pumpAndSettle();
-    expect(find.text('2027'), findsOneWidget);
-    expect(find.text('1 Sep - 30 Sep 2027'), findsOneWidget);
-
-    // Tap prev year button (chevron_left_rounded)
-    await tester.tap(find.byIcon(Icons.chevron_left_rounded).last);
-    await tester.pumpAndSettle();
-    expect(find.text('2026'), findsOneWidget);
 
     // Tap on month "Okt"
     await tester.tap(find.text('Okt'));
     await tester.pumpAndSettle();
-    expect(find.text('1 Okt - 31 Okt 2026'), findsOneWidget);
+
+    // Tap on year "2027"
+    await tester.tap(find.text('2027'));
+    await tester.pumpAndSettle();
 
     // Tap on "Terapkan" button
     await tester.tap(find.text('Terapkan'));
     await tester.pumpAndSettle();
 
-    // Modal should close and the Report screen should now display "Okt 2026"
-    expect(find.text('Rentang Terpilih'), findsNothing);
-    expect(find.text('Okt 2026'), findsOneWidget);
+    // Modal should close and the Report screen should now display "Okt 2027"
+    expect(find.text('Pilih Periode'), findsNothing);
+    expect(find.text('Okt 2027'), findsOneWidget);
   });
 
   testWidgets('Dashboard to Report screen navigation test', (WidgetTester tester) async {

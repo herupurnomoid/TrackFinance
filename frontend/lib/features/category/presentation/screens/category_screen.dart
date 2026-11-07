@@ -12,6 +12,7 @@ import '../widgets/category_delete_dialog.dart';
 import '../widgets/category_empty_state.dart';
 import '../widgets/category_grid_item.dart';
 import '../widgets/category_skeleton.dart';
+import '../widgets/category_tab_bar.dart';
 import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart';
 
 /// Halaman Manajemen Kategori Modern Tactile Finance
@@ -367,65 +368,32 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                   _incomeCategories = allDocs.where((c) => !c.isExpense).toList();
                                 }
 
-                                final currentCategories = _isExpenseTab ? _expenseCategories : _incomeCategories;
-                                final isEmpty = currentCategories.isEmpty;
-
                                 return Column(
                                   key: const ValueKey('content'),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Tactile Recessed Segmented Toggle Track
+                                    // 1. Segmented Switcher Control (Pengeluaran vs Pemasukan)
                                     _buildSegmentedTabTrack(),
 
                                     const SizedBox(height: 14),
 
-                                    // Instruction Badge (Jika tidak kosong)
-                                    if (!isEmpty) ...[
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.touch_app_rounded,
-                                              size: 16,
-                                              color: Color(0xFF004AC6),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Flexible(
-                                              child: Text(
-                                                'Ketuk kategori untuk mengubah atau menghapus',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w400,
-                                                  color: const Color(0xFF64748B),
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                    // 2. Konten Tab (Pengeluaran atau Pemasukan)
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      child: _isExpenseTab
+                                          ? RepaintBoundary(
+                                              child: _buildTabContent(
+                                                categories: _expenseCategories,
+                                                isExpense: true,
+                                              ),
+                                            )
+                                          : RepaintBoundary(
+                                              child: _buildTabContent(
+                                                categories: _incomeCategories,
+                                                isExpense: false,
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                    ],
-
-                                    // Konten Kategori (Grid Matrix atau Empty State)
-                                    if (isEmpty)
-                                      CategoryEmptyState(
-                                        isExpense: _isExpenseTab,
-                                        onAddCategory: _openAddModal,
-                                        onAddQuickCategory: _addQuickCategory,
-                                      )
-                                    else ...[
-                                      // 4-Column Skeuomorphic Tile Matrix
-                                      _buildCategoryGrid(currentCategories),
-
-                                      const SizedBox(height: 18),
-
-                                      // Contextual Information Card: Tips Manajemen Anggaran
-                                      _buildBudgetTipsCard(),
-                                    ],
+                                    ),
                                   ],
                                 );
                               },
@@ -554,146 +522,31 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Widget _buildSegmentedTabTrack() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE2E7FF),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F131B2E),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Tab 1: Pengeluaran
-          Expanded(
-            child: PressableScale(
-              onTap: () => setState(() => _isExpenseTab = true),
-              scaleFactor: 0.96,
-              translateY: 1.5,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 9),
-                decoration: BoxDecoration(
-                  gradient: _isExpenseTab
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF2563EB),
-                            Color(0xFF004AC6),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: _isExpenseTab
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x472563EB),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.arrow_downward_rounded,
-                        size: 15,
-                        color: _isExpenseTab ? Colors.white : const Color(0xFF434655),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'Pengeluaran (${_expenseCategories.length})',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: _isExpenseTab ? FontWeight.w700 : FontWeight.w500,
-                            color: _isExpenseTab ? Colors.white : const Color(0xFF434655),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Tab 2: Pemasukan
-          Expanded(
-            child: PressableScale(
-              onTap: () => setState(() => _isExpenseTab = false),
-              scaleFactor: 0.96,
-              translateY: 1.5,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 9),
-                decoration: BoxDecoration(
-                  gradient: !_isExpenseTab
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF2563EB),
-                            Color(0xFF004AC6),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: !_isExpenseTab
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x472563EB),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.arrow_upward_rounded,
-                        size: 15,
-                        color: !_isExpenseTab ? Colors.white : const Color(0xFF434655),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'Pemasukan (${_incomeCategories.length})',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: !_isExpenseTab ? FontWeight.w700 : FontWeight.w500,
-                            color: !_isExpenseTab ? Colors.white : const Color(0xFF434655),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return CategoryTabBar(
+      isExpenseSelected: _isExpenseTab,
+      expenseCount: _expenseCategories.length,
+      incomeCount: _incomeCategories.length,
+      onTabChanged: (isExpense) {
+        setState(() => _isExpenseTab = isExpense);
+      },
     );
+  }
+
+  Widget _buildTabContent({
+    required List<CategoryItem> categories,
+    required bool isExpense,
+  }) {
+    if (categories.isEmpty) {
+      return CategoryEmptyState(
+        key: ValueKey('empty_$isExpense'),
+        isExpense: isExpense,
+        onAddCategory: _openAddModal,
+        onAddQuickCategory: _addQuickCategory,
+      );
+    }
+
+    // 4-Column Skeuomorphic Tile Matrix
+    return _buildCategoryGrid(categories);
   }
 
   Widget _buildCategoryGrid(List<CategoryItem> categories) {
@@ -730,90 +583,4 @@ class _CategoryScreenState extends State<CategoryScreen> {
       },
     );
   }
-
-  Widget _buildBudgetTipsCard() {
-    return RepaintBoundary(
-      child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.0,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F2563EB),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Lamp Icon Badge
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF7FFC97),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x26006329),
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.lightbulb_rounded,
-                size: 22,
-                color: Color(0xFF002109),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Teks Tips
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Tips Manajemen Anggaran',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF131B2E),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Kelompokkan pengeluaran harian maksimal ke dalam 8 kategori inti agar pelacakan pengeluaran bulanan tetap fokus dan rapi.',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF64748B),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 }

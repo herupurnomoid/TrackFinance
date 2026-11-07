@@ -40,13 +40,12 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify header and instruction
+      // Verify header
       expect(find.text('Kategori'), findsOneWidget);
-      expect(find.text('Ketuk kategori untuk mengubah atau menghapus'), findsOneWidget);
 
-      // Verify streamed expense count in tab
-      expect(find.textContaining('Pengeluaran (8)'), findsOneWidget);
-      expect(find.textContaining('Pemasukan (6)'), findsOneWidget);
+      // Verify tab labels
+      expect(find.text('Pengeluaran'), findsOneWidget);
+      expect(find.text('Pemasukan'), findsOneWidget);
 
       // Verify streamed default expense items
       expect(find.text('Makanan & Minuman'), findsOneWidget);
@@ -72,11 +71,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify screen instantly updated in realtime without manual reload
-      expect(find.textContaining('Pengeluaran (9)'), findsOneWidget);
       expect(find.text('Streaming Game'), findsOneWidget);
 
       // Switch to income tab
-      await tester.tap(find.textContaining('Pemasukan (6)'));
+      await tester.tap(find.text('Pemasukan'));
       await tester.pumpAndSettle();
 
       // Verify income categories

@@ -169,7 +169,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: const DashboardScreen(user: testUser),
+          home: const DashboardScreen(
+            user: testUser,
+            initialMonthIndex: 9,
+          ),
         ),
       );
       await tester.pump(const Duration(seconds: 1));
@@ -253,7 +256,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: const DashboardScreen(user: testUser),
+          home: const DashboardScreen(
+            user: testUser,
+            initialMonthIndex: 9,
+          ),
         ),
       );
       await tester.pump(const Duration(seconds: 1));
@@ -291,7 +297,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: const DashboardScreen(user: testUser),
+          home: const DashboardScreen(
+            user: testUser,
+            initialMonthIndex: 9,
+          ),
         ),
       );
       await tester.pump(const Duration(seconds: 1));

@@ -132,8 +132,8 @@ void main() {
 
       // Renders pre-seeded offline default categories
       expect(find.text('Kategori'), findsOneWidget);
-      expect(find.textContaining('Pengeluaran (8)'), findsOneWidget);
-      expect(find.textContaining('Pemasukan (6)'), findsOneWidget);
+      expect(find.text('Pengeluaran'), findsOneWidget);
+      expect(find.text('Pemasukan'), findsOneWidget);
       expect(find.text('Makanan & Minuman'), findsOneWidget);
 
       // Tap on a non-locked category to open modal
@@ -174,8 +174,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Initially 8 expense items
-      expect(find.textContaining('Pengeluaran (8)'), findsOneWidget);
+      // Initially expense tab is active
+      expect(find.text('Pengeluaran'), findsOneWidget);
 
       // Perform add while offline
       await repository.addCategory(
@@ -194,7 +194,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Stream immediately reflects offline mutation
-      expect(find.textContaining('Pengeluaran (9)'), findsOneWidget);
       expect(find.text('Kopi Susu Harian'), findsOneWidget);
     });
   });

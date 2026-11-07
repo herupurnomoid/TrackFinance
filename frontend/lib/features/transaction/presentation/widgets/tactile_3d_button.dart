@@ -54,12 +54,12 @@ class _Tactile3DButtonState extends State<Tactile3DButton> {
 
     final colors = active
         ? (widget.gradientColors ?? defaultGradient)
-        : [
-            const Color(0xFFCBD5E1),
-            const Color(0xFF94A3B8),
+        : const [
+            Color(0xFFCBD5E1),
+            Color(0xFF94A3B8),
           ];
 
-    final effectiveTextColor = widget.textColor ?? Colors.white;
+    final effectiveTextColor = widget.textColor ?? (active ? Colors.white : const Color(0xFF64748B));
     final effectiveShadow = widget.shadowColor ??
         (active ? const Color(0xFF1E40AF).withValues(alpha: 0.38) : Colors.black.withValues(alpha: 0.08));
 
@@ -76,7 +76,7 @@ class _Tactile3DButtonState extends State<Tactile3DButton> {
           : null,
       onTapUp: active ? (_) => setState(() => _isPressed = false) : null,
       onTapCancel: active ? () => setState(() => _isPressed = false) : null,
-      onTap: widget.onTap, // Allow tap to trigger validation error if disabled
+      onTap: active ? widget.onTap : null,
       child: AnimatedScale(
         scale: (_isPressed && active) ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 90),

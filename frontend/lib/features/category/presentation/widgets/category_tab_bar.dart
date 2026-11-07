@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/widgets/animations.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+/// Segmented Switcher Control Kategori (Pengeluaran & Pemasukan)
+/// Menerapkan desain tactile skeuomorphic dengan animated sliding pill dan ikon aksi,
+/// identik dengan ExportImportSegmentedControl pada fitur Impor & Ekspor.
 class CategoryTabBar extends StatelessWidget {
   final bool isExpenseSelected;
   final ValueChanged<bool> onTabChanged;
@@ -13,139 +15,136 @@ class CategoryTabBar extends StatelessWidget {
     super.key,
     required this.isExpenseSelected,
     required this.onTabChanged,
-    this.expenseCount = 9,
-    this.incomeCount = 6,
+    this.expenseCount = 0,
+    this.incomeCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(5),
+      width: double.infinity,
+      height: 48,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
+        color: const Color(0xFFDAE2FD),
         borderRadius: BorderRadius.circular(999),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFF0D2C3A).withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.85),
+            color: Color(0x14131B2E),
             blurRadius: 4,
-            offset: const Offset(0, -2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: Stack(
         children: [
-          // Pengeluaran Tab
-          Expanded(
-            child: _buildTabButton(
-              title: 'Pengeluaran',
-              count: expenseCount,
-              icon: Icons.trending_down_rounded,
-              isSelected: isExpenseSelected,
-              onTap: () {
-                if (!isExpenseSelected) onTabChanged(true);
-              },
+          // Sliding Active Pill Background
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: isExpenseSelected ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF2563EB), // Primary Container
+                      Color(0xFF004AC6), // Primary Blue
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x472563EB),
+                      blurRadius: 10,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
 
-          // Pemasukan Tab
-          Expanded(
-            child: _buildTabButton(
-              title: 'Pemasukan',
-              count: incomeCount,
-              icon: Icons.trending_up_rounded,
-              isSelected: !isExpenseSelected,
-              onTap: () {
-                if (isExpenseSelected) onTabChanged(false);
-              },
-            ),
+          // Clickable Tab Buttons with Icons
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (!isExpenseSelected) {
+                      HapticFeedback.lightImpact();
+                      onTabChanged(true);
+                    }
+                  },
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.arrow_downward_rounded,
+                          size: 18,
+                          color: isExpenseSelected ? Colors.white : const Color(0xFF434655),
+                        ),
+                        const SizedBox(width: 6),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isExpenseSelected ? Colors.white : const Color(0xFF434655),
+                          ),
+                          child: const Text('Pengeluaran'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (isExpenseSelected) {
+                      HapticFeedback.lightImpact();
+                      onTabChanged(false);
+                    }
+                  },
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 18,
+                          color: !isExpenseSelected ? Colors.white : const Color(0xFF434655),
+                        ),
+                        const SizedBox(width: 6),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: !isExpenseSelected ? Colors.white : const Color(0xFF434655),
+                          ),
+                          child: const Text('Pemasukan'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton({
-    required String title,
-    required int count,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: onTap,
-      scaleFactor: 0.95,
-      translateY: 2.0,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryContainer : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF65D0F4).withValues(alpha: 0.45),
-                    blurRadius: 18,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? Colors.white : AppColors.secondary,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.labelLg.copyWith(
-                  color: isSelected ? Colors.white : AppColors.secondary,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            // Count badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.28)
-                    : AppColors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '$count',
-                style: AppTextStyles.labelSm.copyWith(
-                  fontSize: 10,
-                  color: isSelected ? Colors.white : AppColors.secondary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

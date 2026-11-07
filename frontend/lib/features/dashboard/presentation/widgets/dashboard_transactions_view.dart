@@ -290,9 +290,10 @@ class DashboardTransactionsView extends StatelessWidget {
   }
 
   Widget _buildTransactionCard(DashboardTransaction tx) {
-    return _PressableCard(
-      onTap: () => onTransactionTap?.call(tx),
-      child: Row(
+    return RepaintBoundary(
+      child: _PressableCard(
+        onTap: () => onTransactionTap?.call(tx),
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
@@ -374,8 +375,9 @@ class DashboardTransactionsView extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildSummaryCardList(List<_SummaryItem> items) {
     if (items.isEmpty) return _buildEmptyState();
@@ -384,9 +386,10 @@ class DashboardTransactionsView extends StatelessWidget {
       children: items.map((item) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: _PressableCard(
-            isActive: item.isActive,
-            child: Row(
+          child: RepaintBoundary(
+            child: _PressableCard(
+              isActive: item.isActive,
+              child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
@@ -443,8 +446,9 @@ class DashboardTransactionsView extends StatelessWidget {
               ],
             ),
           ),
-        );
-      }).toList(),
+        ),
+      );
+    }).toList(),
     );
   }
 

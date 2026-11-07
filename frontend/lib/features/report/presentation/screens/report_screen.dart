@@ -44,18 +44,13 @@ class ReportScreen extends StatefulWidget {
   State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen>
-    with SingleTickerProviderStateMixin {
+class _ReportScreenState extends State<ReportScreen> {
   late bool _isLoading;
   late int _currentYear;
   late int _currentMonthIndex;
   late bool _isExpenseMode;
   MonthlyReportData? _reportData;
   StreamSubscription<MonthlyReportData>? _reportSubscription;
-
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   static const List<String> _monthsShort = [
     'Jan',
@@ -75,33 +70,15 @@ class _ReportScreenState extends State<ReportScreen>
   @override
   void initState() {
     super.initState();
-    _isLoading = widget.initialIsLoading;
     final now = DateTime.now();
     _currentYear = widget.initialYear ?? now.year;
     _currentMonthIndex = widget.initialMonthIndex ?? (now.month - 1);
     _isExpenseMode = widget.initialIsExpenseTab;
 
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
+    final uid = _uid;
+    _isLoading = widget.initialIsLoading ||
+        (uid != null && uid.trim().isNotEmpty && _reportData == null);
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
-    _fadeController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initAfterTransition();
     });
@@ -136,7 +113,6 @@ class _ReportScreenState extends State<ReportScreen>
   @override
   void dispose() {
     _reportSubscription?.cancel();
-    _fadeController.dispose();
     super.dispose();
   }
 
@@ -151,24 +127,47 @@ class _ReportScreenState extends State<ReportScreen>
       return;
     }
 
-    setState(() => _isLoading = true);
+    if (!_isLoading) {
+      setState(() => _isLoading = true);
+    }
 
     try {
-      final data = await ReportRepository.instance.getMonthlyReport(
-        uid,
-        year: _currentYear,
-        monthIndex: _currentMonthIndex,
-      );
+      // Timeout mencegah skeleton loading berputar tanpa batas saat perangkat
+      // tidak dapat menjangkau Firestore (mis. DNS gagal / offline).
+      final data = await ReportRepository.instance
+          .getMonthlyReport(
+            uid,
+            year: _currentYear,
+            monthIndex: _currentMonthIndex,
+          )
+          .timeout(const Duration(seconds: 10));
       if (mounted) {
         setState(() {
           _reportData = data;
           _isLoading = false;
         });
-        _fadeController.forward(from: 0.0);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _reportData ??=
+              MonthlyReportData.empty(_currentYear, _currentMonthIndex);
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is TimeoutException
+                  ? 'Koneksi lambat atau terputus. Laporan akan diperbarui otomatis saat koneksi kembali.'
+                  : 'Gagal memuat laporan. Tarik ke bawah untuk mencoba lagi.',
+            ),
+            backgroundColor: const Color(0xFFBA1A1A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     }
 
@@ -184,8 +183,11 @@ class _ReportScreenState extends State<ReportScreen>
       if (mounted) {
         setState(() {
           _reportData = data;
+          _isLoading = false;
         });
       }
+    }, onError: (Object e) {
+      debugPrint('ReportScreen realtime stream error: $e');
     });
   }
 
@@ -233,7 +235,6 @@ class _ReportScreenState extends State<ReportScreen>
       await Future.delayed(const Duration(milliseconds: 650));
       if (mounted) {
         setState(() => _isLoading = false);
-        _fadeController.forward(from: 0.0);
       }
     }
   }
@@ -253,8 +254,6 @@ class _ReportScreenState extends State<ReportScreen>
         final uid = _uid;
         if (uid != null && uid.trim().isNotEmpty) {
           _loadReportData();
-        } else {
-          _fadeController.forward(from: 0.0);
         }
       },
     );
@@ -266,7 +265,6 @@ class _ReportScreenState extends State<ReportScreen>
     setState(() {
       _isExpenseMode = isExpense;
     });
-    _fadeController.forward(from: 0.0);
   }
 
   @override
@@ -305,81 +303,72 @@ class _ReportScreenState extends State<ReportScreen>
                     16,
                     MediaQuery.of(context).padding.bottom + 28,
                   ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _isLoading
-                            ? const ReportSkeleton(key: ValueKey('skeleton'))
-                            : FadeTransition(
-                                key: const ValueKey('content'),
-                                opacity: _fadeAnimation,
-                                child: SlideTransition(
-                                  position: _slideAnimation,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Baris Filter Bulan/Tahun & Status Arsip
-                                      _buildFilterRow(currentMonthLabel),
+                  child: _isLoading
+                      ? const ReportSkeleton(key: ValueKey('skeleton'))
+                      : Column(
+                          key: const ValueKey('content'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Baris Filter Bulan/Tahun & Status Arsip
+                            _buildFilterRow(currentMonthLabel),
 
-                                      const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                                      // Kartu 1: Tren Keuangan (Empty / Populated Keluar / Populated Masuk)
-                                      RepaintBoundary(
-                                        child: ReportTrendCard(
-                                          isEmpty: _isMonthEmpty,
-                                          isExpenseMode: _isExpenseMode,
-                                          expenseTotal: _currentExpenseTotal,
-                                          incomeTotal: _currentIncomeTotal,
-                                          dailyTrends: _reportData != null
-                                              ? _reportData!.dailyTrends
-                                              : (_isMonthEmpty ? const [] : ReportDataStore.oktoberDailyTrends),
-                                        ),
-                                      ),
-
-                                      const SizedBox(height: 16),
-
-                                      // Kartu 2: Struktur Transaksi (Donut Chart & List Kategori)
-                                      RepaintBoundary(
-                                        child: ReportStructureCard(
-                                          isEmpty: _isMonthEmpty,
-                                          totalAmount: _structureTotalAmount,
-                                          isExpenseTab: _isExpenseMode,
-                                          onTabChanged: _handleTabChanged,
-                                          categoryItems: _reportData != null
-                                              ? (_isExpenseMode
-                                                  ? _reportData!.expenseCategories
-                                                  : _reportData!.incomeCategories)
-                                              : null,
-                                        ),
-                                      ),
-
-                                      const SizedBox(height: 16),
-
-                                      // Kartu 3: Indikator Kesehatan (Gauge Track & Skor)
-                                      RepaintBoundary(
-                                        child: ReportHealthCard(
-                                          isEmpty: _isMonthEmpty,
-                                          isExpenseMode: _isExpenseMode,
-                                          healthScore: _isMonthEmpty
-                                              ? null
-                                              : (_reportData != null
-                                                  ? _reportData!.healthScore.toDouble()
-                                                  : (_isExpenseMode ? -100.0 : 95.0)),
-                                          score: _reportData?.healthScore,
-                                          savingsRate: _reportData?.savingsRate,
-                                          healthStatus: _reportData?.healthStatus,
-                                          recommendation: _reportData?.healthRecommendation,
-                                          incomeTotal: _currentIncomeTotal,
-                                          expenseTotal: _currentExpenseTotal,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            // Kartu 1: Tren Keuangan (Empty / Populated Keluar / Populated Masuk)
+                            RepaintBoundary(
+                              child: ReportTrendCard(
+                                isEmpty: _isMonthEmpty,
+                                isExpenseMode: _isExpenseMode,
+                                expenseTotal: _currentExpenseTotal,
+                                incomeTotal: _currentIncomeTotal,
+                                dailyTrends: _reportData != null
+                                    ? _reportData!.dailyTrends
+                                    : (_isMonthEmpty ? const [] : ReportDataStore.oktoberDailyTrends),
                               ),
-                      ),
-                    ),
-                  ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Kartu 2: Struktur Transaksi (Donut Chart & List Kategori)
+                            RepaintBoundary(
+                              child: ReportStructureCard(
+                                isEmpty: _isMonthEmpty,
+                                totalAmount: _structureTotalAmount,
+                                isExpenseTab: _isExpenseMode,
+                                onTabChanged: _handleTabChanged,
+                                categoryItems: _reportData != null
+                                    ? (_isExpenseMode
+                                        ? _reportData!.expenseCategories
+                                        : _reportData!.incomeCategories)
+                                    : null,
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Kartu 3: Indikator Kesehatan (Gauge Track & Skor)
+                            RepaintBoundary(
+                              child: ReportHealthCard(
+                                isEmpty: _isMonthEmpty,
+                                isExpenseMode: _isExpenseMode,
+                                healthScore: _isMonthEmpty
+                                    ? null
+                                    : (_reportData != null
+                                        ? _reportData!.healthScore.toDouble()
+                                        : (_isExpenseMode ? -100.0 : 95.0)),
+                                score: _reportData?.healthScore,
+                                savingsRate: _reportData?.savingsRate,
+                                healthStatus: _reportData?.healthStatus,
+                                recommendation: _reportData?.healthRecommendation,
+                                incomeTotal: _currentIncomeTotal,
+                                expenseTotal: _currentExpenseTotal,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
+              ),
+            ),
           ],
         ),
       ),

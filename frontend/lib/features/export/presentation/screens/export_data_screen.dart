@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
-import '../../../transaction/presentation/widgets/transaction_date_picker_modal.dart';
+import '../widgets/export_date_picker_modal.dart';
 import '../../data/export_share_service.dart';
 import '../../data/import_data_model.dart';
 import '../../data/sync_export_repository.dart';
@@ -57,8 +57,7 @@ class ExportDataScreen extends StatefulWidget {
   State<ExportDataScreen> createState() => _ExportDataScreenState();
 }
 
-class _ExportDataScreenState extends State<ExportDataScreen>
-    with SingleTickerProviderStateMixin {
+class _ExportDataScreenState extends State<ExportDataScreen> {
   late bool _isLoading;
   late bool _isImportTab;
   ImportFileModel? _uploadedFile;
@@ -75,11 +74,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   late String _exportFormat; // 'PDF' atau 'CSV'
   late int _transactionCount;
   double _estimatedTotal = 3840000;
-
-  // Controller untuk animasi entrance staggered
-  late AnimationController _entranceController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   UserProfile? get _currentUser =>
       widget.user ?? AuthServiceProvider.instance.currentUser;
@@ -105,28 +99,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
     if (widget.initialHasFile) {
       _uploadedFile = ImportFileModel.defaultMock();
     }
-
-    _entranceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _entranceController,
-      curve: Curves.easeOut,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
-    _entranceController.forward();
 
     if (_currentUser != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -164,7 +136,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   @override
   void dispose() {
     _toastTimer?.cancel();
-    _entranceController.dispose();
     super.dispose();
   }
 
@@ -189,7 +160,6 @@ class _ExportDataScreenState extends State<ExportDataScreen>
     await Future.delayed(const Duration(milliseconds: 600));
     if (mounted) {
       setState(() => _isLoading = false);
-      _entranceController.forward(from: 0.0);
     }
   }
 
@@ -461,8 +431,9 @@ class _ExportDataScreenState extends State<ExportDataScreen>
 
   // --- HANDLER TAB EKSPOR ---
   void _openPickStartDate() {
-    TransactionDatePickerModal.show(
+    ExportDatePickerModal.show(
       context,
+      title: 'Pilih Tanggal Mulai',
       initialDate: _exportStartDate,
       onConfirm: (picked) {
         setState(() {
@@ -480,8 +451,9 @@ class _ExportDataScreenState extends State<ExportDataScreen>
   }
 
   void _openPickEndDate() {
-    TransactionDatePickerModal.show(
+    ExportDatePickerModal.show(
       context,
+      title: 'Pilih Tanggal Selesai',
       initialDate: _exportEndDate,
       onConfirm: (picked) {
         setState(() {
@@ -676,9 +648,7 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                       ),
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
                           child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
+                            duration: Duration.zero,
                             child: _isLoading
                                 ? (_isImportTab
                                     ? ImportSkeleton(
@@ -688,34 +658,28 @@ class _ExportDataScreenState extends State<ExportDataScreen>
                                     : const ExportSkeleton(
                                         key: ValueKey('skeleton_export'),
                                       ))
-                                : FadeTransition(
+                                : Column(
                                     key: const ValueKey('content'),
-                                    opacity: _fadeAnimation,
-                                    child: SlideTransition(
-                                      position: _slideAnimation,
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          // 1. Segmented Toggle Control (Impor vs Ekspor)
-                                          ExportImportSegmentedControl(
-                                            isImportSelected: _isImportTab,
-                                            onSelectionChanged: (isImport) {
-                                              setState(() => _isImportTab = isImport);
-                                            },
-                                          ),
-
-                                          const SizedBox(height: 20),
-
-                                          // Konten Tab (Impor atau Ekspor)
-                                          AnimatedSwitcher(
-                                            duration: const Duration(milliseconds: 250),
-                                            child: _isImportTab
-                                                ? RepaintBoundary(child: _buildImportContent())
-                                                : RepaintBoundary(child: _buildExportContent()),
-                                          ),
-                                        ],
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // 1. Segmented Toggle Control (Impor vs Ekspor)
+                                      ExportImportSegmentedControl(
+                                        isImportSelected: _isImportTab,
+                                        onSelectionChanged: (isImport) {
+                                          setState(() => _isImportTab = isImport);
+                                        },
                                       ),
-                                    ),
+
+                                      const SizedBox(height: 20),
+
+                                      // Konten Tab (Impor atau Ekspor)
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 250),
+                                        child: _isImportTab
+                                            ? RepaintBoundary(child: _buildImportContent())
+                                            : RepaintBoundary(child: _buildExportContent()),
+                                      ),
+                                    ],
                                   ),
                           ),
                         ),

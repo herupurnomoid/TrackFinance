@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:track_finance/core/models/user_profile.dart';
 import 'package:track_finance/core/services/auth_service_provider.dart';
+import 'package:track_finance/core/services/firebase_auth_service.dart';
 import 'package:track_finance/core/services/mock_auth_service.dart';
 import 'package:track_finance/features/auth/presentation/screens/login_screen.dart';
 import 'package:track_finance/features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -32,6 +33,7 @@ void main() {
 
   tearDown(() {
     mockAuthService.dispose();
+    AuthServiceProvider.instance = FirebaseAuthService();
   });
 
   testWidgets('Splash Screen navigates to LoginScreen when no user session is saved',

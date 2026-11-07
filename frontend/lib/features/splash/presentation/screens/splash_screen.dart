@@ -16,7 +16,7 @@ class SplashScreen extends StatefulWidget {
 
   const SplashScreen({
     super.key,
-    this.duration = const Duration(milliseconds: 2800),
+    this.duration = const Duration(milliseconds: 1400),
   });
 
   @override
@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Animasi kemunculan nama aplikasi TrackFinance
     _brandingAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 600),
     );
 
     _brandingFadeAnimation = CurvedAnimation(

@@ -110,51 +110,53 @@ class DashboardShortcutsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // 1. Tambah Transaksi
-        Expanded(
-          child: _TactileShortcutCard(
-            svgString: _svgTambah,
-            label: 'Tambah',
-            animationDelayIndex: 0,
-            onTap: onAdd,
+    return RepaintBoundary(
+      child: Row(
+        children: [
+          // 1. Tambah Transaksi
+          Expanded(
+            child: _TactileShortcutCard(
+              svgString: _svgTambah,
+              label: 'Tambah',
+              animationDelayIndex: 0,
+              onTap: onAdd,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
 
-        // 2. Kategori
-        Expanded(
-          child: _TactileShortcutCard(
-            svgString: _svgKategori,
-            label: 'Kategori',
-            animationDelayIndex: 1,
-            onTap: onCategory,
+          // 2. Kategori
+          Expanded(
+            child: _TactileShortcutCard(
+              svgString: _svgKategori,
+              label: 'Kategori',
+              animationDelayIndex: 1,
+              onTap: onCategory,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
 
-        // 3. Ekspor/Impor
-        Expanded(
-          child: _TactileShortcutCard(
-            svgString: _svgEksporImpor,
-            label: 'Ekspor/Impor',
-            animationDelayIndex: 2,
-            onTap: onExportImport,
+          // 3. Ekspor/Impor
+          Expanded(
+            child: _TactileShortcutCard(
+              svgString: _svgEksporImpor,
+              label: 'Ekspor/Impor',
+              animationDelayIndex: 2,
+              onTap: onExportImport,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
 
-        // 4. Laporan
-        Expanded(
-          child: _TactileShortcutCard(
-            svgString: _svgLaporan,
-            label: 'Laporan',
-            animationDelayIndex: 3,
-            onTap: onReports,
+          // 4. Laporan
+          Expanded(
+            child: _TactileShortcutCard(
+              svgString: _svgLaporan,
+              label: 'Laporan',
+              animationDelayIndex: 3,
+              onTap: onReports,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

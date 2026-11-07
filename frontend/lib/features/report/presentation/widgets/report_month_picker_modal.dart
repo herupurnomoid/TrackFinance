@@ -1,10 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Modal Bottom Sheet untuk Pemilihan Filter Bulan dan Tahun pada Laporan
-/// Sesuai referensi visual tactile skeuomorphic dengan stepper navigasi tahun,
-/// grid tombol bulan 3x4, preview rentang tanggal dinamis, dan tombol CTA 'Terapkan'.
+/// Modal Bottom Sheet untuk Pemilihan Filter Bulan dan Tahun pada Laporan.
+/// Menggunakan dual-wheel scroller picker (Bulan & Tahun) dengan estetika modern,
+/// tipografi jernih (tanpa distorsi/squish), lensa sorot seleksi tengah halus,
+/// masker gradasi fade, dan tombol CTA 'Terapkan'.
 class ReportMonthPickerModal extends StatefulWidget {
   final int? initialYear;
   final int? initialMonthIndex; // 0-based: 0 = Jan, 8 = Sep, 9 = Okt, dsb.
@@ -43,6 +45,15 @@ class ReportMonthPickerModal extends StatefulWidget {
 class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
   late int _selectedYear;
   late int _selectedMonthIndex;
+  late FixedExtentScrollController _monthController;
+  late FixedExtentScrollController _yearController;
+
+  static const int _minYear = 2020;
+  static const int _maxYear = 2035;
+  late final List<int> _years = List.generate(
+    _maxYear - _minYear + 1,
+    (index) => _minYear + index,
+  );
 
   static const List<String> _monthsShort = [
     'Jan',
@@ -65,37 +76,24 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
     final now = DateTime.now();
     _selectedYear = widget.initialYear ?? now.year;
     _selectedMonthIndex = widget.initialMonthIndex ?? (now.month - 1);
+
+    final initialYearIndex =
+        (_selectedYear - _minYear).clamp(0, _years.length - 1);
+    _monthController =
+        FixedExtentScrollController(initialItem: _selectedMonthIndex);
+    _yearController =
+        FixedExtentScrollController(initialItem: initialYearIndex);
   }
 
-  /// Menghitung hari terakhir bulan yang dipilih secara akurat (termasuk tahun kabisat)
-  int _getLastDayOfMonth(int year, int monthIndex) {
-    // monthIndex 0-based: 0 = Jan (month 1).
-    // DateTime(year, monthIndex + 2, 0).day memberikan hari terakhir dari bulan (monthIndex + 1)
-    return DateTime(year, monthIndex + 2, 0).day;
-  }
-
-  String get _selectedRangeText {
-    final monthName = _monthsShort[_selectedMonthIndex];
-    final lastDay = _getLastDayOfMonth(_selectedYear, _selectedMonthIndex);
-    return '1 $monthName - $lastDay $monthName $_selectedYear';
+  @override
+  void dispose() {
+    _monthController.dispose();
+    _yearController.dispose();
+    super.dispose();
   }
 
   bool get _isCurrentYear {
     return _selectedYear == DateTime.now().year;
-  }
-
-  void _handlePrevYear() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _selectedYear--;
-    });
-  }
-
-  void _handleNextYear() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _selectedYear++;
-    });
   }
 
   void _handleSelectMonth(int index) {
@@ -103,6 +101,28 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
     setState(() {
       _selectedMonthIndex = index;
     });
+    if (_monthController.hasClients && _monthController.selectedItem != index) {
+      _monthController.animateToItem(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _handleSelectYear(int year) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedYear = year;
+    });
+    final index = (_selectedYear - _minYear).clamp(0, _years.length - 1);
+    if (_yearController.hasClients && _yearController.selectedItem != index) {
+      _yearController.animateToItem(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   void _handleApply() {
@@ -122,16 +142,16 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(0x2E0F172A),
-            blurRadius: 30,
-            offset: Offset(0, -8),
+            color: Color(0x260F172A),
+            blurRadius: 32,
+            offset: Offset(0, -6),
           ),
         ],
       ),
       padding: EdgeInsets.fromLTRB(
-        16,
+        20,
         12,
-        16,
+        20,
         MediaQuery.of(context).padding.bottom + 20,
       ),
       child: Column(
@@ -140,265 +160,277 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
           // 1. Drag Indicator Handle
           Center(
             child: Container(
-              width: 36,
-              height: 4,
+              width: 40,
+              height: 4.5,
               decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
+                color: const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // 2. Year Selector Navigation Row
+          // 2. Header Bar: Ikon + Judul + Badge Tahun Ini
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Tombol Tahun Sebelumnya
-                _buildTactileCircularButton(
-                  icon: Icons.chevron_left_rounded,
-                  onTap: _handlePrevYear,
-                  tooltip: 'Tahun Sebelumnya',
-                ),
-
-                // Center Year Display & Badge
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$_selectedYear',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF131B2E),
-                        letterSpacing: -0.4,
-                      ),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.calendar_month_rounded,
+                      size: 19,
+                      color: Color(0xFF2563EB),
                     ),
-                    if (_isCurrentYear) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E7FF),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'Tahun Ini',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF004AC6),
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-
-                // Tombol Tahun Berikutnya
-                _buildTactileCircularButton(
-                  icon: Icons.chevron_right_rounded,
-                  onTap: _handleNextYear,
-                  tooltip: 'Tahun Berikutnya',
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 18),
-
-          // 3. Month Selector 3x4 Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 12,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              mainAxisExtent: 48,
-            ),
-            itemBuilder: (context, index) {
-              final isSelected = index == _selectedMonthIndex;
-              final monthLabel = _monthsShort[index];
-
-              return _buildMonthCell(
-                label: monthLabel,
-                isSelected: isSelected,
-                onTap: () => _handleSelectMonth(index),
-              );
-            },
-          ),
-
-          const SizedBox(height: 18),
-
-          // 4. Quick Action Summary Subtext: Rentang Terpilih
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                const SizedBox(width: 10),
                 Flexible(
                   child: Text(
-                    'Rentang Terpilih',
+                    'Pilih Periode',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF737686),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -0.3,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedRangeText,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF004AC6),
+                if (_isCurrentYear) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFFDBEAFE),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      'Tahun Ini',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2563EB),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // 5. Main Action CTA: Terapkan
+          // 3. Wheel Scroller Picker (Polosan tanpa background container)
+          _buildScrollerPicker(),
+
+          const SizedBox(height: 20),
+
+          // 4. Main Action CTA: Terapkan
           _buildApplyButton(),
         ],
       ),
     );
   }
 
-  /// Tombol Navigasi Tahun Bundar Tactile
-  Widget _buildTactileCircularButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required String tooltip,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFE2E8F0),
-              width: 1.0,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1F0F172A),
-                blurRadius: 8,
-                offset: Offset(0, 3),
+  /// Dua Roda Scroller Polosan & Clean (Tanpa Background Container)
+  Widget _buildScrollerPicker() {
+    return SizedBox(
+      height: 190,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Kolom Header Label & Roda Scroller
+          Column(
+            children: [
+              // Header Label Kolom
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Center(
+                        child: Text(
+                          'BULAN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: Text(
+                          'TAHUN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF94A3B8),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              BoxShadow(
-                color: Color(0x0F0F172A),
-                blurRadius: 2,
-                offset: Offset(0, 1),
+
+              // Roda Scroller
+              Expanded(
+                child: Row(
+                  children: [
+                    // Kolom Roda Bulan
+                    Expanded(
+                      flex: 3,
+                      child: CupertinoPicker(
+                        scrollController: _monthController,
+                        itemExtent: 46,
+                        diameterRatio: 2.2, // Roda tidak memipih/distorsi
+                        squeeze: 1.0,       // Aspek rasio font natural
+                        useMagnifier: false,
+                        selectionOverlay: const SizedBox.shrink(),
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedMonthIndex = index;
+                          });
+                        },
+                        children: List.generate(12, (index) {
+                          final isSelected = index == _selectedMonthIndex;
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleSelectMonth(index),
+                            child: Center(
+                              child: Text(
+                                _monthsShort[index],
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isSelected ? 22 : 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: isSelected ? -0.3 : -0.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    // Kolom Roda Tahun
+                    Expanded(
+                      flex: 2,
+                      child: CupertinoPicker(
+                        scrollController: _yearController,
+                        itemExtent: 46,
+                        diameterRatio: 2.2, // Roda tidak memipih/distorsi
+                        squeeze: 1.0,       // Aspek rasio font natural
+                        useMagnifier: false,
+                        selectionOverlay: const SizedBox.shrink(),
+                        onSelectedItemChanged: (index) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedYear = _years[index];
+                          });
+                        },
+                        children: List.generate(_years.length, (index) {
+                          final year = _years[index];
+                          final isSelected = year == _selectedYear;
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _handleSelectYear(year),
+                            child: Center(
+                              child: Text(
+                                '$year',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isSelected ? 22 : 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: isSelected ? -0.3 : -0.1,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 22,
-              color: const Color(0xFF131B2E),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  /// Kotak Sel Bulan (Tactile Cell)
-  Widget _buildMonthCell({
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: isSelected
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF2563EB),
-                      Color(0xFF004AC6),
-                    ],
-                  )
-                : const LinearGradient(
+          // Masker Gradasi Atas (Top Fade)
+          Positioned(
+            top: 24,
+            left: 0,
+            right: 0,
+            height: 38,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.white,
-                      Color(0xFFF8FAFC),
+                      Colors.white.withValues(alpha: 0.0),
                     ],
                   ),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.transparent
-                  : const Color(0xFFE2E8F0),
-              width: 1.0,
-            ),
-            boxShadow: isSelected
-                ? const [
-                    BoxShadow(
-                      color: Color(0x59004AC6),
-                      blurRadius: 16,
-                      offset: Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: Color(0x33004AC6),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ]
-                : const [
-                    BoxShadow(
-                      color: Color(0x140F172A),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Color(0x0A0F172A),
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: isSelected ? 15 : 14,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF131B2E),
+                ),
               ),
             ),
           ),
-        ),
+
+          // Masker Gradasi Bawah (Bottom Fade)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 38,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.white,
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -412,27 +444,22 @@ class _ReportMonthPickerModalState extends State<ReportMonthPickerModal> {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           width: double.infinity,
-          height: 52,
+          height: 50,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
                 Color(0xFF2563EB),
-                Color(0xFF004AC6),
+                Color(0xFF1D4ED8),
               ],
             ),
             borderRadius: BorderRadius.circular(14),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x592563EB),
-                blurRadius: 18,
-                offset: Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Color(0x331E40AF),
-                blurRadius: 4,
-                offset: Offset(0, 2),
+                color: Color(0x402563EB),
+                blurRadius: 14,
+                offset: Offset(0, 5),
               ),
             ],
           ),

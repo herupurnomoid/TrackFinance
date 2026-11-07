@@ -29,8 +29,8 @@ class ExportRangeFilterSection extends StatelessWidget {
     required this.onPickEndDate,
     required this.onPickMonth,
     this.onPickYear,
-    required this.transactionCount,
-    required this.estimatedTotal,
+    this.transactionCount = 0,
+    this.estimatedTotal = 0,
   });
 
   String _formatDateShort(DateTime date) {
@@ -111,99 +111,78 @@ class ExportRangeFilterSection extends StatelessWidget {
 
         // 3. Konten Filter Berdasarkan Opsi Terpilih
         if (isRangeMode) ...[
-          // MODE RENTANG (2-Kolom Tanggal Dari & Sampai)
+          // MODE RENTANG (2-Kolom Tanggal Dari & Sampai dengan Button Pill Style Halaman Laporan)
           Row(
             children: [
               Expanded(
-                child: _buildDateCard(
-                  label: 'Dari',
-                  icon: Icons.calendar_today_rounded,
-                  dateText: _formatDateShort(startDate),
-                  onTap: onPickStartDate,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        'Dari',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    _buildReportStyleDatePill(
+                      dateText: _formatDateShort(startDate),
+                      onTap: onPickStartDate,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _buildDateCard(
-                  label: 'Sampai',
-                  icon: Icons.event_rounded,
-                  dateText: _formatDateShort(endDate),
-                  onTap: onPickEndDate,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        'Sampai',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    _buildReportStyleDatePill(
+                      dateText: _formatDateShort(endDate),
+                      onTap: onPickEndDate,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 10),
-
-          // Transaction Count Pill Badge
-          _buildTransactionCountPill(transactionCount),
         ] else if (isMonthMode) ...[
-          // MODE BULAN (Single Selector Card: Contoh "Oktober 2026")
-          _buildSelectorCard(
-            title: _formatMonthYear(selectedMonth),
-            icon: Icons.calendar_month_rounded,
-            onTap: onPickMonth,
+          // MODE BULAN (Button Pill Style Halaman Laporan)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildReportStyleDatePill(
+              dateText: _formatMonthYear(selectedMonth),
+              onTap: onPickMonth,
+              isFullWidth: false,
+            ),
           ),
-
-          const SizedBox(height: 10),
-
-          // Transaction Count Pill Badge
-          _buildTransactionCountPill(transactionCount),
         ] else ...[
-          // MODE TAHUN (Single Selector Card: Contoh "Tahun 2026")
-          _buildSelectorCard(
-            title: 'Tahun ${selectedMonth.year}',
-            icon: Icons.date_range_rounded,
-            onTap: onPickYear ?? onPickMonth,
+          // MODE TAHUN (Button Pill Style Halaman Laporan)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildReportStyleDatePill(
+              dateText: 'Tahun ${selectedMonth.year}',
+              onTap: onPickYear ?? onPickMonth,
+              isFullWidth: false,
+            ),
           ),
-
-          const SizedBox(height: 10),
-
-          // Transaction Count Pill Badge
-          _buildTransactionCountPill(transactionCount),
         ],
       ],
-    );
-  }
-
-  /// Transaction Count Pill Badge (receipt_long + "X transaksi")
-  Widget _buildTransactionCountPill(int count) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDAE2FD),
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A131B2E),
-              blurRadius: 2,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.receipt_long_rounded,
-              size: 14,
-              color: Color(0xFF004AC6),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '$count transaksi',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF004AC6),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -259,207 +238,75 @@ class ExportRangeFilterSection extends StatelessWidget {
     );
   }
 
-  /// Field Selector Card Tactile untuk Pemilihan Bulan/Tahun Sesuai Mockup
-  Widget _buildSelectorCard({
-    required String title,
-    String? subtitle,
-    IconData icon = Icons.calendar_month_rounded,
-    required VoidCallback onTap,
-  }) {
-    return PressableScale(
-      onTap: onTap,
-      scaleFactor: 0.97,
-      translateY: 2.0,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white,
-                Color(0xFFF2F3FF),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: const Color(0xFF131B2E).withValues(alpha: 0.04),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Ikon Squircle Kalender + Label Bulan/Tahun
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDAE2FD),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 2,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          icon,
-                          size: 20,
-                          color: const Color(0xFF004AC6),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF131B2E),
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (subtitle != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: const Color(0xFF434655),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Chevron Down
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 22,
-                color: Color(0xFF434655),
-              ),
-            ],
-          ),
-        ),
-      );
-  }
-
-  Widget _buildDateCard({
-    required String label,
-    required IconData icon,
+  /// Tombol Date Picker bergaya Pill Tactile seperti pada Halaman Laporan
+  Widget _buildReportStyleDatePill({
     required String dateText,
     required VoidCallback onTap,
+    bool isFullWidth = true,
   }) {
     return PressableScale(
       onTap: onTap,
-      scaleFactor: 0.96,
+      scaleFactor: 0.95,
       translateY: 2.0,
       child: Container(
-        padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white,
-                Color(0xFFF2F3FF),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-              BoxShadow(
-                color: const Color(0xFF131B2E).withValues(alpha: 0.03),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF737686),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAEDFF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        size: 14,
-                        color: const Color(0xFF004AC6),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      dateText,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF131B2E),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        width: isFullWidth ? double.infinity : null,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 9,
         ),
-      );
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Color(0xFFF8FAFC),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1.0,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x142563EB),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Color(0x0D0F172A),
+              blurRadius: 3,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                dateText,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF131B2E),
+                  letterSpacing: -0.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.calendar_month_rounded,
+              size: 18,
+              color: Color(0xFF2563EB),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
