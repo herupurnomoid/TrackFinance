@@ -571,22 +571,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 280),
-        reverseTransitionDuration: const Duration(milliseconds: 240),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             ProfileScreen(user: _effectiveUser),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
-            child: RepaintBoundary(child: child),
-          );
-        },
       ),
     );
   }

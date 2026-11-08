@@ -51,6 +51,7 @@ class TrackFinanceApp extends StatelessWidget {
       initialRoute: initialRoute,
       onGenerateRoute: (settings) {
         final instantScreens = <String, WidgetBuilder>{
+          '/profile': (context) => const ProfileScreen(),
           '/category': (context) => const CategoryScreen(),
           '/add-transaction': (context) => const AddTransactionScreen(),
           '/export': (context) => const ExportDataScreen(),
@@ -73,7 +74,6 @@ class TrackFinanceApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const DashboardScreen(),
-        '/profile': (context) => const ProfileScreen(),
       },
     );
   }
