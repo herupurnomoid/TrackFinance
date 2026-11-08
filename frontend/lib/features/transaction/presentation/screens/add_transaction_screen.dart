@@ -721,12 +721,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 onRefresh: _handleRefresh,
                 color: AppColors.tactilePrimary,
                 backgroundColor: Colors.white,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
-                  child: AnimatedSwitcher(
+                child: SizedBox.expand(
+                  child: SingleChildScrollView(
+                    clipBehavior: Clip.none,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      20,
+                      16,
+                      MediaQuery.of(context).padding.bottom + 36,
+                    ),
+                    child: AnimatedSwitcher(
                     duration: Duration.zero,
                     child: _isLoading
                         ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
@@ -834,6 +841,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),

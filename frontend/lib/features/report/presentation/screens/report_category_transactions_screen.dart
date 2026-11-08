@@ -246,33 +246,41 @@ class _ReportCategoryTransactionsScreenState
                 onRefresh: _handleRefresh,
                 color: const Color(0xFF2563EB),
                 backgroundColor: Colors.white,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // A. Hero Category Summary Card
-                      RepaintBoundary(
-                        child: _buildHeroCategoryCard(),
-                      ),
+                child: SizedBox.expand(
+                  child: SingleChildScrollView(
+                    clipBehavior: Clip.none,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      20,
+                      16,
+                      MediaQuery.of(context).padding.bottom + 40,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // A. Hero Category Summary Card
+                        RepaintBoundary(
+                          child: _buildHeroCategoryCard(),
+                        ),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      // B. Section Title & List Transaksi
-                      _buildTransactionSectionHeader(),
+                        // B. Section Title & List Transaksi
+                        _buildTransactionSectionHeader(),
 
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                      // C. Grouped Transactions atau Empty State
-                      _isLoading
-                          ? _buildLoadingSkeleton()
-                          : (_transactions.isEmpty
-                              ? _buildEmptyState()
-                              : _buildGroupedTransactionsList()),
-                    ],
+                        // C. Grouped Transactions atau Empty State
+                        _isLoading
+                            ? _buildLoadingSkeleton()
+                            : (_transactions.isEmpty
+                                ? _buildEmptyState()
+                                : _buildGroupedTransactionsList()),
+                      ],
+                    ),
                   ),
                 ),
               ),

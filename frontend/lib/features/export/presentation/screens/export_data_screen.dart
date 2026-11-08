@@ -655,7 +655,9 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                     onRefresh: _handleRefresh,
                     color: const Color(0xFF2563EB),
                     backgroundColor: Colors.white,
-                    child: SingleChildScrollView(
+                    child: SizedBox.expand(
+                      child: SingleChildScrollView(
+                        clipBehavior: Clip.none,
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
@@ -698,8 +700,9 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
 
           // Primary Bottom Action Dock (Sticky with Gradient Fade)
           Positioned(

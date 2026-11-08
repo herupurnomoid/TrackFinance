@@ -294,17 +294,19 @@ class _ReportScreenState extends State<ReportScreen> {
                 onRefresh: _handleRefresh,
                 color: const Color(0xFF2563EB),
                 backgroundColor: Colors.white,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    20,
-                    16,
-                    MediaQuery.of(context).padding.bottom + 28,
-                  ),
-                  child: _isLoading
+                child: SizedBox.expand(
+                  child: SingleChildScrollView(
+                    clipBehavior: Clip.none,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      20,
+                      16,
+                      MediaQuery.of(context).padding.bottom + 28,
+                    ),
+                    child: _isLoading
                       ? const ReportSkeleton(key: ValueKey('skeleton'))
                       : Column(
                           key: const ValueKey('content'),
@@ -372,6 +374,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),

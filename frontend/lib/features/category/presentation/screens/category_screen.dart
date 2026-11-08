@@ -367,6 +367,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             }
           },
           child: Stack(
+            fit: StackFit.expand,
             children: [
               Column(
                 children: [
@@ -379,12 +380,19 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       onRefresh: _handleRefresh,
                       color: const Color(0xFF2563EB),
                       backgroundColor: Colors.white,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-                        child: _isLoading
+                      child: SizedBox.expand(
+                        child: SingleChildScrollView(
+                          clipBehavior: Clip.none,
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            20,
+                            16,
+                            MediaQuery.of(context).padding.bottom + 64,
+                          ),
+                          child: _isLoading
                             ? const CategorySkeleton(key: ValueKey('skeleton'))
                             : StreamBuilder<List<CategoryItem>>(
                                 stream: (_uid != null && _uid!.isNotEmpty)
@@ -438,6 +446,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                   );
                                 },
                               ),
+                        ),
                       ),
                     ),
                   ),
@@ -601,11 +610,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
+      clipBehavior: Clip.none,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         mainAxisSpacing: 18,
         crossAxisSpacing: 8,
-        mainAxisExtent: 100,
+        mainAxisExtent: 104,
       ),
       itemCount: totalCount,
       itemBuilder: (context, index) {
