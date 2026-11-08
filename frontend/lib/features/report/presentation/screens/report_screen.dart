@@ -561,8 +561,8 @@ class _ReportScreenState extends State<ReportScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: true,
-        transitionDuration: const Duration(milliseconds: 250),
-        reverseTransitionDuration: const Duration(milliseconds: 200),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
         pageBuilder: (context, animation, secondaryAnimation) =>
             ReportCategoryTransactionsScreen(
           categoryItem: category,
@@ -571,17 +571,6 @@ class _ReportScreenState extends State<ReportScreen> {
           isExpense: _isExpenseMode,
           user: _currentUser,
         ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            ),
-            child: child,
-          );
-        },
       ),
     );
   }
