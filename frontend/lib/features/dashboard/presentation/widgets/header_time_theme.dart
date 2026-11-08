@@ -149,4 +149,178 @@ enum DashboardTimeOfDay {
   Color get pullToRefreshTopColor {
     return skyGradientColors.first;
   }
+
+  /// Warna teks nominal pemasukan tanpa kontainer yang diadaptasi sesuai
+  /// kontras kecerahan & rona langit tiap waktu agar selalu jelas terlihat.
+  Color get incomeAmountColor {
+    switch (this) {
+      case DashboardTimeOfDay.pagi:
+        // Mint musim semi hangat yang kontras terhadap langit biru-sian fajar
+        return const Color(0xFFBBF7D0);
+      case DashboardTimeOfDay.siang:
+        // Mint es berluminesensi tinggi di atas langit biru terang & awan putih
+        return const Color(0xFFD1FAE5);
+      case DashboardTimeOfDay.sore:
+        // Mint giok sejuk komplementer terhadap langit senja jingga-tembaga
+        return const Color(0xFFA7F3D0);
+      case DashboardTimeOfDay.malam:
+        // Zamrud bercahaya lembut di atas langit malam obsidian gelap
+        return const Color(0xFF6EE7B7);
+    }
+  }
+
+  /// Warna teks nominal pengeluaran tanpa kontainer yang diadaptasi sesuai
+  /// kontras kecerahan & rona langit tiap waktu agar tidak menyatu dengan latar.
+  Color get expenseAmountColor {
+    switch (this) {
+      case DashboardTimeOfDay.pagi:
+        // Merah muda fajar cerah yang kontras hangat di atas langit biru pagi
+        return const Color(0xFFFFD6DF);
+      case DashboardTimeOfDay.siang:
+        // Rose es berluminesensi tinggi agar tajam di atas langit siang cerah
+        return const Color(0xFFFFE4E8);
+      case DashboardTimeOfDay.sore:
+        // Rose mutiara sejuk (tanpa unsur jingga) agar tidak tenggelam di warna senja
+        return const Color(0xFFFFE4EC);
+      case DashboardTimeOfDay.malam:
+        // Rose cahaya bulan yang kontras anggun di atas langit malam gelap
+        return const Color(0xFFFDA4AF);
+    }
+  }
+
+  /// Lapisan bayangan optik teks pemasukan tanpa kontainer sesuai tema waktu
+  List<Shadow> get incomeAmountShadows {
+    switch (this) {
+      case DashboardTimeOfDay.pagi:
+        return const [
+          Shadow(
+            color: Color(0xE0041E34),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0x99041E34),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ];
+      case DashboardTimeOfDay.siang:
+        return const [
+          Shadow(
+            color: Color(0xEB071D49),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0xB3071D49),
+            blurRadius: 11,
+            offset: Offset(0, 3),
+          ),
+          Shadow(
+            color: Color(0x8A071D49),
+            blurRadius: 1.2,
+            offset: Offset(0, 0.5),
+          ),
+        ];
+      case DashboardTimeOfDay.sore:
+        return const [
+          Shadow(
+            color: Color(0xEB260714),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0xB81C050E),
+            blurRadius: 11,
+            offset: Offset(0, 3),
+          ),
+          Shadow(
+            color: Color(0x851C050E),
+            blurRadius: 1.2,
+            offset: Offset(0, 0.5),
+          ),
+        ];
+      case DashboardTimeOfDay.malam:
+        return const [
+          Shadow(
+            color: Color(0xEB020617),
+            blurRadius: 4,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0x5910B981),
+            blurRadius: 12,
+            offset: Offset(0, 0),
+          ),
+        ];
+    }
+  }
+
+  /// Lapisan bayangan optik teks pengeluaran tanpa kontainer sesuai tema waktu
+  List<Shadow> get expenseAmountShadows {
+    switch (this) {
+      case DashboardTimeOfDay.pagi:
+        return const [
+          Shadow(
+            color: Color(0xE0041E34),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0x99041E34),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ];
+      case DashboardTimeOfDay.siang:
+        return const [
+          Shadow(
+            color: Color(0xEB1A1245),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0xB3071D49),
+            blurRadius: 11,
+            offset: Offset(0, 3),
+          ),
+          Shadow(
+            color: Color(0x8A1A1245),
+            blurRadius: 1.2,
+            offset: Offset(0, 0.5),
+          ),
+        ];
+      case DashboardTimeOfDay.sore:
+        return const [
+          Shadow(
+            color: Color(0xEB2D0618),
+            blurRadius: 3.5,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0xB81C050E),
+            blurRadius: 11,
+            offset: Offset(0, 3),
+          ),
+          Shadow(
+            color: Color(0x852D0618),
+            blurRadius: 1.2,
+            offset: Offset(0, 0.5),
+          ),
+        ];
+      case DashboardTimeOfDay.malam:
+        return const [
+          Shadow(
+            color: Color(0xEB020617),
+            blurRadius: 4,
+            offset: Offset(0, 1.5),
+          ),
+          Shadow(
+            color: Color(0x59F43F5E),
+            blurRadius: 12,
+            offset: Offset(0, 0),
+          ),
+        ];
+    }
+  }
 }

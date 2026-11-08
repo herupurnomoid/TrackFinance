@@ -55,10 +55,10 @@ void main() {
     // (pumpAndSettle would time out because of repeating pulse animations.)
     await tester.pump(const Duration(seconds: 3));
 
-    // Verify dashboard elements
+    // Verify dashboard elements (teks Pemasukan & Pengeluaran dihilangkan, diganti ikon 3D + nominal)
     expect(find.textContaining('Selamat'), findsOneWidget);
-    expect(find.text('Pemasukan'), findsOneWidget);
-    expect(find.text('Pengeluaran'), findsOneWidget);
+    expect(find.text('Pemasukan'), findsNothing);
+    expect(find.text('Pengeluaran'), findsNothing);
     expect(find.textContaining('1.525.000'), findsWidgets);
     expect(find.textContaining('361.666'), findsWidgets);
     expect(find.text('Cari transaksi...'), findsOneWidget);

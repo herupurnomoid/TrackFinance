@@ -44,10 +44,13 @@ class ReportCategoryTransactionsScreen extends StatefulWidget {
 
 class _ReportCategoryTransactionsScreenState
     extends State<ReportCategoryTransactionsScreen> {
+  static const int _kPageSize = 60;
+
   late TransactionRepository _repository;
   StreamSubscription<List<TransactionModel>>? _txSubscription;
   List<DashboardTransaction> _transactions = [];
   bool _isLoading = true;
+  int _visibleLimit = _kPageSize;
 
   UserProfile? get _effectiveUser =>
       widget.user ?? AuthServiceProvider.instance.currentUser;
@@ -592,17 +595,28 @@ class _ReportCategoryTransactionsScreenState
       grouped.putIfAbsent(tx.dateStr, () => []).add(tx);
     }
 
-    return Column(
-      children: grouped.entries.map((entry) {
-        final dateStr = entry.key;
-        final items = entry.value;
+    int renderedCards = 0;
+    final List<Widget> sections = [];
 
-        int groupTotal = 0;
-        for (final item in items) {
-          groupTotal += item.amount;
-        }
+    for (final entry in grouped.entries) {
+      if (renderedCards >= _visibleLimit) break;
 
-        return Padding(
+      final dateStr = entry.key;
+      final items = entry.value;
+
+      int groupTotal = 0;
+      for (final item in items) {
+        groupTotal += item.amount;
+      }
+
+      final remainingBudget = _visibleLimit - renderedCards;
+      final visibleItems = items.length <= remainingBudget
+          ? items
+          : items.sublist(0, remainingBudget);
+      renderedCards += visibleItems.length;
+
+      sections.add(
+        Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +657,7 @@ class _ReportCategoryTransactionsScreenState
 
               // Item Kartu Transaksi
               Column(
-                children: items.map((tx) {
+                children: visibleItems.map((tx) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: RepaintBoundary(
@@ -654,9 +668,48 @@ class _ReportCategoryTransactionsScreenState
               ),
             ],
           ),
-        );
-      }).toList(),
-    );
+        ),
+      );
+    }
+
+    final remainingTotal = _transactions.length - renderedCards;
+    if (remainingTotal > 0) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 16),
+          child: Center(
+            child: TextButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  _visibleLimit += _kPageSize;
+                });
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF2563EB),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Color(0xFFDBEAFE)),
+                ),
+              ),
+              icon: const Icon(Icons.expand_more_rounded, size: 18),
+              label: Text(
+                'Tampilkan lebih banyak ($remainingTotal lainnya)',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(children: sections);
   }
 
   /// Kartu Transaksi Tactile Modern
@@ -703,6 +756,7 @@ class _ReportCategoryTransactionsScreenState
                 fit: BoxFit.contain,
                 cacheWidth: 114,
                 cacheHeight: 114,
+                filterQuality: FilterQuality.low,
               ),
               const SizedBox(width: 12),
 

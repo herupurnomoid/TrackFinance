@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_shimmer.dart';
 import 'dashboard_overlap_layout.dart';
+import 'header_time_theme.dart';
 
 /// Shimmer Skeleton Loading untuk Dashboard Modern Tactile Finance
 /// Memberikan efek gelombang kilau cahaya halus di atas tata letak layout yang presisi.
@@ -9,6 +10,8 @@ class DashboardTactileSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final activeTimeOfDay = DashboardTimeOfDay.fromDateTime();
+
     return AppShimmer(
       baseColor: const Color(0xFFE2E8F0),
       highlightColor: const Color(0xFFF8FAFC),
@@ -19,13 +22,17 @@ class DashboardTactileSkeleton extends StatelessWidget {
           // 1. Header Section Skeleton
           Container(
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: activeTimeOfDay.skyGradientColors,
+              ),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 38 + 48),
+                padding: const EdgeInsets.fromLTRB(20, 34, 20, 44 + 48),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -60,19 +67,40 @@ class DashboardTactileSkeleton extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
 
-                    // Baris 3: Summary Cards
-                    ShimmerBox(
-                      width: double.infinity,
-                      height: 58,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    const SizedBox(height: 8),
-                    ShimmerBox(
-                      width: double.infinity,
-                      height: 58,
-                      borderRadius: BorderRadius.circular(16),
+                    // Baris 3: 2-Column Borderless 3D Icon + Nominal Skeleton
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ShimmerBox.circle(size: 40),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: ShimmerBox.pill(width: 108, height: 20),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ShimmerBox.circle(size: 40),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: ShimmerBox.pill(width: 108, height: 20),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

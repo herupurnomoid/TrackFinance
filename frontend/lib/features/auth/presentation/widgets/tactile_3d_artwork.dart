@@ -34,15 +34,21 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
   late Animation<double> _coin3PopAnimation;
   late Animation<double> _badgePopAnimation;
 
+  // Cached static 3D subtrees agar tidak di-rebuild 60x/detik saat animasi berjalan
+  late final Widget _cachedWallet = RepaintBoundary(child: _buildTactileWallet());
+  late final Widget _cachedCoinRp = RepaintBoundary(child: _buildCoinRp());
+  late final Widget _cachedCoinDot = RepaintBoundary(child: _buildCoinDot());
+  late final Widget _cachedCoinPayment = RepaintBoundary(child: _buildCoinPayment());
+
   @override
   void initState() {
     super.initState();
 
-    // 1. Idle Floating Animation (Weightless Levitation Physics)
+    // 1. Entrance Levitation Wave (1 siklus mulus lalu settle ke 0% CPU saat idle)
     _idleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3200),
-    )..repeat(reverse: true);
+    )..forward();
 
     // 2. Entrance Staggered Animation
     _entranceController = AnimationController(
@@ -234,7 +240,7 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
                         offset: Offset(0, walletDy),
                         child: Transform.scale(
                           scale: _walletScaleAnimation.value,
-                          child: _buildTactileWallet(),
+                          child: _cachedWallet,
                         ),
                       ),
                     ),
@@ -245,7 +251,7 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
                       right: 32,
                       child: Transform.scale(
                         scale: _coin1PopAnimation.value,
-                        child: _buildCoinRp(),
+                        child: _cachedCoinRp,
                       ),
                     ),
 
@@ -255,7 +261,7 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
                       left: 48,
                       child: Transform.scale(
                         scale: _coin2PopAnimation.value,
-                        child: _buildCoinDot(),
+                        child: _cachedCoinDot,
                       ),
                     ),
 
@@ -265,7 +271,7 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
                       right: 68,
                       child: Transform.scale(
                         scale: _coin3PopAnimation.value,
-                        child: _buildCoinPayment(),
+                        child: _cachedCoinPayment,
                       ),
                     ),
                   ],

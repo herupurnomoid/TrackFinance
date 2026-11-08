@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
@@ -51,13 +50,11 @@ class _CategoryDeleteDialogState extends State<CategoryDeleteDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Container(
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
           width: double.infinity,
           constraints: const BoxConstraints(maxWidth: 342),
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
@@ -242,7 +239,6 @@ class _CategoryDeleteDialogState extends State<CategoryDeleteDialog> {
             ],
           ),
         ),
-      ),
     );
   }
 }

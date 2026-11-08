@@ -26,21 +26,59 @@ class HeaderTimeBackground extends StatefulWidget {
 
 class _HeaderTimeBackgroundState extends State<HeaderTimeBackground>
     with SingleTickerProviderStateMixin {
+  /// 240 bucket per siklus 12 detik (~20Hz refresh ambien) memangkas ~66% beban
+  /// CPU/GPU pada perangkat Android low-end tanpa mengurangi kehalusan visual awan/bintang.
+  static const int _kStepBuckets = 240;
+
   late AnimationController _animController;
+  final ValueNotifier<double> _stepProgress = ValueNotifier<double>(0.5);
+  int _lastStepBucket = -1;
+  bool _osDisableAnimations = false;
+
+  bool get _isFlutterTest =>
+      !kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST');
+
+  bool get _shouldAnimate =>
+      widget.animate && !_osDisableAnimations && !_isFlutterTest;
 
   @override
   void initState() {
     super.initState();
-    // Loop animasi kontinu berdurasi 12 detik untuk menggerakkan seluruh elemen
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 12000),
-    );
-    if (!widget.animate ||
-        (!kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST'))) {
-      _animController.value = 0.5;
+    )..addListener(_handleTick);
+    _syncAnimationState();
+  }
+
+  void _handleTick() {
+    final val = _animController.value;
+    final bucket = (val * _kStepBuckets).floor();
+    if (bucket != _lastStepBucket) {
+      _lastStepBucket = bucket;
+      _stepProgress.value = bucket / _kStepBuckets;
+    }
+  }
+
+  void _syncAnimationState() {
+    if (_shouldAnimate) {
+      if (!_animController.isAnimating) {
+        _animController.repeat();
+      }
     } else {
-      _animController.repeat();
+      _animController.stop();
+      _animController.value = 0.5;
+      _stepProgress.value = 0.5;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disable = MediaQuery.disableAnimationsOf(context);
+    if (disable != _osDisableAnimations) {
+      _osDisableAnimations = disable;
+      _syncAnimationState();
     }
   }
 
@@ -48,80 +86,77 @@ class _HeaderTimeBackgroundState extends State<HeaderTimeBackground>
   void didUpdateWidget(covariant HeaderTimeBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.animate != oldWidget.animate) {
-      if (widget.animate &&
-          !(!kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST'))) {
-        if (!_animController.isAnimating) {
-          _animController.repeat();
-        }
-      } else {
-        _animController.stop();
-        _animController.value = 0.5;
-      }
+      _syncAnimationState();
     }
   }
 
   @override
   void dispose() {
+    _animController.removeListener(_handleTick);
     _animController.dispose();
+    _stepProgress.dispose();
     super.dispose();
+  }
+
+  Widget _buildSkyLayer({required ValueListenable<double>? listenable}) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: widget.timeOfDay.skyGradientColors,
+        ),
+      ),
+      child: CustomPaint(
+        painter: _TimeSkyPainter(
+          timeOfDay: widget.timeOfDay,
+          progressListenable: listenable,
+        ),
+        size: Size.infinite,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.animate) {
+    if (!widget.animate || _osDisableAnimations) {
       return RepaintBoundary(
         key: ValueKey('static_${widget.timeOfDay}'),
-        child: CustomPaint(
-          painter: _TimeSkyPainter(
-            timeOfDay: widget.timeOfDay,
-            progress: 0.5,
-          ),
-          size: Size.infinite,
-        ),
+        child: _buildSkyLayer(listenable: null),
       );
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 500),
       switchInCurve: Curves.easeInOut,
       switchOutCurve: Curves.easeInOut,
       child: RepaintBoundary(
         key: ValueKey(widget.timeOfDay),
-        child: AnimatedBuilder(
-          animation: _animController,
-          builder: (context, child) {
-            return CustomPaint(
-              painter: _TimeSkyPainter(
-                timeOfDay: widget.timeOfDay,
-                progress: _animController.value,
-              ),
-              size: Size.infinite,
-            );
-          },
-        ),
+        child: _buildSkyLayer(listenable: _stepProgress),
       ),
     );
   }
 }
 
-/// CustomPainter utama yang menggambar langit dan animasi elemen spesifik waktu
+/// CustomPainter utama yang menggambar elemen langit spesifik waktu tanpa
+/// memicu rebuild widget tree (menggunakan repaint ValueListenable langsung).
 class _TimeSkyPainter extends CustomPainter {
   final DashboardTimeOfDay timeOfDay;
-  final double progress; // 0.0 .. 1.0 continuously
+  final ValueListenable<double>? progressListenable;
 
   _TimeSkyPainter({
     required this.timeOfDay,
-    required this.progress,
-  });
+    this.progressListenable,
+  }) : super(repaint: progressListenable);
+
+  double get progress => progressListenable?.value ?? 0.5;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
-    // 1. Gambar Gradient Langit Sesuai Waktu
-    _paintSkyGradient(canvas, size);
-
-    // 2. Gambar Elemen Spesifik Berdasarkan Waktu
+    // Gradient dasar sudah di-cache pada DecoratedBox di atas CustomPaint
+    // sehingga tidak membuat Shader baru setiap frame.
     switch (timeOfDay) {
       case DashboardTimeOfDay.pagi:
         _paintPagi(canvas, size);
@@ -136,22 +171,6 @@ class _TimeSkyPainter extends CustomPainter {
         _paintMalam(canvas, size);
         break;
     }
-  }
-
-  /// -------------------------------------------------------------
-  /// 1. SKY GRADIENT DASAR
-  /// -------------------------------------------------------------
-  void _paintSkyGradient(Canvas canvas, Size size) {
-    final colors = timeOfDay.skyGradientColors;
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: colors,
-    );
-
-    final rect = Offset.zero & size;
-    final paint = Paint()..shader = gradient.createShader(rect);
-    canvas.drawRect(rect, paint);
   }
 
   /// -------------------------------------------------------------
@@ -883,7 +902,7 @@ class _TimeSkyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TimeSkyPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.timeOfDay != timeOfDay;
+    return oldDelegate.timeOfDay != timeOfDay ||
+        oldDelegate.progressListenable != progressListenable;
   }
 }

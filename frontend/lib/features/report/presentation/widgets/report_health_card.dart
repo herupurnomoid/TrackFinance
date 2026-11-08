@@ -167,6 +167,9 @@ class ReportHealthCard extends StatelessWidget {
                       width: 22,
                       height: 22,
                       fit: BoxFit.contain,
+                      cacheWidth: 66,
+                      cacheHeight: 66,
+                      filterQuality: FilterQuality.low,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.favorite_rounded,
                         size: 20,

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,24 +27,18 @@ class ExportImportSuccessDialog extends StatefulWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss Dialog',
-      barrierColor: const Color(0xFF0F172A).withValues(alpha: 0.45),
-      transitionDuration: const Duration(milliseconds: 250),
+      barrierColor: const Color(0x8C0F172A),
+      transitionDuration: const Duration(milliseconds: 220),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(
           parent: animation,
           curve: Curves.easeOutBack,
         );
-        return BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 6 * animation.value,
-            sigmaY: 6 * animation.value,
-          ),
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.85, end: 1.0).animate(curved),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.88, end: 1.0).animate(curved),
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
           ),
         );
       },

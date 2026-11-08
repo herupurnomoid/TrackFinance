@@ -4,7 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/dashboard_transaction_model.dart';
 import 'dashboard_search_and_filter.dart';
 
-class DashboardTransactionsView extends StatelessWidget {
+class DashboardTransactionsView extends StatefulWidget {
+  /// Batas awal kartu transaksi yang dipasang ke pohon widget pada satu waktu
+  /// agar perangkat Android RAM rendah (1-2 GB) tetap mulus meski ada ratusan transaksi.
+  static const int kInitialVisibleTransactions = 60;
+  static const int kLoadMoreStep = 60;
+
   final DashboardPeriod period;
   final List<DashboardTransaction> transactions;
   final int currentYear;
@@ -25,46 +30,75 @@ class DashboardTransactionsView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (dateRange != null) {
-      return _buildDailyView();
-    }
+  State<DashboardTransactionsView> createState() =>
+      _DashboardTransactionsViewState();
+}
 
-    switch (period) {
-      case DashboardPeriod.hari:
-        return _buildDailyView();
-      case DashboardPeriod.minggu:
-        return _buildWeeklyView();
-      case DashboardPeriod.bulan:
-        return _buildMonthlyView();
-      case DashboardPeriod.tahun:
-        return _buildYearlyView();
+class _DashboardTransactionsViewState extends State<DashboardTransactionsView> {
+  int _visibleLimit = DashboardTransactionsView.kInitialVisibleTransactions;
+
+  @override
+  void didUpdateWidget(covariant DashboardTransactionsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.period != widget.period ||
+        oldWidget.currentYear != widget.currentYear ||
+        oldWidget.currentMonthIndex != widget.currentMonthIndex ||
+        oldWidget.currentDecadeStart != widget.currentDecadeStart ||
+        oldWidget.dateRange != widget.dateRange) {
+      _visibleLimit = DashboardTransactionsView.kInitialVisibleTransactions;
     }
   }
 
-  List<DashboardTransaction> get _uniqueTransactions {
+  List<DashboardTransaction> _deduplicateTransactions() {
     final seen = <String>{};
-    return transactions.where((t) => seen.add(t.id)).toList();
+    return widget.transactions.where((t) => seen.add(t.id)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uniqueTransactions = _deduplicateTransactions();
+
+    if (widget.dateRange != null) {
+      return _buildDailyView(uniqueTransactions);
+    }
+
+    switch (widget.period) {
+      case DashboardPeriod.hari:
+        return _buildDailyView(uniqueTransactions);
+      case DashboardPeriod.minggu:
+        return _buildWeeklyView(uniqueTransactions);
+      case DashboardPeriod.bulan:
+        return _buildMonthlyView(uniqueTransactions);
+      case DashboardPeriod.tahun:
+        return _buildYearlyView(uniqueTransactions);
+    }
   }
 
   // 1. Daily View (Per Tanggal atau Rentang Tanggal)
-  Widget _buildDailyView() {
-    final filtered = _uniqueTransactions.where((t) {
-      if (dateRange != null) {
+  Widget _buildDailyView(List<DashboardTransaction> uniqueTransactions) {
+    final dateRange = widget.dateRange;
+    final DateTime? rangeStart = dateRange != null
+        ? DateTime(
+            dateRange.start.year,
+            dateRange.start.month,
+            dateRange.start.day,
+          )
+        : null;
+    final DateTime? rangeEnd = dateRange != null
+        ? DateTime(
+            dateRange.end.year,
+            dateRange.end.month,
+            dateRange.end.day,
+          )
+        : null;
+
+    final filtered = uniqueTransactions.where((t) {
+      if (rangeStart != null && rangeEnd != null) {
         final txDate = DateTime(t.year, t.month + 1, t.day);
-        final start = DateTime(
-          dateRange!.start.year,
-          dateRange!.start.month,
-          dateRange!.start.day,
-        );
-        final end = DateTime(
-          dateRange!.end.year,
-          dateRange!.end.month,
-          dateRange!.end.day,
-        );
-        return !txDate.isBefore(start) && !txDate.isAfter(end);
+        return !txDate.isBefore(rangeStart) && !txDate.isAfter(rangeEnd);
       }
-      return t.year == currentYear && t.month == currentMonthIndex;
+      return t.year == widget.currentYear &&
+          t.month == widget.currentMonthIndex;
     }).toList();
 
     if (dateRange != null) {
@@ -85,22 +119,34 @@ class DashboardTransactionsView extends StatelessWidget {
       grouped.putIfAbsent(item.dateStr, () => []).add(item);
     }
 
-    return Column(
-      children: grouped.entries.map((entry) {
-        final dateStr = entry.key;
-        final items = entry.value;
+    int renderedCards = 0;
+    final List<Widget> daySections = [];
 
-        int dayIncome = 0;
-        int dayExpense = 0;
-        for (final tx in items) {
-          if (tx.isIncome) {
-            dayIncome += tx.amount;
-          } else {
-            dayExpense += tx.amount.abs();
-          }
+    for (final entry in grouped.entries) {
+      if (renderedCards >= _visibleLimit) break;
+
+      final dateStr = entry.key;
+      final items = entry.value;
+
+      // Rekap harian dihitung dari seluruh item pada tanggal tersebut agar tetap akurat
+      int dayIncome = 0;
+      int dayExpense = 0;
+      for (final tx in items) {
+        if (tx.isIncome) {
+          dayIncome += tx.amount;
+        } else {
+          dayExpense += tx.amount.abs();
         }
+      }
 
-        return Padding(
+      final remainingBudget = _visibleLimit - renderedCards;
+      final visibleItems = items.length <= remainingBudget
+          ? items
+          : items.sublist(0, remainingBudget);
+      renderedCards += visibleItems.length;
+
+      daySections.add(
+        Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +202,7 @@ class DashboardTransactionsView extends StatelessWidget {
 
               // Daftar Kartu Transaksi
               Column(
-                children: items.map((tx) {
+                children: visibleItems.map((tx) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _buildTransactionCard(tx),
@@ -165,17 +211,57 @@ class DashboardTransactionsView extends StatelessWidget {
               ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      );
+    }
+
+    final remainingTotal = filtered.length - renderedCards;
+    if (remainingTotal > 0) {
+      daySections.add(_buildLoadMoreButton(remainingTotal));
+    }
+
+    return Column(children: daySections);
+  }
+
+  Widget _buildLoadMoreButton(int remainingCount) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            setState(() {
+              _visibleLimit += DashboardTransactionsView.kLoadMoreStep;
+            });
+          },
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF2563EB),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFDBEAFE)),
+            ),
+          ),
+          icon: const Icon(Icons.expand_more_rounded, size: 18),
+          label: Text(
+            'Tampilkan lebih banyak ($remainingCount lainnya)',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   // 2. Weekly View (Rekap per Minggu di Bulan Ini, dimulai dari hari Senin)
-  Widget _buildWeeklyView() {
-    final month = currentMonthIndex + 1;
-    final firstDayOfMonth = DateTime(currentYear, month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(currentYear, month);
-    final lastDayOfMonth = DateTime(currentYear, month, daysInMonth);
+  Widget _buildWeeklyView(List<DashboardTransaction> uniqueTransactions) {
+    final month = widget.currentMonthIndex + 1;
+    final firstDayOfMonth = DateTime(widget.currentYear, month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(widget.currentYear, month);
+    final lastDayOfMonth = DateTime(widget.currentYear, month, daysInMonth);
 
     // Hari Senin di minggu pertama (mundur ke hari Senin terdekat jika tanggal 1 bukan hari Senin)
     final daysFromMonday = firstDayOfMonth.weekday - DateTime.monday;
@@ -219,7 +305,7 @@ class DashboardTransactionsView extends StatelessWidget {
       int wIncome = 0;
       int wExpense = 0;
 
-      for (final tx in _uniqueTransactions) {
+      for (final tx in uniqueTransactions) {
         final txDate = DateTime(tx.year, tx.month + 1, tx.day);
         if (!txDate.isBefore(startMidnight) && !txDate.isAfter(endMidnight)) {
           if (tx.isIncome) {
@@ -253,67 +339,68 @@ class DashboardTransactionsView extends StatelessWidget {
   }
 
   // 3. Monthly View (12 Bulan dalam currentYear)
-  Widget _buildMonthlyView() {
-    final filtered = _uniqueTransactions.where((t) => t.year == currentYear).toList();
-
-    final List<_SummaryItem> monthlyItems = [];
-    for (int m = 0; m < 12; m++) {
-      int mIncome = 0;
-      int mExpense = 0;
-
-      for (final tx in filtered) {
-        if (tx.month == m) {
-          if (tx.isIncome) {
-            mIncome += tx.amount;
-          } else {
-            mExpense += tx.amount.abs();
-          }
+  Widget _buildMonthlyView(List<DashboardTransaction> uniqueTransactions) {
+    final incomeByMonth = List<int>.filled(12, 0);
+    final expenseByMonth = List<int>.filled(12, 0);
+    for (final tx in uniqueTransactions) {
+      if (tx.year == widget.currentYear && tx.month >= 0 && tx.month < 12) {
+        if (tx.isIncome) {
+          incomeByMonth[tx.month] += tx.amount;
+        } else {
+          expenseByMonth[tx.month] += tx.amount.abs();
         }
       }
-
-      monthlyItems.add(_SummaryItem(
-        title: DashboardDataStore.monthsName[m],
-        subtitle: '$currentYear',
-        income: mIncome,
-        expense: mExpense,
-        isActive: m == currentMonthIndex,
-      ));
     }
+
+    final List<_SummaryItem> monthlyItems = List.generate(12, (m) {
+      return _SummaryItem(
+        title: DashboardDataStore.monthsName[m],
+        subtitle: '${widget.currentYear}',
+        income: incomeByMonth[m],
+        expense: expenseByMonth[m],
+        isActive: m == widget.currentMonthIndex,
+      );
+    });
 
     return _buildSummaryCardList(monthlyItems);
   }
 
   // 4. Yearly View (Dekade Aktif)
-  Widget _buildYearlyView() {
-    final minYear = DashboardDataStore.getMinTransactionYear(_uniqueTransactions);
-    final maxYear = DashboardDataStore.getMaxTransactionYear(_uniqueTransactions);
+  Widget _buildYearlyView(List<DashboardTransaction> uniqueTransactions) {
+    final minYear = DashboardDataStore.getMinTransactionYear(uniqueTransactions);
+    final maxYear = DashboardDataStore.getMaxTransactionYear(uniqueTransactions);
 
-    final startYear = currentDecadeStart < minYear ? currentDecadeStart : minYear;
-    final endYear = (currentDecadeStart + 9) > maxYear ? (currentDecadeStart + 9) : maxYear;
+    final startYear = widget.currentDecadeStart < minYear
+        ? widget.currentDecadeStart
+        : minYear;
+    final endYear = (widget.currentDecadeStart + 9) > maxYear
+        ? (widget.currentDecadeStart + 9)
+        : maxYear;
 
-    final List<_SummaryItem> yearlyItems = [];
-    for (int y = startYear; y <= endYear; y++) {
-      int yIncome = 0;
-      int yExpense = 0;
-
-      for (final tx in _uniqueTransactions) {
-        if (tx.year == y) {
-          if (tx.isIncome) {
-            yIncome += tx.amount;
-          } else {
-            yExpense += tx.amount.abs();
-          }
+    final int span = endYear - startYear + 1;
+    final incomeByYear = List<int>.filled(span, 0);
+    final expenseByYear = List<int>.filled(span, 0);
+    for (final tx in uniqueTransactions) {
+      final idx = tx.year - startYear;
+      if (idx >= 0 && idx < span) {
+        if (tx.isIncome) {
+          incomeByYear[idx] += tx.amount;
+        } else {
+          expenseByYear[idx] += tx.amount.abs();
         }
       }
+    }
 
-      yearlyItems.add(_SummaryItem(
+    final List<_SummaryItem> yearlyItems = List.generate(span, (idx) {
+      final y = startYear + idx;
+      return _SummaryItem(
         title: '$y',
         subtitle: 'Januari - Desember',
-        income: yIncome,
-        expense: yExpense,
-        isActive: y == currentYear,
-      ));
-    }
+        income: incomeByYear[idx],
+        expense: expenseByYear[idx],
+        isActive: y == widget.currentYear,
+      );
+    });
 
     return _buildSummaryCardList(yearlyItems);
   }
@@ -321,75 +408,76 @@ class DashboardTransactionsView extends StatelessWidget {
   Widget _buildTransactionCard(DashboardTransaction tx) {
     return RepaintBoundary(
       child: _PressableCard(
-        onTap: () => onTransactionTap?.call(tx),
+        onTap: () => widget.onTransactionTap?.call(tx),
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                // Ikon 3D Panah Melayang (Pemasukan: Panah Naik, Pengeluaran: Panah Turun) Tanpa Container
-                Image.asset(
-                  tx.isIncome
-                      ? 'assets/icons/3d/income_arrow.webp'
-                      : 'assets/icons/3d/expense_arrow.webp',
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.contain,
-                  cacheWidth: 120,
-                  cacheHeight: 120,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tx.category,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        tx.meta,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF64748B),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  // Ikon 3D Panah Melayang (Pemasukan: Panah Naik, Pengeluaran: Panah Turun) Tanpa Container
+                  Image.asset(
+                    tx.isIncome
+                        ? 'assets/icons/3d/income_arrow.webp'
+                        : 'assets/icons/3d/expense_arrow.webp',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    cacheWidth: 120,
+                    cacheHeight: 120,
+                    filterQuality: FilterQuality.low,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tx.category,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          tx.meta,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Nominal Transaksi
-          Text(
-            DashboardDataStore.formatCurrency(tx.amount, showSign: true),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-              color: tx.isIncome
-                  ? const Color(0xFF16A34A)
-                  : const Color(0xFFDC2626),
-              letterSpacing: -0.2,
+            // Nominal Transaksi
+            Text(
+              DashboardDataStore.formatCurrency(tx.amount, showSign: true),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+                color: tx.isIncome
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFDC2626),
+                letterSpacing: -0.2,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildSummaryCardList(List<_SummaryItem> items) {
     if (items.isEmpty) return _buildEmptyState();
@@ -402,65 +490,65 @@ class DashboardTransactionsView extends StatelessWidget {
             child: _PressableCard(
               isActive: item.isActive,
               child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        item.title,
+                        DashboardDataStore.formatCurrency(item.income, showSign: true),
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: const Color(0xFF16A34A),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        item.subtitle,
+                        DashboardDataStore.formatCurrency(-item.expense, showSign: true),
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF64748B),
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFDC2626),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      DashboardDataStore.formatCurrency(item.income, showSign: true),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF16A34A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      DashboardDataStore.formatCurrency(-item.expense, showSign: true),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFDC2626),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    }).toList(),
+        );
+      }).toList(),
     );
   }
 
@@ -566,83 +654,123 @@ class _PressableCard extends StatefulWidget {
   State<_PressableCard> createState() => _PressableCardState();
 }
 
-class _PressableCardState extends State<_PressableCard> {
+class _PressableCardState extends State<_PressableCard>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
+  // Lazy controller: kartu yang tidak disentuh tidak mengalokasikan Ticker/AnimationController sama sekali.
+  AnimationController? _pressController;
+  Animation<double>? _pressCurve;
+
+  AnimationController _ensureController() {
+    final existing = _pressController;
+    if (existing != null) return existing;
+    final ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _pressController = ctrl;
+    _pressCurve = CurvedAnimation(parent: ctrl, curve: Curves.easeOutCubic);
+    return ctrl;
+  }
+
+  @override
+  void dispose() {
+    _pressController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      offset: Offset(0, _isPressed ? 0.025 : 0.0),
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOutCubic,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
-        child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: widget.isActive
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFF8FAFC),
-                    Color(0xFFEEF2F6),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white,
-                    Color(0xFFF8FAFC),
-                  ],
-                ),
-          border: Border.all(
-            color: widget.isActive
-                ? const Color(0xFF2563EB)
-                : const Color(0xFFE2E8F0),
-            width: widget.isActive ? 1.5 : 1.0,
-          ),
-          boxShadow: _isPressed
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
+    final card = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: widget.isActive
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFF8FAFC),
+                  Color(0xFFEEF2F6),
                 ],
+              )
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Color(0xFFF8FAFC),
+                ],
+              ),
+        border: Border.all(
+          color: widget.isActive
+              ? const Color(0xFF2563EB)
+              : const Color(0xFFE2E8F0),
+          width: widget.isActive ? 1.5 : 1.0,
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onHighlightChanged: (highlighted) {
-              setState(() => _isPressed = highlighted);
-            },
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onTap?.call();
-            },
-            child: widget.child,
-          ),
+        boxShadow: _isPressed
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onHighlightChanged: (highlighted) {
+            if (_isPressed == highlighted) return;
+            setState(() => _isPressed = highlighted);
+            final ctrl = _ensureController();
+            if (highlighted) {
+              ctrl.forward();
+            } else {
+              ctrl.reverse();
+            }
+          },
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap?.call();
+          },
+          child: widget.child,
         ),
       ),
-    ),
-  );
-}
+    );
+
+    final curve = _pressCurve;
+    if (curve == null) {
+      return card;
+    }
+
+    return AnimatedBuilder(
+      animation: curve,
+      child: card,
+      builder: (context, child) {
+        final t = curve.value;
+        if (t == 0.0) return child!;
+        return FractionalTranslation(
+          translation: Offset(0, 0.025 * t),
+          child: Transform.scale(
+            scale: 1.0 - (0.02 * t),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
 }

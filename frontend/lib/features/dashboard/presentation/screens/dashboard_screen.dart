@@ -44,7 +44,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   late bool _isLoading;
 
   // Waktu & Filter State
@@ -99,12 +100,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else {
       _transactions = List.from(DashboardDataStore.initialTransactions);
     }
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
     _setupStreams();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _txSubscription?.cancel();
     _summarySubscription?.cancel();
     _scrollController.removeListener(_onScroll);
@@ -112,6 +115,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _searchController.dispose();
     _isHeaderCoveredNotifier.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() {});
+    }
   }
 
   double get _headerHeight {
@@ -258,16 +268,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Filtered transactions berdasarkan pencarian
+  // Filtered transactions berdasarkan pencarian (1-pass deduplikasi + filter)
   List<DashboardTransaction> get _filteredTransactions {
     final seen = <String>{};
-    final unique = _transactions.where((item) => seen.add(item.id)).toList();
-    if (_searchQuery.trim().isEmpty) return unique;
-    final query = _searchQuery.toLowerCase();
-    return unique.where((item) {
-      return item.category.toLowerCase().contains(query) ||
-          item.meta.toLowerCase().contains(query);
-    }).toList();
+    final trimmedQuery = _searchQuery.trim();
+    if (trimmedQuery.isEmpty) {
+      return _transactions.where((item) => seen.add(item.id)).toList();
+    }
+    final query = trimmedQuery.toLowerCase();
+    final result = <DashboardTransaction>[];
+    for (final item in _transactions) {
+      if (!seen.add(item.id)) continue;
+      if (item.category.toLowerCase().contains(query) ||
+          item.meta.toLowerCase().contains(query)) {
+        result.add(item);
+      }
+    }
+    return result;
+  }
+
+  /// Menghitung daftar transaksi unik terfilter beserta total pemasukan & pengeluaran
+  /// sekaligus dalam satu lintasan (single-pass) per siklus `build()` agar hemat CPU & alokasi GC.
+  ({
+    List<DashboardTransaction> transactions,
+    int totalIncome,
+    int totalExpense,
+  }) _computeDashboardMetrics() {
+    final list = _filteredTransactions;
+
+    if (_selectedDateRange != null) {
+      final range = _selectedDateRange!;
+      int income = 0;
+      int expense = 0;
+      for (final tx in list) {
+        if (_isTxInDateRange(tx, range)) {
+          if (tx.isIncome) {
+            income += tx.amount;
+          } else {
+            expense += tx.amount.abs();
+          }
+        }
+      }
+      return (transactions: list, totalIncome: income, totalExpense: expense);
+    }
+
+    if ((_activePeriod == DashboardPeriod.hari ||
+            _activePeriod == DashboardPeriod.minggu) &&
+        _monthlySummary != null) {
+      return (
+        transactions: list,
+        totalIncome: _monthlySummary!.totalIncome,
+        totalExpense: _monthlySummary!.totalExpense,
+      );
+    }
+
+    int income = 0;
+    int expense = 0;
+    if (_activePeriod == DashboardPeriod.hari ||
+        _activePeriod == DashboardPeriod.minggu) {
+      for (final tx in list) {
+        if (tx.year == _currentYear && tx.month == _currentMonthIndex) {
+          if (tx.isIncome) {
+            income += tx.amount;
+          } else {
+            expense += tx.amount.abs();
+          }
+        }
+      }
+    } else if (_activePeriod == DashboardPeriod.bulan) {
+      for (final tx in list) {
+        if (tx.year == _currentYear) {
+          if (tx.isIncome) {
+            income += tx.amount;
+          } else {
+            expense += tx.amount.abs();
+          }
+        }
+      }
+    } else {
+      final decadeEnd = _currentDecadeStart + 9;
+      for (final tx in list) {
+        if (tx.year >= _currentDecadeStart && tx.year <= decadeEnd) {
+          if (tx.isIncome) {
+            income += tx.amount;
+          } else {
+            expense += tx.amount.abs();
+          }
+        }
+      }
+    }
+
+    return (transactions: list, totalIncome: income, totalExpense: expense);
   }
 
   bool _isTxInDateRange(DashboardTransaction tx, DateTimeRange range) {
@@ -306,95 +397,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else {
       return '$_currentDecadeStart - ${_currentDecadeStart + 9}';
     }
-  }
-
-  // Total Pemasukan & Pengeluaran Header (Raw Values for Animated Counter)
-  int get _totalIncomeRaw {
-    if (_selectedDateRange != null) {
-      int total = 0;
-      for (final tx in _filteredTransactions) {
-        if (_isTxInDateRange(tx, _selectedDateRange!)) {
-          if (tx.isIncome) total += tx.amount;
-        }
-      }
-      return total;
-    }
-
-    if ((_activePeriod == DashboardPeriod.hari ||
-            _activePeriod == DashboardPeriod.minggu) &&
-        _monthlySummary != null) {
-      return _monthlySummary!.totalIncome;
-    }
-
-    int total = 0;
-    final list = _filteredTransactions;
-
-    if (_activePeriod == DashboardPeriod.hari ||
-        _activePeriod == DashboardPeriod.minggu) {
-      for (final tx in list) {
-        if (tx.year == _currentYear && tx.month == _currentMonthIndex) {
-          if (tx.isIncome) total += tx.amount;
-        }
-      }
-    } else if (_activePeriod == DashboardPeriod.bulan) {
-      for (final tx in list) {
-        if (tx.year == _currentYear) {
-          if (tx.isIncome) total += tx.amount;
-        }
-      }
-    } else {
-      final decadeEnd = _currentDecadeStart + 9;
-      for (final tx in list) {
-        if (tx.year >= _currentDecadeStart && tx.year <= decadeEnd) {
-          if (tx.isIncome) total += tx.amount;
-        }
-      }
-    }
-    return total;
-  }
-
-  int get _totalExpenseRaw {
-    if (_selectedDateRange != null) {
-      int total = 0;
-      for (final tx in _filteredTransactions) {
-        if (_isTxInDateRange(tx, _selectedDateRange!)) {
-          if (!tx.isIncome) total += tx.amount.abs();
-        }
-      }
-      return total;
-    }
-
-    if ((_activePeriod == DashboardPeriod.hari ||
-            _activePeriod == DashboardPeriod.minggu) &&
-        _monthlySummary != null) {
-      return _monthlySummary!.totalExpense;
-    }
-
-    int total = 0;
-    final list = _filteredTransactions;
-
-    if (_activePeriod == DashboardPeriod.hari ||
-        _activePeriod == DashboardPeriod.minggu) {
-      for (final tx in list) {
-        if (tx.year == _currentYear && tx.month == _currentMonthIndex) {
-          if (!tx.isIncome) total += tx.amount.abs();
-        }
-      }
-    } else if (_activePeriod == DashboardPeriod.bulan) {
-      for (final tx in list) {
-        if (tx.year == _currentYear) {
-          if (!tx.isIncome) total += tx.amount.abs();
-        }
-      }
-    } else {
-      final decadeEnd = _currentDecadeStart + 9;
-      for (final tx in list) {
-        if (tx.year >= _currentDecadeStart && tx.year <= decadeEnd) {
-          if (!tx.isIncome) total += tx.amount.abs();
-        }
-      }
-    }
-    return total;
   }
 
   bool get _isFilterActive {
@@ -705,6 +707,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String displayName = _effectiveUser?.displayName?.trim().isNotEmpty == true
         ? _effectiveUser!.displayName!
         : 'Heru';
+    final metrics = _isLoading
+        ? (
+            transactions: const <DashboardTransaction>[],
+            totalIncome: 0,
+            totalExpense: 0,
+          )
+        : _computeDashboardMetrics();
 
     return ValueListenableBuilder<bool>(
       valueListenable: _isHeaderCoveredNotifier,
@@ -761,28 +770,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           // 1. Header Card (pinned): digeser balik sebesar offset scroll
                           // sehingga tetap diam, lalu tertutup panel putih di bawahnya.
-                          // Diisolasi dengan RepaintBoundary agar animasi background/sapaan
-                          // tidak memicu repaint pada content panel atau transaction list.
+                          // Diisolasi dengan RepaintBoundary + TickerMode dinamis agar saat
+                          // header tertutup panel konten, animasi langit berhenti total (0% CPU/GPU).
                           AnimatedBuilder(
                             animation: _scrollController,
                             child: RepaintBoundary(
                               child: KeyedSubtree(
                                 key: _headerKey,
-                                child: DashboardTactileHeader(
-                                  userName: displayName,
-                                  periodLabel: _periodLabel,
-                                  totalIncomeValue: _totalIncomeRaw,
-                                  totalExpenseValue: _totalExpenseRaw,
-                                  isPrevDisabled: _isPrevDisabled,
-                                  isNextDisabled: _isNextDisabled,
-                                  onOpenPicker: _openTimePickerModal,
-                                  onPrev: _handlePrevPeriod,
-                                  onNext: _handleNextPeriod,
-                                  onProfileTap: () => _openProfile(context),
-                                  onLogout: _handleLogout,
-                                  isFilterActive: _isFilterActive,
-                                  onResetToToday: _handleResetToToday,
-                                  bottomExtension: _headerExtension,
+                                child: ValueListenableBuilder<bool>(
+                                  valueListenable: _isHeaderCoveredNotifier,
+                                  builder: (context, isHeaderCovered, headerChild) {
+                                    return TickerMode(
+                                      enabled: !isHeaderCovered &&
+                                          !MediaQuery.disableAnimationsOf(context),
+                                      child: headerChild!,
+                                    );
+                                  },
+                                  child: DashboardTactileHeader(
+                                    userName: displayName,
+                                    periodLabel: _periodLabel,
+                                    totalIncomeValue: metrics.totalIncome,
+                                    totalExpenseValue: metrics.totalExpense,
+                                    isPrevDisabled: _isPrevDisabled,
+                                    isNextDisabled: _isNextDisabled,
+                                    onOpenPicker: _openTimePickerModal,
+                                    onPrev: _handlePrevPeriod,
+                                    onNext: _handleNextPeriod,
+                                    onProfileTap: () => _openProfile(context),
+                                    onLogout: _handleLogout,
+                                    isFilterActive: _isFilterActive,
+                                    onResetToToday: _handleResetToToday,
+                                    bottomExtension: _headerExtension,
+                                    timeOfDay: _activeTimeOfDay,
+                                  ),
                                 ),
                               ),
                             ),
@@ -888,7 +908,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       DashboardTransactionsView(
                                         period: _activePeriod,
                                         dateRange: _selectedDateRange,
-                                        transactions: _filteredTransactions,
+                                        transactions: metrics.transactions,
                                         currentYear: _currentYear,
                                         currentMonthIndex: _currentMonthIndex,
                                         currentDecadeStart: _currentDecadeStart,

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,6 +25,7 @@ class DashboardTactileHeader extends StatefulWidget {
   final bool isFilterActive;
   final VoidCallback? onResetToToday;
   final double bottomExtension;
+  final DashboardTimeOfDay? timeOfDay;
 
   const DashboardTactileHeader({
     super.key,
@@ -41,6 +43,7 @@ class DashboardTactileHeader extends StatefulWidget {
     this.isFilterActive = false,
     this.onResetToToday,
     this.bottomExtension = 0.0,
+    this.timeOfDay,
   });
 
   @override
@@ -50,43 +53,37 @@ class DashboardTactileHeader extends StatefulWidget {
 class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
     with TickerProviderStateMixin {
   late AnimationController _waveController;
-  late Animation<double> _waveAnimation;
-
   late AnimationController _breatheController;
-  late Animation<double> _breatheAnimation;
 
   DashboardTimeOfDay get _currentTimeOfDay =>
-      DashboardTimeOfDay.fromDateTime();
+      widget.timeOfDay ?? DashboardTimeOfDay.fromDateTime();
 
   @override
   void initState() {
     super.initState();
 
-    // 1. Animasi Lambaian Tangan Sapaan (Waving Hand 👋)
+    // 1. Animasi Lambaian Tangan Sapaan (2 siklus sambutan lalu settle ke 0% CPU saat idle)
     _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 2200),
+    )..forward();
 
-    _waveAnimation = Tween<double>(begin: -0.15, end: 0.20).animate(
-      CurvedAnimation(
-        parent: _waveController,
-        curve: Curves.easeInOutSine,
-      ),
-    );
-
-    // 2. Animasi Denyut / Melayang Panah Aliran Uang (Breathing Cashflow)
+    // 2. Animasi Denyut Panah Aliran Uang (aktif saat masuk & saat nominal berubah, 0% CPU saat idle)
     _breatheController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 1400),
+    )..forward();
+  }
 
-    _breatheAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-      CurvedAnimation(
-        parent: _breatheController,
-        curve: Curves.easeInOut,
-      ),
-    );
+  @override
+  void didUpdateWidget(covariant DashboardTactileHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.totalIncomeValue != widget.totalIncomeValue ||
+        oldWidget.totalExpenseValue != widget.totalExpenseValue) {
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _breatheController.forward(from: 0.0);
+      }
+    }
   }
 
   @override
@@ -96,12 +93,10 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
     super.dispose();
   }
 
-  String _getGreeting() {
-    return _currentTimeOfDay.greeting;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final activeTimeOfDay = _currentTimeOfDay;
+
     // Jika header dipanjangkan ke bawah untuk menutup celah di balik panel konten,
     // ratakan sudut bawah agar background menutup sempurna dari ujung ke ujung.
     final effectiveBorderRadius = widget.bottomExtension > 0
@@ -119,7 +114,7 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
             ? null
             : [
                 BoxShadow(
-                  color: _currentTimeOfDay.skyGradientColors.first
+                  color: activeTimeOfDay.skyGradientColors.first
                       .withValues(alpha: 0.25),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
@@ -133,7 +128,7 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
             // 1. Background Animasi Waktu Dinamis (Pagi, Siang, Sore, Malam)
             Positioned.fill(
               child: HeaderTimeBackground(
-                timeOfDay: _currentTimeOfDay,
+                timeOfDay: activeTimeOfDay,
               ),
             ),
 
@@ -175,7 +170,7 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _getGreeting(),
+                                      activeTimeOfDay.greeting,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
@@ -205,19 +200,29 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
                                         ),
                                         const SizedBox(width: 8),
 
-                                        // Tangan Melambai Beranimasi 👋
-                                        AnimatedBuilder(
-                                          animation: _waveAnimation,
-                                          builder: (context, child) {
-                                            return Transform.rotate(
-                                              angle: _waveAnimation.value,
-                                              alignment: Alignment.bottomRight,
-                                              child: const Text(
-                                                '👋',
-                                                style: TextStyle(fontSize: 20),
-                                              ),
-                                            );
-                                          },
+                                        // Tangan Melambai Beranimasi 👋 (settle mulus ke 0 rad setelah sambutan)
+                                        RepaintBoundary(
+                                          child: AnimatedBuilder(
+                                            animation: _waveController,
+                                            child: const Text(
+                                              '👋',
+                                              style: TextStyle(fontSize: 20),
+                                            ),
+                                            builder: (context, child) {
+                                              if (_waveController.isCompleted) {
+                                                return child!;
+                                              }
+                                              final t = _waveController.value;
+                                              final angle = math.sin(t * 4 * math.pi) *
+                                                  0.20 *
+                                                  (1.0 - t);
+                                              return Transform.rotate(
+                                                angle: angle,
+                                                alignment: Alignment.bottomRight,
+                                                child: child,
+                                              );
+                                            },
+                                          ),
                                         ),
 
                                         const SizedBox(width: 6),
@@ -336,25 +341,45 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
                     ],
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 20),
 
-                  // Baris 3: Rekapitulasi Pemasukan & Pengeluaran dengan Animated Rolling Counter
-                  Column(
-                    children: [
-                      // Kartu Pemasukan
-                      _buildSummaryCard(
-                        title: 'Pemasukan',
-                        amountValue: widget.totalIncomeValue,
-                        isIncome: true,
-                      ),
-                      const SizedBox(height: 8),
-                      // Kartu Pengeluaran
-                      _buildSummaryCard(
-                        title: 'Pengeluaran',
-                        amountValue: widget.totalExpenseValue,
-                        isIncome: false,
-                      ),
-                    ],
+                  // Baris 3: Ikon 3D & Nominal Pemasukan / Pengeluaran Berdampingan
+                  // Tanpa teks label, tanpa kontainer, tanpa background color, dengan
+                  // warna & bayangan yang diadaptasi terhadap kondisi tema waktu aktif.
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 290;
+                      final iconSize = isCompact ? 36.0 : 42.0;
+                      final itemGap = isCompact ? 6.0 : 8.0;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Pemasukan: Ikon 3D Panah Naik + Nominal
+                          Expanded(
+                            child: _buildCashflowMetric(
+                              amountValue: widget.totalIncomeValue,
+                              isIncome: true,
+                              timeOfDay: activeTimeOfDay,
+                              iconSize: iconSize,
+                              itemGap: itemGap,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Pengeluaran: Ikon 3D Panah Turun + Nominal
+                          Expanded(
+                            child: _buildCashflowMetric(
+                              amountValue: widget.totalExpenseValue,
+                              isIncome: false,
+                              timeOfDay: activeTimeOfDay,
+                              iconSize: iconSize,
+                              itemGap: itemGap,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -409,118 +434,82 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
     );
   }
 
-  Widget _buildSummaryCard({
-    required String title,
+  Widget _buildCashflowMetric({
     required int amountValue,
     required bool isIncome,
+    required DashboardTimeOfDay timeOfDay,
+    required double iconSize,
+    required double itemGap,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withValues(alpha: 0.36),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.24),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                // Ikon 3D Panah Melayang (Pemasukan: Panah Naik, Pengeluaran: Panah Turun) Tanpa Kontainer
-                AnimatedBuilder(
-                  animation: _breatheAnimation,
-                  builder: (context, child) {
-                    final dy = isIncome
-                        ? _breatheAnimation.value
-                        : -_breatheAnimation.value;
-                    return Transform.translate(
-                      offset: Offset(0, dy),
-                      child: Image.asset(
-                        isIncome
-                            ? 'assets/icons/3d/income_arrow.webp'
-                            : 'assets/icons/3d/expense_arrow.webp',
-                        width: 38,
-                        height: 38,
-                        fit: BoxFit.contain,
-                        cacheWidth: 114,
-                        cacheHeight: 114,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      shadows: const [
-                        Shadow(
-                          color: Color(0x99000000),
-                          blurRadius: 3,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
+    final textColor = isIncome
+        ? timeOfDay.incomeAmountColor
+        : timeOfDay.expenseAmountColor;
+    final textShadows = isIncome
+        ? timeOfDay.incomeAmountShadows
+        : timeOfDay.expenseAmountShadows;
+    final cachePixelSize = (iconSize * 3).round();
 
-          // Nilai Angka Beranimasi dengan Kapsul Kontras Tinggi (High Contrast Amount Capsule)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.20),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+    return Semantics(
+      label: isIncome ? 'Nominal pemasukan' : 'Nominal pengeluaran',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Ikon 3D Panah Melayang Tanpa Kontainer & Tanpa Background Color
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _breatheController,
+                builder: (context, child) {
+                  if (_breatheController.isCompleted) {
+                    return child!;
+                  }
+                  final t = _breatheController.value;
+                  final pulse = math.sin(t * 2 * math.pi) * 2.2 * (1.0 - t);
+                  final dy = isIncome ? -pulse : pulse;
+                  return Transform.translate(
+                    offset: Offset(0, dy),
+                    child: child,
+                  );
+                },
+                child: Image.asset(
+                  isIncome
+                      ? 'assets/icons/3d/income_arrow.webp'
+                      : 'assets/icons/3d/expense_arrow.webp',
+                  width: iconSize,
+                  height: iconSize,
+                  fit: BoxFit.contain,
+                  cacheWidth: cachePixelSize,
+                  cacheHeight: cachePixelSize,
+                  filterQuality: FilterQuality.low,
                 ),
-              ],
-            ),
-            child: AnimatedAmountText(
-              targetAmount: amountValue,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.2,
-                shadows: const [
-                  Shadow(
-                    color: Color(0xCC000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 1.5),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+            SizedBox(width: itemGap),
+
+            // Angka Nominal Tanpa Kontainer & Tanpa Background Color,
+            // Warna & Bayangan Disesuaikan dengan Tema Waktu Aktif
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: AnimatedAmountText(
+                  targetAmount: amountValue,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                    letterSpacing: -0.3,
+                    height: 1.2,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    shadows: textShadows,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

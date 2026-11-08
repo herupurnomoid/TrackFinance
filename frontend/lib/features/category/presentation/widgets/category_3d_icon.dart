@@ -340,7 +340,7 @@ class Category3DIcon extends StatelessWidget {
       width: size,
       height: size,
       fit: fit,
-      filterQuality: FilterQuality.medium,
+      filterQuality: FilterQuality.low,
       cacheWidth: (size * 2.5).toInt(),
       cacheHeight: (size * 2.5).toInt(),
       errorBuilder: (context, error, stackTrace) {

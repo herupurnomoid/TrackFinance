@@ -26,12 +26,17 @@ class AppLogo extends StatelessWidget {
       );
     }
 
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final targetDecodePx = (size * dpr).round().clamp(64, 512);
+
     return Image.asset(
       'assets/icons/app_logo.png',
       width: size,
       height: size,
       fit: fit,
-      filterQuality: FilterQuality.high,
+      cacheWidth: targetDecodePx,
+      cacheHeight: targetDecodePx,
+      filterQuality: FilterQuality.low,
     );
   }
 }

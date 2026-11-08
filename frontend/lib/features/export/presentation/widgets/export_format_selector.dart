@@ -194,6 +194,7 @@ class _Format3DIconButtonState extends State<_Format3DIconButton> {
                       fit: BoxFit.contain,
                       cacheWidth: 204,
                       cacheHeight: 204,
+                      filterQuality: FilterQuality.low,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           widget.formatName == 'PDF'

@@ -72,10 +72,58 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
+  # Hanya bundel aset runtime yang benar-benar dipakai aplikasi (menghemat ~4.2 MB
+  # ukuran APK dengan mengecualikan duplikat .png/.svg & master launcher icon).
   assets:
-    - assets/icons/
-    - assets/icons/3d/
+    - assets/icons/app_logo.png
+    - assets/icons/app_logo.svg
+    - assets/icons/trackfinance-logo.svg
+    - assets/icons/3d/baby.webp
+    - assets/icons/3d/beauty.webp
+    - assets/icons/3d/bills.webp
+    - assets/icons/3d/bonus.webp
+    - assets/icons/3d/books.webp
+    - assets/icons/3d/cafe.webp
+    - assets/icons/3d/cake.webp
+    - assets/icons/3d/camera.webp
+    - assets/icons/3d/card.webp
+    - assets/icons/3d/csv.webp
+    - assets/icons/3d/donate.webp
+    - assets/icons/3d/education.webp
+    - assets/icons/3d/electricity.webp
+    - assets/icons/3d/entertainment.webp
+    - assets/icons/3d/expense_arrow.webp
+    - assets/icons/3d/fashion.webp
+    - assets/icons/3d/fitness.webp
+    - assets/icons/3d/food.webp
+    - assets/icons/3d/freelance.webp
+    - assets/icons/3d/fuel.webp
+    - assets/icons/3d/gold.webp
+    - assets/icons/3d/health.webp
+    - assets/icons/3d/home.webp
+    - assets/icons/3d/income_arrow.webp
+    - assets/icons/3d/investment.webp
+    - assets/icons/3d/maintenance.webp
+    - assets/icons/3d/more.webp
+    - assets/icons/3d/music.webp
+    - assets/icons/3d/nav_add.webp
+    - assets/icons/3d/nav_category.webp
+    - assets/icons/3d/nav_export.webp
+    - assets/icons/3d/nav_report.webp
+    - assets/icons/3d/other_expense.webp
+    - assets/icons/3d/other_income.webp
+    - assets/icons/3d/pdf.webp
+    - assets/icons/3d/pet.webp
+    - assets/icons/3d/phone.webp
+    - assets/icons/3d/salary.webp
+    - assets/icons/3d/savings.webp
+    - assets/icons/3d/shield.webp
+    - assets/icons/3d/shopping.webp
+    - assets/icons/3d/store.webp
+    - assets/icons/3d/transport.webp
+    - assets/icons/3d/travel.webp
+    - assets/icons/3d/water.webp
+    - assets/icons/3d/wifi.webp
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

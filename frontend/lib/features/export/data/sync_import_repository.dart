@@ -26,6 +26,20 @@ class SyncImportRepository {
   @visibleForTesting
   static set instance(SyncImportRepository repo) => _instance = repo;
 
+  /// Ambang ukuran berkas CSV (32 KB) untuk memindahkan proses decoding UTF-8 & parsing CSV
+  /// ke background isolate (`compute`) agar thread UI tetap responsif di perangkat spek rendah.
+  static const int kIsolateParseThresholdBytes = 32 * 1024;
+
+  static ImportFileModel _parseCsvInIsolate(_CsvIsolatePayload payload) {
+    final csvString = utf8.decode(payload.fileBytes);
+    return const CsvImportParser().parse(
+      csvString: csvString,
+      fileName: payload.fileName,
+      categories: payload.categories,
+      existingTransactions: payload.existingTransactions,
+    );
+  }
+
   /// Mengurai dan memvalidasi berkas CSV ([fileBytes]) terhadap kategori dan riwayat transaksi pengguna.
   Future<ImportFileModel> parseAndValidateCsv(
     Uint8List fileBytes,
@@ -33,8 +47,6 @@ class SyncImportRepository {
     String? uid,
     List<CategoryItem>? categories,
   }) async {
-    final csvString = utf8.decode(fileBytes);
-
     List<CategoryItem> resolvedCategories = categories ?? [];
     List<TransactionModel> existingTransactions = [];
 
@@ -80,6 +92,20 @@ class SyncImportRepository {
       ];
     }
 
+    if (fileBytes.lengthInBytes >= kIsolateParseThresholdBytes &&
+        _parser.runtimeType == CsvImportParser) {
+      return compute(
+        _parseCsvInIsolate,
+        _CsvIsolatePayload(
+          fileBytes: fileBytes,
+          fileName: fileName,
+          categories: resolvedCategories,
+          existingTransactions: existingTransactions,
+        ),
+      );
+    }
+
+    final csvString = utf8.decode(fileBytes);
     return _parser.parse(
       csvString: csvString,
       fileName: fileName,
@@ -214,4 +240,18 @@ class SyncImportRepository {
 
     return totalCommitted;
   }
+}
+
+class _CsvIsolatePayload {
+  final Uint8List fileBytes;
+  final String fileName;
+  final List<CategoryItem> categories;
+  final List<TransactionModel> existingTransactions;
+
+  const _CsvIsolatePayload({
+    required this.fileBytes,
+    required this.fileName,
+    required this.categories,
+    required this.existingTransactions,
+  });
 }
