@@ -44,7 +44,6 @@ class ReportHealthCard extends StatelessWidget {
     final Color scoreColor;
     final double targetPercent;
     final LinearGradient trackGradient;
-    final Color knobColor;
 
     if (isEmpty) {
       badgeLabel = 'Belum ada data';
@@ -56,7 +55,6 @@ class ReportHealthCard extends StatelessWidget {
       trackGradient = const LinearGradient(
         colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
       );
-      knobColor = const Color(0xFFC3C6D7);
     } else if (healthScore == -100.0 || (healthScore != null && healthScore! < 0)) {
       badgeLabel = 'Minus Kritis';
       badgeBg = const Color(0xFFFFDAD6);
@@ -67,7 +65,6 @@ class ReportHealthCard extends StatelessWidget {
       trackGradient = const LinearGradient(
         colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
       );
-      knobColor = const Color(0xFFDC2626);
     } else if (healthScore == 95.0 && score == null && healthStatus == null) {
       badgeLabel = 'Sehat';
       badgeBg = const Color(0xFFDCFCE7);
@@ -78,7 +75,6 @@ class ReportHealthCard extends StatelessWidget {
       trackGradient = const LinearGradient(
         colors: [Color(0xFF16A34A), Color(0xFF006329)],
       );
-      knobColor = const Color(0xFF006329);
     } else {
       final effectiveScore = score ?? (healthScore?.round() ?? 75);
       final effectiveStatus = healthStatus ??
@@ -100,7 +96,6 @@ class ReportHealthCard extends StatelessWidget {
         trackGradient = const LinearGradient(
           colors: [Color(0xFF16A34A), Color(0xFF006329)],
         );
-        knobColor = const Color(0xFF006329);
       } else if (isWarning) {
         // Indikator Waspada -> Kuning / Amber
         badgeLabel = effectiveStatus;
@@ -110,7 +105,6 @@ class ReportHealthCard extends StatelessWidget {
         trackGradient = const LinearGradient(
           colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
         );
-        knobColor = const Color(0xFFD97706);
       } else {
         // Indikator Minus / Kritis / Defisit -> Merah
         badgeLabel = effectiveStatus;
@@ -120,7 +114,6 @@ class ReportHealthCard extends StatelessWidget {
         trackGradient = const LinearGradient(
           colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
         );
-        knobColor = const Color(0xFFDC2626);
       }
 
       scoreDisplay = savingsRate != null
@@ -147,12 +140,12 @@ class ReportHealthCard extends StatelessWidget {
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x142563EB),
+            color: Color(0x0C2563EB),
             blurRadius: 14,
             offset: Offset(0, 4),
           ),
           BoxShadow(
-            color: Color(0x0D0F172A),
+            color: Color(0x080F172A),
             blurRadius: 3,
             offset: Offset(0, 1),
           ),
@@ -162,20 +155,38 @@ class ReportHealthCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header Card: Judul & Badge Status
+          // 1. Header Card: Judul dengan Ikon 3D & Badge Status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  'Indikator Kesehatan',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF131B2E),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/icons/3d/health.webp',
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.favorite_rounded,
+                        size: 20,
+                        color: Color(0xFFEF4444),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Indikator Kesehatan',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF131B2E),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -201,103 +212,149 @@ class ReportHealthCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // 2. Inset Gauge Track dengan Animasi Knob & Track Fill
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: SizedBox(
-              height: 28, // ruang agar knob (28x28) muat sempurna
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final totalWidth = constraints.maxWidth;
-                  const knobSize = 28.0;
+          // 2. Pointer Needle & Multi-Zone Segmented Gauge Meter (No Draggable Slider Knob)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = constraints.maxWidth;
+              const pointerWidth = 10.0;
+              const pointerHeight = 6.0;
 
-                  return TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeOutCubic,
-                    tween: Tween<double>(begin: 0.0, end: targetPercent),
-                    builder: (context, currentPercent, child) {
-                      final knobLeft = (totalWidth - knobSize) * currentPercent;
+              return TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+                tween: Tween<double>(begin: 0.0, end: targetPercent),
+                builder: (context, currentPercent, child) {
+                  final pointerLeft =
+                      (totalWidth * currentPercent - (pointerWidth / 2))
+                          .clamp(0.0, totalWidth - pointerWidth);
 
-                      return Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          // Recessed Inset Track Groove
-                          Container(
-                            width: double.infinity,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEAEDFF),
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x140F172A),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(999),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  width: totalWidth * currentPercent,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    gradient: trackGradient,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Pointer Needle Caret Row (Menunjuk ke bar, bukan slider thumb)
+                      SizedBox(
+                        height: 8,
+                        child: Stack(
+                          children: [
+                            if (!isEmpty)
+                              Positioned(
+                                left: pointerLeft,
+                                child: CustomPaint(
+                                  size: const Size(pointerWidth, pointerHeight),
+                                  painter: _TrianglePointerPainter(color: scoreColor),
                                 ),
                               ),
-                            ),
-                          ),
+                          ],
+                        ),
+                      ),
 
-                          // Floating Tactile Knob Marker (28x28)
-                          Positioned(
-                            left: knobLeft,
-                            child: Container(
-                              width: knobSize,
-                              height: knobSize,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x2E0F172A),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 3),
+                      const SizedBox(height: 2),
+
+                      // Segmented 3-Zone Gauge Bar (Height: 14)
+                      Container(
+                        width: double.infinity,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: const Color(0xFFF1F5F9),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.0,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x0A0F172A),
+                              blurRadius: 3,
+                              offset: Offset(0, 1.5),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: Stack(
+                            children: [
+                              // 3 Zones Background: Kritis (0-50%), Waspada (50-75%), Sehat (75-100%)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: 50,
+                                    child: Container(
+                                      color: isEmpty
+                                          ? const Color(0xFFF1F5F9)
+                                          : const Color(0xFFFEE2E2), // Soft Red
+                                    ),
                                   ),
-                                  BoxShadow(
-                                    color: Color(0x140F172A),
-                                    blurRadius: 2,
-                                    offset: Offset(0, 1),
+                                  Container(
+                                    width: 1.5,
+                                    color: Colors.white,
+                                  ),
+                                  Expanded(
+                                    flex: 25,
+                                    child: Container(
+                                      color: isEmpty
+                                          ? const Color(0xFFF1F5F9)
+                                          : const Color(0xFFFEF3C7), // Soft Amber
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1.5,
+                                    color: Colors.white,
+                                  ),
+                                  Expanded(
+                                    flex: 25,
+                                    child: Container(
+                                      color: isEmpty
+                                          ? const Color(0xFFF1F5F9)
+                                          : const Color(0xFFDCFCE7), // Soft Green
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Center(
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: knobColor,
-                                    shape: BoxShape.circle,
+
+                              // Active Fill Meter Bar (Progress gradient)
+                              if (!isEmpty && currentPercent > 0)
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    width: totalWidth * currentPercent,
+                                    height: 14,
+                                    decoration: BoxDecoration(
+                                      gradient: trackGradient,
+                                      borderRadius: BorderRadius.circular(999),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: scoreColor.withValues(alpha: 0.35),
+                                          blurRadius: 4,
+                                          offset: const Offset(1, 0),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.topCenter,
+                                      child: Container(
+                                        height: 3,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.28),
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      );
-                    },
+                        ),
+                      ),
+                    ],
                   );
                 },
-              ),
-            ),
+              );
+            },
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // 3. Metrik Bawah: 0%, Skor, 100%
           Padding(
@@ -340,7 +397,7 @@ class ReportHealthCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: const Color(0xFFE2E8F0),
@@ -378,4 +435,30 @@ class ReportHealthCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Custom Painter untuk jarum penunjuk nilai indikator (Pointer Caret Needle)
+class _TrianglePointerPainter extends CustomPainter {
+  final Color color;
+
+  const _TrianglePointerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrianglePointerPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

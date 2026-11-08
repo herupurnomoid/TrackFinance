@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../category/presentation/widgets/category_3d_icon.dart';
 import '../../data/report_data_model.dart';
 
 /// Kartu Struktur Transaksi Modern Tactile
@@ -290,7 +291,7 @@ class ReportStructureCard extends StatelessWidget {
         onTap: () => HapticFeedback.selectionClick(),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          height: 64,
+          height: 66,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -322,31 +323,17 @@ class ReportStructureCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Kiri: Icon Well + Nama Kategori + Badge Persentase
+              // Kiri: 3D Category Icon (Bebas Tanpa Kontainer / Background Color) + Nama Kategori + Badge Persentase
               Expanded(
                 child: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: cat.containerColor,
-                        borderRadius: BorderRadius.circular(11),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0F0F172A),
-                            blurRadius: 3,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          cat.icon,
-                          size: 19,
-                          color: cat.iconColor,
-                        ),
-                      ),
+                    // Ikon 3D kategori taktil bebas tanpa batasan kotak atau warna latar
+                    Category3DIcon(
+                      id: cat.id,
+                      name: cat.name,
+                      icon: cat.icon,
+                      isExpense: isExpenseTab,
+                      size: 44,
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -3,6 +3,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../category/data/category_model.dart';
+import '../../../category/presentation/widgets/category_3d_icon.dart';
 import 'all_categories_bottom_sheet.dart';
 
 class TransactionCategoryOption {
@@ -85,36 +86,36 @@ class CategorySelectorGrid extends StatelessWidget {
     final availableCategories = categories ??
         (isExpense ? topExpenseCategories : topIncomeCategories);
 
-    final topList = availableCategories.take(7).toList();
+    // Ambil maksimal 3 kategori pertama untuk baris pertama
+    final topList = availableCategories.take(3).toList();
 
-    // Cek apakah kategori yang dipilih berada di luar top 7
-    final bool isSelectedInTop7 =
+    // Cek apakah kategori yang dipilih berada di dalam top 3
+    final bool isSelectedInTop3 =
         topList.any((c) => c.id == selectedCategoryId);
 
-    TransactionCategoryOption eighthTile;
-    if (isSelectedInTop7 || selectedCategoryId.isEmpty) {
-      eighthTile = const TransactionCategoryOption(
-        id: 'more',
-        name: 'Lebih Banyak',
-        icon: Icons.more_horiz_rounded,
-        tintColor: Color(0xFFDAE2FD),
-        iconColor: Color(0xFF434655),
-      );
-    } else {
-      // Tampilkan kategori luar yang sedang dipilih
-      eighthTile = availableCategories.firstWhere(
-        (c) => c.id == selectedCategoryId,
-        orElse: () => const TransactionCategoryOption(
-          id: 'more',
-          name: 'Lebih Banyak',
-          icon: Icons.more_horiz_rounded,
-          tintColor: Color(0xFFDAE2FD),
-          iconColor: Color(0xFF434655),
-        ),
-      );
-    }
+    const moreTile = TransactionCategoryOption(
+      id: 'more',
+      name: 'Lebih Banyak',
+      icon: Icons.more_horiz_rounded,
+      tintColor: Color(0xFFDAE2FD),
+      iconColor: Color(0xFF434655),
+    );
 
-    final displayList = [...topList, eighthTile];
+    List<TransactionCategoryOption> displayList;
+    if (isSelectedInTop3 || selectedCategoryId.isEmpty) {
+      displayList = [...topList, moreTile];
+    } else {
+      // Tampilkan kategori luar yang sedang dipilih di slot ke-3 agar selalu terlihat aktif
+      final selectedCategory = availableCategories.firstWhere(
+        (c) => c.id == selectedCategoryId,
+        orElse: () => moreTile,
+      );
+      if (topList.length >= 3) {
+        displayList = [topList[0], topList[1], selectedCategory, moreTile];
+      } else {
+        displayList = [...topList, selectedCategory, moreTile];
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,14 +157,14 @@ class CategorySelectorGrid extends StatelessWidget {
                   ],
                 ],
               ),
-              // Hitungan "Semua (8)" telah dihapus sesuai permintaan
             ],
           ),
         ),
 
         const SizedBox(height: 8),
 
-        // Matriks 2 Row x 4 Column (Tepat 8 tiles)
+        // Matriks 1 Row x 4 Column (3 Kategori + 1 Ikon "Lebih Banyak" di paling kanan)
+        // Menampilkan ikon 3D bebas tanpa kontainer dan tanpa background color
         GridView.builder(
           padding: EdgeInsets.zero,
           clipBehavior: Clip.none,
@@ -171,9 +172,9 @@ class CategorySelectorGrid extends StatelessWidget {
           shrinkWrap: true,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            mainAxisExtent: 80, // Tinggi lebih compact agar proporsional
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 0,
+            mainAxisExtent: 88,
           ),
           itemCount: displayList.length,
           itemBuilder: (context, index) {
@@ -181,160 +182,92 @@ class CategorySelectorGrid extends StatelessWidget {
             final bool isSelected = cat.id == selectedCategoryId;
             final bool isLastTile = index == displayList.length - 1;
 
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                PressableScale(
-                  onTap: () {
-                    if (isLastTile && (cat.id == 'more' || !isSelectedInTop7)) {
-                      // Klik tile "Lebih Banyak" memunculkan seluruh kategori terdaftar
-                      _openAllCategories(context, availableCategories);
-                    } else {
-                      onSelect(cat);
-                    }
-                  },
-                  scaleFactor: 0.94,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    width: double.infinity,
-                    height: 80,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: isSelected
-                          ? const Color(0xFFDBE1FF) // primary-fixed
-                          : Colors.white,
-                      gradient: isSelected
-                          ? null
-                          : const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.white,
-                                Color(0xFFF2F3FF),
-                              ],
-                            ),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFF004AC6)
-                            : const Color(0xFFE2E8F0),
-                        width: isSelected ? 2 : 1,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF004AC6)
-                                    .withValues(alpha: 0.22),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                              const BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 0,
-                                offset: Offset(0, -1),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: const Color(0xFF2563EB)
-                                    .withValues(alpha: 0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                              BoxShadow(
-                                color: const Color(0xFF0F172A)
-                                    .withValues(alpha: 0.03),
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                              const BoxShadow(
-                                color: Colors.white,
-                                blurRadius: 0,
-                                offset: Offset(0, -1),
-                              ),
-                            ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            return PressableScale(
+              onTap: () {
+                if (isLastTile && cat.id == 'more') {
+                  // Klik tile "Lebih Banyak" memunculkan seluruh kategori terdaftar
+                  _openAllCategories(context, availableCategories);
+                } else {
+                  onSelect(cat);
+                }
+              },
+              scaleFactor: 0.93,
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Stack untuk Ikon 3D dan Checkmark Badge saat terpilih
+                    Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        // Icon Box Squircle (Compact 36x36)
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.white : cat.tintColor,
-                            borderRadius: BorderRadius.circular(11),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.65),
-                                blurRadius: 0,
-                                offset: const Offset(0, -1),
+                        // 3D Category Icon (Besar 52x52) murni tanpa batasan background atau kontainer
+                        Category3DIcon(
+                          id: cat.id,
+                          name: cat.name,
+                          icon: cat.icon,
+                          isExpense: isExpense,
+                          size: 52,
+                        ),
+
+                        // Indikator centang bulat jika item ini terpilih
+                        if (isSelected)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF004AC6),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x35004AC6),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Icon(
-                              cat.icon,
-                              size: 20,
-                              color: cat.iconColor,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.check_rounded,
+                                  size: 10,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-
-                        // Jarak vertikal ketat & proporsional
-                        const SizedBox(height: 3),
-
-                        // Title Kategori
-                        Text(
-                          cat.name,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.labelSm.copyWith(
-                            fontSize: 10.5,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            color: AppColors.tactileTextPrimary,
-                            height: 1.15,
-                          ),
-                        ),
                       ],
                     ),
-                  ),
-                ),
 
-                // Blue Checkmark Badge di pojok kanan atas saat terpilih
-                if (isSelected)
-                  Positioned(
-                    top: -3,
-                    right: -3,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF004AC6),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x40004AC6),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.check_rounded,
-                          size: 11,
-                          color: Colors.white,
-                        ),
+                    const SizedBox(height: 5),
+
+                    // Label Teks Kategori
+                    Text(
+                      cat.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.labelSm.copyWith(
+                        fontSize: 11,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected
+                            ? const Color(0xFF004AC6)
+                            : AppColors.tactileTextPrimary,
+                        height: 1.15,
                       ),
                     ),
-                  ),
-              ],
+                  ],
+                ),
+              ),
             );
           },
         ),

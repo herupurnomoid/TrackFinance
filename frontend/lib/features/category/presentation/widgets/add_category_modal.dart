@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../data/category_model.dart';
+import 'category_3d_icon.dart';
 
 /// Bottom Sheet Interaktif Tambah & Edit Kategori
 /// Sesuai referensi HTML 2 Modern Tactile Finance
@@ -33,25 +34,43 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
   String? _errorMessage;
   bool _isSaving = false;
 
-  // 18 Ikon Populer Keuangan sesuai desain
+  // 36 Koleksi Ikon 3D Populer Keuangan
   final List<IconData> _availableIcons = const [
     Icons.restaurant_rounded,
     Icons.directions_car_rounded,
+    Icons.local_gas_station_rounded,
     Icons.shopping_bag_rounded,
     Icons.receipt_long_rounded,
+    Icons.credit_card_rounded,
     Icons.medical_services_rounded,
-    Icons.sports_esports_rounded,
     Icons.school_rounded,
+    Icons.sports_esports_rounded,
     Icons.home_rounded,
-    Icons.account_balance_wallet_rounded,
-    Icons.trending_up_rounded,
-    Icons.savings_rounded,
-    Icons.card_giftcard_rounded,
     Icons.flight_rounded,
     Icons.local_cafe_rounded,
     Icons.fitness_center_rounded,
     Icons.pets_rounded,
-    Icons.devices_rounded,
+    Icons.storefront_rounded,
+    Icons.work_rounded,
+    Icons.account_balance_wallet_rounded,
+    Icons.savings_rounded,
+    Icons.trending_up_rounded,
+    Icons.card_giftcard_rounded,
+    Icons.bolt_rounded,
+    Icons.water_drop_rounded,
+    Icons.wifi_rounded,
+    Icons.phone_android_rounded,
+    Icons.volunteer_activism_rounded,
+    Icons.checkroom_rounded,
+    Icons.spa_rounded,
+    Icons.child_care_rounded,
+    Icons.build_rounded,
+    Icons.music_note_rounded,
+    Icons.menu_book_rounded,
+    Icons.monetization_on_rounded,
+    Icons.shield_rounded,
+    Icons.photo_camera_rounded,
+    Icons.cake_rounded,
     Icons.category_rounded,
   ];
 
@@ -167,128 +186,90 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Drag Handle Bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
-                borderRadius: BorderRadius.circular(999),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Drag Handle Bar
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFCBD5E1),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Sheet Header Simetris & Terpusat
+          Row(
+            children: [
+              const SizedBox(width: 40, height: 40),
+              Expanded(
+                child: Text(
+                  _isEditMode ? 'Edit Kategori' : 'Tambah Kategori',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Sheet Header Simetris & Terpusat
-            Row(
-              children: [
-                const SizedBox(width: 40, height: 40),
-                Expanded(
-                  child: Text(
-                    _isEditMode ? 'Edit Kategori' : 'Tambah Kategori',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
-                    ),
-                    textAlign: TextAlign.center,
+              PressableScale(
+                onTap: () => Navigator.of(context).pop(),
+                scaleFactor: 0.90,
+                translateY: 1.5,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
                   ),
-                ),
-                PressableScale(
-                  onTap: () => Navigator.of(context).pop(),
-                  scaleFactor: 0.90,
-                  translateY: 1.5,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF1F5F9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: Color(0xFF64748B),
-                      ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Color(0xFF64748B),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
 
-            const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-            // Live Preview Card (Tactile Squircle 88x88)
+          // Area Form Input (Scrollable)
+          Flexible(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Live Preview (Ikon 3D bebas tanpa batasan container & background color)
             Column(
               children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white,
-                        Color(0xFFF8FAFC),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.0,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1F2563EB),
-                        blurRadius: 18,
-                        offset: Offset(0, 8),
-                      ),
-                      BoxShadow(
-                        color: Color(0x0A0F172A),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDBEAFE),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x242563EB),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            _selectedIcon,
-                            size: 24,
-                            color: const Color(0xFF004AC6),
-                          ),
-                        ),
+                      Category3DIcon(
+                        icon: _selectedIcon,
+                        name: currentText.isNotEmpty ? currentText : null,
+                        isExpense: _isExpense,
+                        size: 68,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           previewDisplayName,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
                             color: _errorMessage != null
                                 ? const Color(0xFFBA1A1A)
                                 : const Color(0xFF0F172A),
@@ -734,91 +715,67 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: GridView.builder(
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 6,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1.0,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 6,
+                      mainAxisExtent: 52,
                     ),
                     itemCount: _availableIcons.length,
                     itemBuilder: (context, index) {
                       final icon = _availableIcons[index];
                       final isSelected = _selectedIcon == icon;
 
-                      return InkWell(
+                      return PressableScale(
                         onTap: () => setState(() => _selectedIcon = icon),
-                        borderRadius: BorderRadius.circular(10),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          decoration: BoxDecoration(
-                            gradient: isSelected
-                                ? const LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.white,
-                                      Color(0xFFDBEAFE),
-                                    ],
-                                  )
-                                : const LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.white,
-                                      Color(0xFFF8FAFC),
+                        scaleFactor: 0.90,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            // 3D Icon (Ukuran 44x44) tanpa container pembatas & tanpa background color
+                            Center(
+                              child: Category3DIcon(
+                                icon: icon,
+                                isExpense: _isExpense,
+                                size: 44,
+                              ),
+                            ),
+
+                            // Indikator centang saat dipilih
+                            if (isSelected)
+                              Positioned(
+                                top: 0,
+                                right: 2,
+                                child: Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF004AC6),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color(0x33004AC6),
+                                        blurRadius: 4,
+                                        offset: Offset(0, 1),
+                                      ),
                                     ],
                                   ),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? const Color(0xFF004AC6)
-                                  : const Color(0xFFE2E8F0),
-                              width: isSelected ? 1.5 : 1.0,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      blurRadius: 2,
-                                      offset: const Offset(0, -1),
-                                    ),
-                                    BoxShadow(
-                                      color: const Color(0xFF004AC6).withValues(alpha: 0.25),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                : const [
-                                    BoxShadow(
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.check_rounded,
+                                      size: 11,
                                       color: Colors.white,
-                                      blurRadius: 1,
-                                      offset: Offset(0, -1),
                                     ),
-                                    BoxShadow(
-                                      color: Color(0x0A0F172A),
-                                      blurRadius: 3,
-                                      offset: Offset(0, 1.5),
-                                    ),
-                                  ],
-                          ),
-                          child: Center(
-                            child: Icon(
-                              icon,
-                              size: 20,
-                              color: isSelected
-                                  ? const Color(0xFF004AC6)
-                                  : const Color(0xFF475569),
-                            ),
-                          ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -826,8 +783,12 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
                 ),
               ],
             ),
+                  ],
+                ),
+              ),
+            ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
             // Action Buttons Row
             Row(
@@ -1025,7 +986,6 @@ class _AddCategoryModalState extends State<AddCategoryModal> {
             ),
           ],
         ),
-      ),
     );
   }
 }

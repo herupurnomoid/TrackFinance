@@ -558,9 +558,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
       shrinkWrap: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.88,
+        mainAxisSpacing: 18,
+        crossAxisSpacing: 8,
+        mainAxisExtent: 100,
       ),
       itemCount: totalCount,
       itemBuilder: (context, index) {

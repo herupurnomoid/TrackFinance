@@ -1,0 +1,86 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="bag-front" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="50%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#9A3412"/>
+    </linearGradient>
+    <linearGradient id="bag-fold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDBA74"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+    <linearGradient id="bag-inner" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7C2D12"/>
+      <stop offset="100%" stop-color="#431407"/>
+    </linearGradient>
+    <linearGradient id="bread" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="50%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="apple" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#4ADE80"/>
+      <stop offset="70%" stop-color="#16A34A"/>
+      <stop offset="100%" stop-color="#14532D"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="228" rx="76" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Groceries Peaking Out (Behind Front Bag Face) -->
+    <!-- Baguette -->
+    <path d="M142 120 L176 48 C182 36 196 42 192 54 L164 124 Z" fill="url(#bread)" filter="url(#shadow-sharp)"/>
+    <ellipse cx="178" cy="56" rx="4" ry="2" fill="#FEF08A" transform="rotate(-30 178 56)"/>
+    <ellipse cx="170" cy="72" rx="4" ry="2" fill="#FEF08A" transform="rotate(-30 170 72)"/>
+    <ellipse cx="162" cy="88" rx="4" ry="2" fill="#FEF08A" transform="rotate(-30 162 88)"/>
+
+    <!-- Fresh Pear / Apple -->
+    <circle cx="96" cy="116" r="24" fill="url(#apple)" filter="url(#shadow-sharp)"/>
+    <ellipse cx="88" cy="108" rx="8" ry="4" fill="#FFFFFF" opacity="0.45" transform="rotate(-20 88 108)"/>
+    <!-- Leaf -->
+    <path d="M102 96 C112 88 116 94 114 100 C106 100 102 98 102 96 Z" fill="#15803D"/>
+
+    <!-- Carrot / Orange -->
+    <circle cx="132" cy="120" r="18" fill="#F97316"/>
+
+    <!-- Bag Back Wall / Inner -->
+    <path d="M66 122 L190 122 L182 136 L74 136 Z" fill="url(#bag-inner)"/>
+
+    <!-- Back Handle Loop -->
+    <path d="M100 126 C100 80 156 80 156 126" fill="none" stroke="url(#handle)" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Main Shopping Bag Body -->
+    <path d="M62 130 L74 206 C76 214 82 220 90 220 L166 220 C174 220 180 214 182 206 L194 130 Z" fill="url(#bag-front)"/>
+    <!-- Fold / Top Rim -->
+    <path d="M58 126 L198 126 L194 140 L62 140 Z" fill="url(#bag-fold)"/>
+    
+    <!-- Front Handle Loop -->
+    <path d="M102 136 C102 90 154 90 154 136" fill="none" stroke="url(#handle)" stroke-width="8" stroke-linecap="round" filter="url(#shadow-sharp)"/>
+
+    <!-- Bag Front Highlight -->
+    <path d="M76 146 L84 208 C84 210 87 212 90 212 L98 212 L90 146 Z" fill="#FFFFFF" opacity="0.3"/>
+    
+    <!-- Tactile Percent / Star badge on bag -->
+    <circle cx="128" cy="176" r="16" fill="#FEF08A" filter="url(#shadow-sharp)"/>
+    <path d="M128 166 L131 172 L137 173 L132 178 L134 184 L128 181 L122 184 L124 178 L119 173 L125 172 Z" fill="#D97706"/>
+  </g>
+</svg>

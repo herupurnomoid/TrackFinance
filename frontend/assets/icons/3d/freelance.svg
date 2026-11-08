@@ -1,0 +1,70 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="laptop-case" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="50%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+    <linearGradient id="screen-display" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1E3A8A"/>
+    </linearGradient>
+    <linearGradient id="mug-color" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="226" rx="90" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Laptop Open Screen -->
+    <path d="M56 80 C56 72 62 66 70 66 L174 66 C182 66 188 72 188 80 L188 162 L56 162 Z" fill="url(#laptop-case)"/>
+    <!-- Screen Bezel / Inner Display -->
+    <rect x="64" y="74" width="116" height="82" rx="4" fill="url(#screen-display)"/>
+
+    <!-- UI code / dashboard elements on screen -->
+    <rect x="72" y="84" width="32" height="12" rx="3" fill="#38BDF8"/>
+    <rect x="110" y="84" width="62" height="12" rx="3" fill="#FFFFFF" opacity="0.3"/>
+    <rect x="72" y="104" width="48" height="6" rx="3" fill="#4ADE80"/>
+    <rect x="72" y="116" width="68" height="6" rx="3" fill="#FACC15"/>
+    <rect x="72" y="128" width="36" height="6" rx="3" fill="#F43F5E"/>
+    <!-- Chart bar on screen -->
+    <circle cx="150" cy="120" r="16" fill="#FFFFFF" opacity="0.25"/>
+
+    <!-- Screen Glare / Reflection -->
+    <path d="M72 74 L148 74 L84 156 L64 156 Z" fill="#FFFFFF" opacity="0.2"/>
+
+    <!-- Laptop Base Keyboard Deck (Isometric Projection) -->
+    <path d="M42 162 L202 162 L218 198 C220 204 214 210 206 210 L38 210 C30 210 24 204 26 198 Z" fill="url(#laptop-case)"/>
+    <!-- Trackpad -->
+    <rect x="108" y="194" width="28" height="12" rx="3" fill="#CBD5E1"/>
+
+    <!-- Steaming Coffee Mug (Right Front) -->
+    <g filter="url(#shadow-soft)">
+      <!-- Mug Body -->
+      <rect x="180" y="156" width="28" height="34" rx="8" fill="url(#mug-color)"/>
+      <ellipse cx="194" cy="156" rx="14" ry="5" fill="#78350F"/>
+      <!-- Handle -->
+      <path d="M208 162 C216 162 216 182 208 182" fill="none" stroke="url(#mug-color)" stroke-width="4" stroke-linecap="round"/>
+      <!-- Steam -->
+      <path d="M190 148 C188 142 196 138 194 132" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+      <path d="M196 148 C194 142 202 138 200 132" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    </g>
+  </g>
+</svg>

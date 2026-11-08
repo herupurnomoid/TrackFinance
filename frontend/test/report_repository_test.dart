@@ -2,6 +2,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:track_finance/features/category/data/category_model.dart';
+import 'package:track_finance/features/category/presentation/widgets/category_3d_icon.dart';
 import 'package:track_finance/features/report/data/monthly_report_model.dart';
 import 'package:track_finance/features/report/data/report_analysis_engine.dart';
 import 'package:track_finance/features/report/data/report_data_model.dart';
@@ -792,6 +793,9 @@ void main() {
       expect(find.text('Bensin & Tol'), findsOneWidget);
       expect(find.text('25.0%'), findsOneWidget);
       expect(find.text('Rp 50.000'), findsOneWidget);
+
+      // Verifikasi 3D Category Icon dirender tanpa kontainer
+      expect(find.byType(Category3DIcon), findsNWidgets(2));
     });
 
     testWidgets('ReportStructureCard shows graceful placeholder when category items are empty', (tester) async {

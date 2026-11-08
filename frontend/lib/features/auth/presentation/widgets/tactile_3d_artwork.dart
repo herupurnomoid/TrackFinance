@@ -126,18 +126,7 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          // 1. Subtle Diagonal Pattern Overlay
-          if (widget.showBackgroundEffects)
-            Positioned.fill(
-              child: FadeTransition(
-                opacity: _bgFadeAnimation,
-                child: const CustomPaint(
-                  painter: _DiagonalHatchPainter(),
-                ),
-              ),
-            ),
-
-          // 2. Ambient Soft Glow Spheres (Top Left & Center Right)
+          // Ambient Soft Glow Spheres (Top Left & Center Right)
           if (widget.showBackgroundEffects) ...[
             Positioned(
               top: -50,
@@ -867,33 +856,6 @@ class _Tactile3DArtworkState extends State<Tactile3DArtwork>
       ),
     );
   }
-}
-
-/// Custom painter untuk tekstur garis diagonal halus (45 derajat)
-class _DiagonalHatchPainter extends CustomPainter {
-  const _DiagonalHatchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 14.0;
-    final total = size.width + size.height;
-
-    for (double i = -size.height; i < total; i += spacing) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Custom painter untuk garis jahitan bawah dompet (dashed line)

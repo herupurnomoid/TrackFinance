@@ -47,24 +47,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Expense categories from DefaultCategories should appear
+      // Top 3 Expense categories from DefaultCategories should appear on the 1-row grid
       expect(find.text('Makanan & Minuman'), findsOneWidget);
       expect(find.text('Transportasi'), findsOneWidget);
       expect(find.text('Belanja Harian'), findsOneWidget);
-      expect(find.text('Tagihan & Pulsa'), findsOneWidget);
 
       // Verify old dummy names like 'Makanan' alone or 'Belanja' alone do not exist
       expect(find.text('Makanan'), findsNothing);
       expect(find.text('Belanja'), findsNothing);
 
-      // Verify the more button is named 'Lebih Banyak' to avoid ambiguity with category 'Lainnya'
+      // Verify the more button is named 'Lebih Banyak' and sits at the rightmost position
       expect(find.text('Lebih Banyak'), findsOneWidget);
 
       // Verify tapping 'Lebih Banyak' opens AllCategoriesBottomSheet containing full category list
       await tester.tap(find.text('Lebih Banyak'));
       await tester.pumpAndSettle();
       expect(find.byType(AllCategoriesBottomSheet), findsOneWidget);
-      // In bottom sheet, the actual category 'Lainnya' is available and selectable
+      // In bottom sheet, all categories like 'Tagihan & Pulsa' and 'Lainnya' are available
+      expect(find.text('Tagihan & Pulsa'), findsOneWidget);
       expect(find.text('Lainnya'), findsOneWidget);
       await tester.tap(find.text('Lainnya'));
       await tester.pumpAndSettle();
@@ -122,7 +122,7 @@ void main() {
       expect(find.text('Kopi Spesial'), findsNothing);
     });
 
-    testWidgets('Tapping Kelola in all categories sheet navigates to CategoryScreen and refreshes categories', (WidgetTester tester) async {
+    testWidgets('Verify Kelola button is removed from AllCategoriesBottomSheet', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.625;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -135,22 +135,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap 'Lebih Banyak' then 'Kelola'
+      // Tap 'Lebih Banyak'
       await tester.tap(find.text('Lebih Banyak'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Kelola'));
-      await tester.pumpAndSettle();
-
-      // Verify CategoryScreen is opened
-      expect(find.byType(CategoryScreen), findsOneWidget);
-      expect(find.text('Kategori'), findsWidgets);
-
-      // Pop back to AddTransactionScreen
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AddTransactionScreen), findsOneWidget);
+      // Verify 'Kelola' button is removed
+      expect(find.text('Kelola'), findsNothing);
     });
 
     testWidgets('Transaction saved with selected category contains exact categoryId and categoryName from Category Management', (WidgetTester tester) async {

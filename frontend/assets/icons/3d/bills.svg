@@ -1,0 +1,68 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="bill-bg" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+    <linearGradient id="lightning" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="35%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="coin-gold" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="60%" stop-color="#EAB308"/>
+      <stop offset="100%" stop-color="#A16207"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="228" rx="80" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Tilted 3D Paper Receipt -->
+    <g transform="rotate(-6 120 130)">
+      <!-- Receipt Body with folded header and zigzag bottom -->
+      <path d="M72 56 C72 50 78 46 84 46 L164 46 C170 46 176 50 176 56 L176 200 L166 192 L154 200 L142 192 L130 200 L118 192 L106 200 L94 192 L82 200 L72 192 Z" fill="url(#bill-bg)"/>
+      <!-- Header bar -->
+      <rect x="84" y="60" width="80" height="12" rx="6" fill="#3B82F6"/>
+      <!-- Invoice lines -->
+      <rect x="84" y="82" width="60" height="6" rx="3" fill="#94A3B8"/>
+      <rect x="84" y="96" width="76" height="6" rx="3" fill="#CBD5E1"/>
+      <rect x="84" y="110" width="48" height="6" rx="3" fill="#CBD5E1"/>
+      <rect x="84" y="124" width="70" height="6" rx="3" fill="#CBD5E1"/>
+      <line x1="84" y1="142" x2="164" y2="142" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 4"/>
+      <rect x="84" y="152" width="40" height="8" rx="4" fill="#64748B"/>
+      <rect x="136" y="152" width="28" height="8" rx="4" fill="#2563EB"/>
+    </g>
+
+    <!-- Glowing 3D Golden Lightning Bolt in Foreground -->
+    <g filter="url(#shadow-main)">
+      <path d="M148 40 L108 124 L142 124 L114 204 L184 108 L146 108 Z" fill="url(#lightning)"/>
+      <!-- Lightning Highlight -->
+      <path d="M148 40 L120 100 L138 100 L124 160 L146 108 L146 108 Z" fill="#FFFFFF" opacity="0.45"/>
+    </g>
+
+    <!-- Shiny 3D Gold Coin at Base -->
+    <g filter="url(#shadow-sharp)">
+      <ellipse cx="178" cy="188" rx="26" ry="16" fill="url(#coin-gold)"/>
+      <ellipse cx="178" cy="185" rx="22" ry="13" fill="#FDE047"/>
+      <ellipse cx="178" cy="185" rx="17" ry="10" fill="url(#coin-gold)"/>
+      <text x="174" y="189" font-family="Arial, sans-serif" font-weight="bold" font-size="12" fill="#78350F">Rp</text>
+    </g>
+  </g>
+</svg>

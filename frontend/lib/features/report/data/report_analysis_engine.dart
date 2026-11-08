@@ -275,6 +275,7 @@ class CategoryProportionGenerator {
       final Color sliceColor = slicePalette[index % slicePalette.length];
 
       return ReportCategoryItem(
+        id: item.id,
         name: item.name,
         percentage: percentage,
         amount: item.amount,

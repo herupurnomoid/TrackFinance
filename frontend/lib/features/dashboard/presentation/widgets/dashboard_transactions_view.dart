@@ -10,6 +10,7 @@ class DashboardTransactionsView extends StatelessWidget {
   final int currentYear;
   final int currentMonthIndex;
   final int currentDecadeStart;
+  final DateTimeRange? dateRange;
   final Function(DashboardTransaction)? onTransactionTap;
 
   const DashboardTransactionsView({
@@ -19,11 +20,16 @@ class DashboardTransactionsView extends StatelessWidget {
     required this.currentYear,
     required this.currentMonthIndex,
     required this.currentDecadeStart,
+    this.dateRange,
     this.onTransactionTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (dateRange != null) {
+      return _buildDailyView();
+    }
+
     switch (period) {
       case DashboardPeriod.hari:
         return _buildDailyView();
@@ -41,10 +47,33 @@ class DashboardTransactionsView extends StatelessWidget {
     return transactions.where((t) => seen.add(t.id)).toList();
   }
 
-  // 1. Daily View (Per Tanggal)
+  // 1. Daily View (Per Tanggal atau Rentang Tanggal)
   Widget _buildDailyView() {
-    final filtered = _uniqueTransactions.where((t) =>
-        t.year == currentYear && t.month == currentMonthIndex).toList();
+    final filtered = _uniqueTransactions.where((t) {
+      if (dateRange != null) {
+        final txDate = DateTime(t.year, t.month + 1, t.day);
+        final start = DateTime(
+          dateRange!.start.year,
+          dateRange!.start.month,
+          dateRange!.start.day,
+        );
+        final end = DateTime(
+          dateRange!.end.year,
+          dateRange!.end.month,
+          dateRange!.end.day,
+        );
+        return !txDate.isBefore(start) && !txDate.isAfter(end);
+      }
+      return t.year == currentYear && t.month == currentMonthIndex;
+    }).toList();
+
+    if (dateRange != null) {
+      filtered.sort((a, b) {
+        final dateA = DateTime(a.year, a.month + 1, a.day);
+        final dateB = DateTime(b.year, b.month + 1, b.day);
+        return dateB.compareTo(dateA);
+      });
+    }
 
     if (filtered.isEmpty) {
       return _buildEmptyState();
@@ -299,33 +328,16 @@ class DashboardTransactionsView extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                // Badge Icon Lingkaran Transparan
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: tx.isIncome
-                        ? const Color(0xFFDCFCE7)
-                        : const Color(0xFFFEE2E2),
-                    border: Border.all(
-                      color: tx.isIncome
-                          ? const Color(0xFFBBF7D0)
-                          : const Color(0xFFFECACA),
-                      width: 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      tx.isIncome
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
-                      size: 20,
-                      color: tx.isIncome
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
-                    ),
-                  ),
+                // Ikon 3D Panah Melayang (Pemasukan: Panah Naik, Pengeluaran: Panah Turun) Tanpa Container
+                Image.asset(
+                  tx.isIncome
+                      ? 'assets/icons/3d/income_arrow.webp'
+                      : 'assets/icons/3d/expense_arrow.webp',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
+                  cacheWidth: 120,
+                  cacheHeight: 120,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

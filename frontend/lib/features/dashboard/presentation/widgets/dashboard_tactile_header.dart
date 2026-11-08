@@ -137,14 +137,7 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
               ),
             ),
 
-            // 2. Tekstur Garis Diagonal Halus
-            Positioned.fill(
-              child: const CustomPaint(
-                painter: _HeaderHatchPainter(),
-              ),
-            ),
-
-            // 3. Konten Utama Header
+            // 2. Konten Utama Header
             SafeArea(
               bottom: false,
               child: Padding(
@@ -445,7 +438,7 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
           Expanded(
             child: Row(
               children: [
-                // Icon Badge Lingkaran dengan Animasi Breathing Melayang
+                // Ikon 3D Panah Melayang (Pemasukan: Panah Naik, Pengeluaran: Panah Turun) Tanpa Kontainer
                 AnimatedBuilder(
                   animation: _breatheAnimation,
                   builder: (context, child) {
@@ -454,44 +447,15 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
                         : -_breatheAnimation.value;
                     return Transform.translate(
                       offset: Offset(0, dy),
-                      child: Container(
+                      child: Image.asset(
+                        isIncome
+                            ? 'assets/icons/3d/income_arrow.webp'
+                            : 'assets/icons/3d/expense_arrow.webp',
                         width: 38,
                         height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: isIncome
-                                ? const [Color(0xFF22C55E), Color(0xFF16A34A)]
-                                : const [Color(0xFFEF4444), Color(0xFFDC2626)],
-                          ),
-                          border: Border.all(
-                            color: isIncome
-                                ? const Color(0xFF4ADE80)
-                                : const Color(0xFFF87171),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isIncome
-                                      ? const Color(0xFF16A34A)
-                                      : const Color(0xFFDC2626))
-                                  .withValues(alpha: 0.35),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            isIncome
-                                ? Icons.arrow_downward_rounded
-                                : Icons.arrow_upward_rounded,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                        ),
+                        fit: BoxFit.contain,
+                        cacheWidth: 114,
+                        cacheHeight: 114,
                       ),
                     );
                   },
@@ -560,30 +524,4 @@ class _DashboardTactileHeaderState extends State<DashboardTactileHeader>
       ),
     );
   }
-}
-
-class _HeaderHatchPainter extends CustomPainter {
-  const _HeaderHatchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 12.0;
-    final total = size.width + size.height;
-
-    for (double i = -size.height; i < total; i += spacing) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

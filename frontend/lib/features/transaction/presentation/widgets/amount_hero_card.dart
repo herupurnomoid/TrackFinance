@@ -4,8 +4,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/animations.dart';
 
-/// Card Nominal Timbul Modern Tactile Finance dengan Inset Carved-In Display
-/// dan Tactile Quick-Add Chips.
+/// Form Nominal Transaksi Modern Tactile Finance dengan konsep No Container & No Background Color.
+/// Menampilkan input nominal melayang bebas (borderless & floating) dengan tipografi hero yang tegas.
 class AmountHeroCard extends StatelessWidget {
   final TextEditingController controller;
   final bool isExpense;
@@ -24,7 +24,7 @@ class AmountHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Quick Add presets based on Expense vs Income
+    // Preset Nominal Cepat (Quick Add) berdasarkan Pengeluaran vs Pemasukan
     final List<Map<String, dynamic>> quickPills = isExpense
         ? [
             {'label': '+10.000', 'amount': 10000},
@@ -43,48 +43,21 @@ class AmountHeroCard extends StatelessWidget {
         ? AppColors.error
         : (isExpense ? const Color(0xFFDC2626) : AppColors.tactileGreen);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
-        boxShadow: [
-          // Specular top highlight
-          const BoxShadow(
-            color: Colors.white,
-            blurRadius: 0,
-            offset: Offset(0, -1),
-          ),
-          // Ambient soft blue tactile drop shadow
-          BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Title & Status Badge
+          // Baris Header: Label & Status Badge Transaksi
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Nominal Transaksi',
-                style: AppTextStyles.labelMd.copyWith(
-                  color: const Color(0xFF434655), // on-surface-variant
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
                   letterSpacing: 0.2,
                 ),
               ),
@@ -113,7 +86,7 @@ class AmountHeroCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: isExpense
-                          ? AppColors.errorContainer
+                          ? const Color(0xFFFEE2E2)
                           : const Color(0xFFDCFCE7),
                       borderRadius: BorderRadius.circular(999),
                     ),
@@ -135,7 +108,7 @@ class AmountHeroCard extends StatelessWidget {
                           isExpense ? 'Keluar' : 'Kas Masuk',
                           style: AppTextStyles.labelSm.copyWith(
                             color: isExpense
-                                ? AppColors.onErrorContainer
+                                ? const Color(0xFFDC2626)
                                 : AppColors.tactileGreen,
                             fontWeight: FontWeight.w700,
                           ),
@@ -147,37 +120,22 @@ class AmountHeroCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Inset Carved-In Amount Display Field
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          // Tampilan Hero Nominal Bebas Batasan (No Container, No Background Color)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: hasError
-                  ? AppColors.errorContainer.withValues(alpha: 0.22)
-                  : const Color(0xFFE2E7FF), // surface-container-high
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: hasError
-                    ? AppColors.error.withValues(alpha: 0.45)
-                    : const Color(0xFFC3C6D7).withValues(alpha: 0.35),
-                width: 1,
+              border: Border(
+                bottom: BorderSide(
+                  color: hasError
+                      ? AppColors.error
+                      : (isExpense
+                          ? const Color(0xFFFDA4AF)
+                          : const Color(0xFF86EFAC)),
+                  width: 2.0,
+                ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: (hasError ? AppColors.error : const Color(0xFF0F172A))
-                      .withValues(alpha: 0.08),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-                BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.05),
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -185,11 +143,13 @@ class AmountHeroCard extends StatelessWidget {
                 Text(
                   'Rp',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.w700,
                     color: hasError
                         ? AppColors.error.withValues(alpha: 0.75)
-                        : const Color(0xFF434655),
+                        : (isExpense
+                            ? const Color(0xFFDC2626).withValues(alpha: 0.85)
+                            : AppColors.tactileGreen.withValues(alpha: 0.85)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -200,7 +160,7 @@ class AmountHeroCard extends StatelessWidget {
                     controller: controller,
                     keyboardType: TextInputType.number,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 32,
+                      fontSize: 38,
                       fontWeight: FontWeight.w800,
                       color: amountColor,
                       letterSpacing: -0.5,
@@ -211,39 +171,32 @@ class AmountHeroCard extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       hintText: '0',
                       hintStyle: GoogleFonts.plusJakartaSans(
-                        fontSize: 32,
+                        fontSize: 38,
                         fontWeight: FontWeight.w800,
                         color: hasError
-                            ? AppColors.error.withValues(alpha: 0.5)
-                            : const Color(0xFFC3C6D7),
+                            ? AppColors.error.withValues(alpha: 0.4)
+                            : const Color(0xFFCBD5E1),
                       ),
                     ),
                   ),
                 ),
 
-                // Backspace / Clear Tactile Button
+                // Tombol Hapus / Backspace Minimalis
                 PressableScale(
                   onTap: onClear,
-                  scaleFactor: 0.92,
+                  scaleFactor: 0.90,
                   child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDAE2FD), // surface-container-highest
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF1F5F9),
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          blurRadius: 2,
-                          offset: const Offset(0, -1),
-                        ),
-                      ],
                     ),
                     child: Center(
                       child: Icon(
                         Icons.backspace_outlined,
-                        size: 16,
-                        color: hasError ? AppColors.error : const Color(0xFF434655),
+                        size: 18,
+                        color: hasError ? AppColors.error : const Color(0xFF64748B),
                       ),
                     ),
                   ),
@@ -252,7 +205,7 @@ class AmountHeroCard extends StatelessWidget {
             ),
           ),
 
-          // Error Helper Message if validation failed
+          // Pesan Bantuan Validasi jika error
           if (hasError) ...[
             const SizedBox(height: 6),
             Row(
@@ -274,9 +227,9 @@ class AmountHeroCard extends StatelessWidget {
             ),
           ],
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // Quick Add Pills (Tactile Chips)
+          // Quick Add Pills (Tactile Chips) Melayang Halus
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -302,40 +255,28 @@ class AmountHeroCard extends StatelessWidget {
       onTap: () => onQuickAdd(amount),
       scaleFactor: 0.94,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Color(0xFFF2F3FF),
-            ],
-          ),
+          color: Colors.white,
           border: Border.all(
             color: const Color(0xFFE2E8F0),
             width: 1,
           ),
           boxShadow: [
-            const BoxShadow(
-              color: Colors.white,
-              blurRadius: 0,
-              offset: Offset(0, -1),
-            ),
             BoxShadow(
-              color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 1.5),
             ),
           ],
         ),
         child: Text(
           label,
-          style: AppTextStyles.labelMd.copyWith(
-            color: AppColors.tactileTextPrimary,
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFF334155),
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 12.5,
           ),
         ),
       ),

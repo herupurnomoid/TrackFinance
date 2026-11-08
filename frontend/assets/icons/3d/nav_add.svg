@@ -1,0 +1,82 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="doc-back" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+    <linearGradient id="doc-front" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="plus-badge" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="40%" stop-color="#3B82F6"/>
+      <stop offset="85%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#1E3A8A"/>
+    </linearGradient>
+    <linearGradient id="coin-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="specular-plus" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ground contact shadow -->
+  <ellipse cx="128" cy="226" rx="76" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Back card tilt -->
+    <rect x="54" y="44" width="128" height="152" rx="26" fill="url(#doc-back)" transform="rotate(-8 118 120)"/>
+
+    <!-- Front main card -->
+    <rect x="58" y="40" width="134" height="156" rx="26" fill="url(#doc-front)"/>
+    <rect x="58" y="40" width="134" height="156" rx="26" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+
+    <!-- Subtle receipt lines -->
+    <rect x="80" y="68" width="56" height="10" rx="5" fill="#93C5FD" opacity="0.8"/>
+    <rect x="80" y="90" width="88" height="8" rx="4" fill="#CBD5E1" opacity="0.7"/>
+    <rect x="80" y="108" width="70" height="8" rx="4" fill="#E2E8F0"/>
+    <rect x="80" y="126" width="50" height="8" rx="4" fill="#E2E8F0"/>
+
+    <!-- 3D Gold Accent Coin Top-Left -->
+    <g filter="url(#shadow-soft)">
+      <circle cx="68" cy="52" r="16" fill="url(#coin-gold)"/>
+      <circle cx="68" cy="52" r="11" fill="none" stroke="#FDE68A" stroke-width="2"/>
+      <text x="63" y="58" font-family="sans-serif" font-size="14" font-weight="900" fill="#78350F">Rp</text>
+    </g>
+
+    <!-- Large 3D Plus Action Badge Bottom-Right -->
+    <g filter="url(#shadow-main)">
+      <!-- Outer 3D Sphere -->
+      <circle cx="164" cy="164" r="44" fill="url(#plus-badge)"/>
+      <!-- Specular Highlight Top Crest -->
+      <path d="M 126 150 Q 164 126 202 150 Q 164 136 126 150 Z" fill="url(#specular-plus)"/>
+      <ellipse cx="164" cy="130" rx="24" ry="8" fill="#93C5FD" opacity="0.35"/>
+
+      <!-- 3D White Plus Symbol -->
+      <rect x="156" y="136" width="16" height="56" rx="8" fill="#FFFFFF" filter="url(#shadow-sharp)"/>
+      <rect x="136" y="156" width="56" height="16" rx="8" fill="#FFFFFF" filter="url(#shadow-sharp)"/>
+      <rect x="157" y="138" width="14" height="26" rx="6" fill="#F8FAFC" opacity="0.9"/>
+      <rect x="138" y="157" width="26" height="14" rx="6" fill="#F8FAFC" opacity="0.9"/>
+    </g>
+  </g>
+</svg>

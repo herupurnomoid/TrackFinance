@@ -181,8 +181,9 @@ void main() {
       await tester.tap(find.text('Bulan'));
       await tester.pump(const Duration(seconds: 1));
 
-      // Verifikasi banner aktif filter Bulan
-      expect(find.textContaining('Filter Bulan aktif'), findsOneWidget);
+      // Verifikasi banner aktif filter Bulan sudah ditiadakan per user request
+      expect(find.textContaining('Filter Bulan aktif'), findsNothing);
+      expect(find.text('Kembali ke Hari Ini'), findsNothing);
 
       // Verifikasi nama bulan Januari, Mei, Oktober muncul di layar
       expect(find.text('Januari'), findsWidgets);
@@ -198,8 +199,9 @@ void main() {
       await tester.tap(find.text('Tahun'));
       await tester.pump(const Duration(seconds: 1));
 
-      // Verifikasi banner aktif filter Tahun
-      expect(find.textContaining('Filter Tahun aktif'), findsOneWidget);
+      // Verifikasi banner aktif filter Tahun sudah ditiadakan per user request
+      expect(find.textContaining('Filter Tahun aktif'), findsNothing);
+      expect(find.text('Kembali ke Hari Ini'), findsNothing);
 
       // Verifikasi tahun 2026 muncul di daftar dekade
       expect(find.text('2026'), findsWidgets);

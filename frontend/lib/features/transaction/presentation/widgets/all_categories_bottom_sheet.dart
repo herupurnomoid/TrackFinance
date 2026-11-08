@@ -3,6 +3,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../category/data/category_model.dart';
+import '../../../category/presentation/widgets/category_3d_icon.dart';
 import 'category_selector_grid.dart';
 
 /// Bottom Sheet untuk menampilkan SELURUH kategori yang terdaftar
@@ -12,7 +13,7 @@ class AllCategoriesBottomSheet extends StatefulWidget {
   final String selectedCategoryId;
   final List<TransactionCategoryOption>? categories;
   final ValueChanged<TransactionCategoryOption> onSelect;
-  final VoidCallback onManageTap;
+  final VoidCallback? onManageTap;
 
   const AllCategoriesBottomSheet({
     super.key,
@@ -20,7 +21,7 @@ class AllCategoriesBottomSheet extends StatefulWidget {
     required this.selectedCategoryId,
     this.categories,
     required this.onSelect,
-    required this.onManageTap,
+    this.onManageTap,
   });
 
   static Future<void> show(
@@ -29,7 +30,7 @@ class AllCategoriesBottomSheet extends StatefulWidget {
     required String selectedCategoryId,
     List<TransactionCategoryOption>? categories,
     required ValueChanged<TransactionCategoryOption> onSelect,
-    required VoidCallback onManageTap,
+    VoidCallback? onManageTap,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -126,7 +127,6 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
 
               // Title Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Column(
@@ -153,27 +153,6 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      widget.onManageTap();
-                    },
-                    borderRadius: BorderRadius.circular(999),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        'Kelola',
-                        style: AppTextStyles.labelMd.copyWith(
-                          color: AppColors.tactilePrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -257,9 +236,9 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 4,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          mainAxisExtent: 82,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 14,
+                          mainAxisExtent: 88,
                         ),
                         itemCount: filteredList.length,
                         itemBuilder: (context, index) {
@@ -267,113 +246,89 @@ class _AllCategoriesBottomSheetState extends State<AllCategoriesBottomSheet> {
                           final isSelected =
                               cat.id == widget.selectedCategoryId;
 
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              PressableScale(
-                                onTap: () {
-                                  widget.onSelect(cat);
-                                  Navigator.of(context).pop();
-                                },
-                                scaleFactor: 0.94,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 160),
-                                  width: double.infinity,
-                                  height: 82,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    color: isSelected
-                                        ? const Color(0xFFDBE1FF)
-                                        : Colors.white,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? const Color(0xFF004AC6)
-                                          : const Color(0xFFE2E8F0),
-                                      width: isSelected ? 2 : 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: isSelected
-                                            ? const Color(0xFF004AC6)
-                                                .withValues(alpha: 0.20)
-                                            : const Color(0xFF2563EB)
-                                                .withValues(alpha: 0.05),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                          return PressableScale(
+                            onTap: () {
+                              widget.onSelect(cat);
+                              Navigator.of(context).pop();
+                            },
+                            scaleFactor: 0.93,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // Stack untuk Ikon 3D dan Checkmark Badge saat terpilih
+                                  Stack(
+                                    clipBehavior: Clip.none,
                                     children: [
-                                      // Icon Container (Compact 36x36)
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : cat.tintColor,
-                                          borderRadius:
-                                              BorderRadius.circular(11),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            cat.icon,
-                                            size: 20,
-                                            color: cat.iconColor,
+                                      // 3D Category Icon (Besar 52x52) murni tanpa batasan background atau kontainer
+                                      Category3DIcon(
+                                        id: cat.id,
+                                        name: cat.name,
+                                        icon: cat.icon,
+                                        isExpense: widget.isExpense,
+                                        size: 52,
+                                      ),
+
+                                      // Indikator centang bulat jika item ini terpilih
+                                      if (isSelected)
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: 18,
+                                            height: 18,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF004AC6),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white,
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Color(0x35004AC6),
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.check_rounded,
+                                                size: 10,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-
-                                      const SizedBox(height: 3),
-
-                                      // Label text tightly under icon
-                                      Text(
-                                        cat.name,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.labelSm.copyWith(
-                                          fontSize: 10.5,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w600,
-                                          color: AppColors.tactileTextPrimary,
-                                        ),
-                                      ),
                                     ],
                                   ),
-                                ),
-                              ),
 
-                              // Checkmark badge if selected
-                              if (isSelected)
-                                Positioned(
-                                  top: -3,
-                                  right: -3,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF004AC6),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.check_rounded,
-                                        size: 11,
-                                        color: Colors.white,
-                                      ),
+                                  const SizedBox(height: 5),
+
+                                  // Label text tightly under icon
+                                  Text(
+                                    cat.name,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.labelSm.copyWith(
+                                      fontSize: 10.5,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: isSelected
+                                          ? const Color(0xFF004AC6)
+                                          : AppColors.tactileTextPrimary,
+                                      height: 1.15,
                                     ),
                                   ),
-                                ),
-                            ],
+                                ],
+                              ),
+                            ),
                           );
                         },
                       ),

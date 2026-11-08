@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
-import '../../../../core/widgets/animations.dart';
 import '../../../category/presentation/screens/category_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../transaction/presentation/screens/add_transaction_screen.dart';
@@ -15,12 +13,12 @@ import '../../../transaction/data/transaction_repository.dart';
 import '../../../export/presentation/screens/export_data_screen.dart';
 import '../../../report/presentation/screens/report_screen.dart';
 import '../../data/dashboard_transaction_model.dart';
+import '../widgets/dashboard_date_range_picker_dialog.dart';
 import '../widgets/dashboard_overlap_layout.dart';
 import '../widgets/dashboard_search_and_filter.dart';
 import '../widgets/dashboard_shortcuts_row.dart';
 import '../widgets/dashboard_tactile_header.dart';
 import '../widgets/dashboard_tactile_skeleton.dart';
-import '../widgets/dashboard_time_picker_modal.dart';
 import '../widgets/dashboard_transactions_view.dart';
 import '../widgets/header_time_theme.dart';
 
@@ -54,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentMonthIndex = 9; // 9 = Oktober (0-based)
   late int _currentDecadeStart;
   DashboardPeriod _activePeriod = DashboardPeriod.hari;
+  DateTimeRange? _selectedDateRange;
 
   // Waktu sistem aktif untuk tema background & pull-to-refresh
   DashboardTimeOfDay get _activeTimeOfDay => DashboardTimeOfDay.fromDateTime();
@@ -152,7 +151,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     _txSubscription?.cancel();
 
-    if (_activePeriod == DashboardPeriod.hari) {
+    if (_selectedDateRange != null) {
+      _summarySubscription?.cancel();
+      _summarySubscription = null;
+      _monthlySummary = null;
+
+      _txSubscription = TransactionRepository.instance
+          .watchAllTransactions(uid)
+          .listen(
+        (list) {
+          if (mounted) {
+            setState(() {
+              final seen = <String>{};
+              _transactions = list
+                  .map((m) => m.toDashboardTransaction())
+                  .where((t) => seen.add(t.id))
+                  .toList();
+            });
+          }
+        },
+        onError: (e) {
+          debugPrint('[DashboardScreen] watchAllTransactions error: $e');
+        },
+      );
+    } else if (_activePeriod == DashboardPeriod.hari) {
       final monthKey =
           '$_currentYear-${(_currentMonthIndex + 1).toString().padLeft(2, '0')}';
 
@@ -248,8 +270,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }).toList();
   }
 
+  bool _isTxInDateRange(DashboardTransaction tx, DateTimeRange range) {
+    final txDate = DateTime(tx.year, tx.month + 1, tx.day);
+    final startDate = DateTime(range.start.year, range.start.month, range.start.day);
+    final endDate = DateTime(range.end.year, range.end.month, range.end.day);
+    return !txDate.isBefore(startDate) && !txDate.isAfter(endDate);
+  }
+
+  String _formatDateRangeLabel(DateTimeRange range) {
+    final start = range.start;
+    final end = range.end;
+    final months = DashboardDataStore.monthsShort;
+
+    if (start.year == end.year && start.month == end.month && start.day == end.day) {
+      return '${start.day} ${months[start.month - 1]} ${start.year}';
+    } else if (start.year == end.year && start.month == end.month) {
+      return '${start.day} - ${end.day} ${months[start.month - 1]} ${start.year}';
+    } else if (start.year == end.year) {
+      return '${start.day} ${months[start.month - 1]} - ${end.day} ${months[end.month - 1]} ${start.year}';
+    } else {
+      return '${start.day} ${months[start.month - 1]} ${start.year} - ${end.day} ${months[end.month - 1]} ${end.year}';
+    }
+  }
+
   // Label Periode pada Glass Pill Header
   String get _periodLabel {
+    if (_selectedDateRange != null) {
+      return _formatDateRangeLabel(_selectedDateRange!);
+    }
     if (_activePeriod == DashboardPeriod.hari ||
         _activePeriod == DashboardPeriod.minggu) {
       return '${DashboardDataStore.monthsName[_currentMonthIndex]} $_currentYear';
@@ -262,6 +310,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Total Pemasukan & Pengeluaran Header (Raw Values for Animated Counter)
   int get _totalIncomeRaw {
+    if (_selectedDateRange != null) {
+      int total = 0;
+      for (final tx in _filteredTransactions) {
+        if (_isTxInDateRange(tx, _selectedDateRange!)) {
+          if (tx.isIncome) total += tx.amount;
+        }
+      }
+      return total;
+    }
+
     if ((_activePeriod == DashboardPeriod.hari ||
             _activePeriod == DashboardPeriod.minggu) &&
         _monthlySummary != null) {
@@ -296,6 +354,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   int get _totalExpenseRaw {
+    if (_selectedDateRange != null) {
+      int total = 0;
+      for (final tx in _filteredTransactions) {
+        if (_isTxInDateRange(tx, _selectedDateRange!)) {
+          if (!tx.isIncome) total += tx.amount.abs();
+        }
+      }
+      return total;
+    }
+
     if ((_activePeriod == DashboardPeriod.hari ||
             _activePeriod == DashboardPeriod.minggu) &&
         _monthlySummary != null) {
@@ -330,6 +398,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   bool get _isFilterActive {
+    if (_selectedDateRange != null) return true;
     final now = DateTime.now();
     final uid = _effectiveUser?.uid;
     final defaultMonth = (uid != null && uid.isNotEmpty) ? (now.month - 1) : 9;
@@ -345,6 +414,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       final now = DateTime.now();
       final uid = _effectiveUser?.uid;
+      _selectedDateRange = null;
       _activePeriod = DashboardPeriod.hari;
       _currentYear = (uid != null && uid.isNotEmpty) ? now.year : 2026;
       _currentMonthIndex = (uid != null && uid.isNotEmpty) ? (now.month - 1) : 9;
@@ -354,6 +424,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   bool get _isPrevDisabled {
+    if (_selectedDateRange != null) {
+      return _selectedDateRange!.start.year <= 2020;
+    }
     if (_activePeriod == DashboardPeriod.tahun) {
       final minYear = DashboardDataStore.getMinTransactionYear(_transactions);
       return _currentDecadeStart <= minYear;
@@ -362,6 +435,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   bool get _isNextDisabled {
+    if (_selectedDateRange != null) {
+      return _selectedDateRange!.end.year >= 2035;
+    }
     if (_activePeriod == DashboardPeriod.tahun) {
       final maxYear = DashboardDataStore.getMaxTransactionYear(_transactions);
       return (_currentDecadeStart + 9) >= maxYear;
@@ -371,7 +447,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _handlePrevPeriod() {
     setState(() {
-      if (_activePeriod == DashboardPeriod.hari ||
+      if (_selectedDateRange != null) {
+        final days = _selectedDateRange!.end.difference(_selectedDateRange!.start).inDays + 1;
+        final newStart = _selectedDateRange!.start.subtract(Duration(days: days));
+        final newEnd = _selectedDateRange!.end.subtract(Duration(days: days));
+        _selectedDateRange = DateTimeRange(start: newStart, end: newEnd);
+        _currentYear = newStart.year;
+        _currentMonthIndex = newStart.month - 1;
+        _currentDecadeStart = (_currentYear ~/ 10) * 10;
+      } else if (_activePeriod == DashboardPeriod.hari ||
           _activePeriod == DashboardPeriod.minggu) {
         _currentMonthIndex--;
         if (_currentMonthIndex < 0) {
@@ -394,7 +478,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _handleNextPeriod() {
     setState(() {
-      if (_activePeriod == DashboardPeriod.hari ||
+      if (_selectedDateRange != null) {
+        final days = _selectedDateRange!.end.difference(_selectedDateRange!.start).inDays + 1;
+        final newStart = _selectedDateRange!.start.add(Duration(days: days));
+        final newEnd = _selectedDateRange!.end.add(Duration(days: days));
+        _selectedDateRange = DateTimeRange(start: newStart, end: newEnd);
+        _currentYear = newStart.year;
+        _currentMonthIndex = newStart.month - 1;
+        _currentDecadeStart = (_currentYear ~/ 10) * 10;
+      } else if (_activePeriod == DashboardPeriod.hari ||
           _activePeriod == DashboardPeriod.minggu) {
         _currentMonthIndex++;
         if (_currentMonthIndex > 11) {
@@ -415,39 +507,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _setupStreams();
   }
 
-  void _openTimePickerModal() {
-    DashboardTimePickerModal.show(
+  Future<void> _openTimePickerModal() async {
+    HapticFeedback.lightImpact();
+    final initialRange = _selectedDateRange ??
+        DateTimeRange(
+          start: DateTime(_currentYear, _currentMonthIndex + 1, 1),
+          end: DateTime(
+            _currentYear,
+            _currentMonthIndex + 1,
+            DateUtils.getDaysInMonth(_currentYear, _currentMonthIndex + 1),
+          ),
+        );
+
+    final picked = await DashboardDateRangePickerDialog.show(
       context,
-      period: _activePeriod,
-      currentYear: _currentYear,
-      currentMonthIndex: _currentMonthIndex,
-      currentDecadeStart: _currentDecadeStart,
-      minYear: DashboardDataStore.getMinTransactionYear(_transactions),
-      maxYear: DashboardDataStore.getMaxTransactionYear(_transactions),
-      onSelectMonthAndYear: (monthIndex, year) {
-        setState(() {
-          _currentMonthIndex = monthIndex;
-          _currentYear = year;
-          _currentDecadeStart = (_currentYear ~/ 10) * 10;
-        });
-        _setupStreams();
-      },
-      onSelectMonth: (index) {
-        setState(() => _currentMonthIndex = index);
-        _setupStreams();
-      },
-      onSelectYear: (year) {
-        setState(() {
-          _currentYear = year;
-          _currentDecadeStart = (_currentYear ~/ 10) * 10;
-        });
-        _setupStreams();
-      },
-      onSelectDecade: (decadeStart) {
-        setState(() => _currentDecadeStart = decadeStart);
-        _setupStreams();
-      },
+      initialDateRange: initialRange,
+      firstDate: DateTime(2020, 1, 1),
+      lastDate: DateTime(2035, 12, 31),
     );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDateRange = picked;
+        _currentYear = picked.start.year;
+        _currentMonthIndex = picked.start.month - 1;
+        _currentDecadeStart = (_currentYear ~/ 10) * 10;
+      });
+      _setupStreams();
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -790,6 +877,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         },
                                         onPeriodChanged: (period) {
                                           setState(() {
+                                            _selectedDateRange = null;
                                             _activePeriod = period;
                                             if (period == DashboardPeriod.hari) {
                                               final now = DateTime.now();
@@ -806,17 +894,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         },
                                       ),
 
-                                      // Banner & Button "Kembali ke Hari Ini" saat filter bulan/tahun aktif
-                                      if (_isFilterActive) ...[
-                                        const SizedBox(height: 12),
-                                        _buildReturnToTodayBanner(),
-                                      ],
-
                                       const SizedBox(height: 16),
 
                                       // 6. Grouped Transactions List
                                       DashboardTransactionsView(
                                         period: _activePeriod,
+                                        dateRange: _selectedDateRange,
                                         transactions: _filteredTransactions,
                                         currentYear: _currentYear,
                                         currentMonthIndex: _currentMonthIndex,
@@ -836,143 +919,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// Banner tactile interaktif dengan tombol "Kembali ke Hari Ini" saat filter bulan/tahun aktif
-  Widget _buildReturnToTodayBanner() {
-    String filterDesc = '';
-    IconData filterIcon = Icons.filter_alt_rounded;
-
-    if (_activePeriod == DashboardPeriod.bulan) {
-      filterDesc = 'Filter Bulan aktif: Tahun $_currentYear';
-      filterIcon = Icons.calendar_view_month_rounded;
-    } else if (_activePeriod == DashboardPeriod.tahun) {
-      filterDesc =
-          'Filter Tahun aktif: $_currentDecadeStart - ${_currentDecadeStart + 9}';
-      filterIcon = Icons.date_range_rounded;
-    } else {
-      filterDesc =
-          'Filter: ${DashboardDataStore.monthsName[_currentMonthIndex]} $_currentYear';
-      filterIcon = Icons.calendar_today_rounded;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF), // Soft Blue Tint
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFBFDBFE),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Filter Info Badge
-          Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDBEAFE),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF93C5FD),
-                      width: 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      filterIcon,
-                      size: 16,
-                      color: const Color(0xFF2563EB),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    filterDesc,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1E40AF),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // Tactile 3D "Kembali ke Hari Ini" Button
-          PressableScale(
-            onTap: _handleResetToToday,
-            scaleFactor: 0.94,
-            translateY: 2.5,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF3B82F6),
-                    Color(0xFF1D4ED8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF60A5FA),
-                  width: 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.replay_rounded,
-                    size: 15,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Kembali ke Hari Ini',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

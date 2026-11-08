@@ -1,0 +1,72 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="cash-top" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="60%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="cash-edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#065F46"/>
+      <stop offset="100%" stop-color="#022C22"/>
+    </linearGradient>
+    <linearGradient id="coin-gold" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="50%" stop-color="#EAB308"/>
+      <stop offset="100%" stop-color="#A16207"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="226" rx="88" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Stack of Banknotes (Base Thickness) -->
+    <!-- Banknote 1 (Bottom) -->
+    <path d="M46 162 L154 130 C160 128 168 132 170 138 L174 154 C176 160 172 166 166 168 L58 200 C52 202 44 198 42 192 L38 176 C36 170 40 164 46 162 Z" fill="url(#cash-edge)"/>
+    <!-- Banknote Stack Body -->
+    <path d="M48 136 L156 104 C162 102 170 106 172 112 L176 136 C178 142 174 148 168 150 L60 182 C54 184 46 180 44 174 L40 150 C38 144 42 138 48 136 Z" fill="url(#cash-edge)"/>
+    <!-- Top Banknote Face -->
+    <path d="M52 116 L160 84 C166 82 174 86 176 92 L180 116 C182 122 178 128 172 130 L64 162 C58 164 50 160 48 154 L44 130 C42 124 46 118 52 116 Z" fill="url(#cash-top)"/>
+
+    <!-- Paper Bank Band (Wrapper) -->
+    <path d="M96 102 L120 95 L126 142 L102 150 Z" fill="#F8FAFC" filter="url(#shadow-sharp)"/>
+    <ellipse cx="112" cy="122" rx="6" ry="12" fill="#CBD5E1" transform="rotate(-15 112 122)"/>
+
+    <!-- Banknote Design (Seal & Circles) -->
+    <ellipse cx="140" cy="112" rx="14" ry="10" fill="#047857" opacity="0.4" transform="rotate(-15 140 112)"/>
+    <text x="133" y="117" font-family="Arial, sans-serif" font-weight="bold" font-size="12" fill="#FFFFFF" opacity="0.8" transform="rotate(-15 140 112)">Rp</text>
+
+    <!-- Towering Stack of Golden 3D Coins (Right / Front) -->
+    <g filter="url(#shadow-main)">
+      <!-- Coin 1 (Bottom) -->
+      <ellipse cx="186" cy="188" rx="28" ry="14" fill="#854D0E"/>
+      <ellipse cx="186" cy="184" rx="28" ry="14" fill="url(#coin-gold)"/>
+      <ellipse cx="186" cy="184" rx="22" ry="10" fill="#FDE047"/>
+
+      <!-- Coin 2 (Middle) -->
+      <ellipse cx="186" cy="172" rx="28" ry="14" fill="#854D0E"/>
+      <ellipse cx="186" cy="168" rx="28" ry="14" fill="url(#coin-gold)"/>
+      <ellipse cx="186" cy="168" rx="22" ry="10" fill="#FDE047"/>
+
+      <!-- Coin 3 (Top) -->
+      <ellipse cx="186" cy="156" rx="28" ry="14" fill="#854D0E"/>
+      <ellipse cx="186" cy="152" rx="28" ry="14" fill="url(#coin-gold)"/>
+      <ellipse cx="186" cy="152" rx="22" ry="10" fill="#FDE047"/>
+      <ellipse cx="186" cy="152" rx="17" ry="7" fill="url(#coin-gold)"/>
+      <ellipse cx="178" cy="150" rx="8" ry="3" fill="#FFFFFF" opacity="0.6"/>
+    </g>
+  </g>
+</svg>

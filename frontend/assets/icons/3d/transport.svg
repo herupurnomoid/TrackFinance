@@ -1,0 +1,87 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="scoot-body" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="45%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="scoot-floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#64748B"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="wheel-rubber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="wheel-rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+    <linearGradient id="headlight" x1="0.3" y1="0.2" x2="0.8" y2="0.8">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="100%" stop-color="#EAB308"/>
+    </linearGradient>
+    <linearGradient id="helmet-grad" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="60%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="226" rx="88" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)">
+    <!-- Back Wheel -->
+    <ellipse cx="76" cy="186" rx="26" ry="26" fill="url(#wheel-rubber)"/>
+    <ellipse cx="76" cy="186" rx="14" ry="14" fill="url(#wheel-rim)"/>
+    <circle cx="76" cy="186" r="6" fill="#334155"/>
+
+    <!-- Front Wheel -->
+    <ellipse cx="186" cy="186" rx="26" ry="26" fill="url(#wheel-rubber)"/>
+    <ellipse cx="186" cy="186" rx="14" ry="14" fill="url(#wheel-rim)"/>
+    <circle cx="186" cy="186" r="6" fill="#334155"/>
+
+    <!-- Scooter Footboard / Deck -->
+    <path d="M84 184 L168 184 C174 184 178 180 178 174 L176 166 C176 160 170 156 164 156 L96 156 C88 156 82 162 82 170 Z" fill="url(#scoot-floor)"/>
+
+    <!-- Rear Body Frame & Seat -->
+    <path d="M52 168 C52 142 70 134 94 134 L126 134 C132 134 136 140 134 148 L126 172 C124 176 118 180 112 180 L68 180 C58 180 52 174 52 168 Z" fill="url(#scoot-body)"/>
+    <!-- Seat Cushion -->
+    <path d="M72 134 C72 125 80 120 90 120 L130 120 C138 120 144 125 142 133 L140 136 C138 140 132 142 126 142 L80 142 C75 142 72 138 72 134 Z" fill="#1E293B"/>
+
+    <!-- Front Steering Column -->
+    <path d="M156 166 L174 88 L184 90 L166 170 Z" fill="url(#scoot-floor)"/>
+    
+    <!-- Front Shield -->
+    <path d="M160 162 C158 130 166 114 186 108 C198 120 200 138 196 166 C190 174 168 172 160 162 Z" fill="url(#scoot-body)"/>
+    <!-- Front Shield Specular Highlight -->
+    <path d="M172 122 C172 116 178 114 184 114 C186 126 186 142 184 154 C178 154 174 136 172 122 Z" fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Handlebars -->
+    <path d="M162 84 L196 84 C202 84 206 78 206 72 L154 72 C154 78 158 84 162 84 Z" fill="#0F172A"/>
+    <!-- Headlight -->
+    <circle cx="188" cy="88" r="14" fill="url(#headlight)" filter="url(#shadow-sharp)"/>
+    <ellipse cx="184" cy="84" rx="5" ry="3" fill="#FFFFFF" opacity="0.75"/>
+
+    <!-- Cute 3D Helmet resting on seat -->
+    <path d="M88 120 C88 96 106 82 126 82 C144 82 156 94 154 116 C152 124 144 126 136 126 L98 126 C92 126 88 124 88 120 Z" fill="url(#helmet-grad)"/>
+    <!-- Helmet visor -->
+    <path d="M128 98 C136 98 148 102 152 110 C146 116 136 116 128 114 Z" fill="#0F172A"/>
+    <!-- Helmet highlight -->
+    <ellipse cx="112" cy="92" rx="14" ry="6" fill="#FFFFFF" opacity="0.5" transform="rotate(-15 112 92)"/>
+  </g>
+</svg>

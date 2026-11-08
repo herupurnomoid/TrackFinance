@@ -1288,38 +1288,40 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 3));
 
-    // Initially on Hari, return to today button should NOT be present
+    // Initially on Hari, return to today banner/button should NOT be present
     expect(find.text('Kembali ke Hari Ini'), findsNothing);
 
     // Tap on 'Bulan' filter pill
     await tester.tap(find.text('Bulan'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Now month filter is active, return to today button should appear
-    expect(find.text('Kembali ke Hari Ini'), findsOneWidget);
-    expect(find.textContaining('Filter Bulan aktif'), findsOneWidget);
+    // Banner container "Filter Bulan aktif" & "Kembali ke Hari Ini" is removed per design
+    expect(find.text('Kembali ke Hari Ini'), findsNothing);
+    expect(find.textContaining('Filter Bulan aktif'), findsNothing);
 
-    // Tap 'Kembali ke Hari Ini' button
-    await tester.tap(find.text('Kembali ke Hari Ini'));
+    // Header today button is active and resets back to Hari
+    expect(find.byIcon(Icons.today_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.today_rounded));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Should return back to Hari and button disappears
-    expect(find.text('Kembali ke Hari Ini'), findsNothing);
+    // Should return back to Hari and header today button disappears
+    expect(find.byIcon(Icons.today_rounded), findsNothing);
 
     // Now test 'Tahun' filter pill
     await tester.tap(find.text('Tahun'));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Year filter is active, return to today button should appear
-    expect(find.text('Kembali ke Hari Ini'), findsOneWidget);
-    expect(find.textContaining('Filter Tahun aktif'), findsOneWidget);
+    // Banner container is removed for Tahun as well
+    expect(find.text('Kembali ke Hari Ini'), findsNothing);
+    expect(find.textContaining('Filter Tahun aktif'), findsNothing);
 
-    // Tap header today icon button
+    // Tap header today icon button to return back to Hari
+    expect(find.byIcon(Icons.today_rounded), findsOneWidget);
     await tester.tap(find.byIcon(Icons.today_rounded));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Should return back to Hari and button disappears
-    expect(find.text('Kembali ke Hari Ini'), findsNothing);
+    // Should return back to Hari and header today button disappears
+    expect(find.byIcon(Icons.today_rounded), findsNothing);
   });
 }
 

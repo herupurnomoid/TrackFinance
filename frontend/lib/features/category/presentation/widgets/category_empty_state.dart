@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'category_3d_icon.dart';
 
 /// Centerpiece Empty State Illustration & Interactive Showcase
 /// Sesuai referensi HTML 4 Modern Tactile Finance
@@ -26,10 +27,6 @@ class CategoryEmptyState extends StatelessWidget {
 
     final badgeColor = isExpense ? const Color(0xFFDC2626) : const Color(0xFF007F36);
     final badgeIcon = isExpense ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded;
-    final innerWellColor = isExpense
-        ? const Color(0xFFFFDAD6).withValues(alpha: 0.6)
-        : const Color(0xFFC7FFCA).withValues(alpha: 0.6);
-    final iconColor = isExpense ? const Color(0xFFBA1A1A) : const Color(0xFF007F36);
 
     // Starter suggestions
     final quickSuggestions = isExpense
@@ -51,71 +48,19 @@ class CategoryEmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 1. Large Raised Tactile Squircle Tile (104x104)
+          // 1. Ikon 3D Utama Bebas Batasan Tanpa Kontainer Pembatas
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white,
-                      Color(0xFFF8FAFC),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1.0,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x1A004AC6),
-                      blurRadius: 24,
-                      offset: Offset(0, 12),
-                    ),
-                    BoxShadow(
-                      color: Color(0x0A131B2E),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  // Inner glow well (56x56)
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: innerWellColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 32,
-                        color: iconColor,
-                      ),
-                    ),
-                  ),
-                ),
+              Category3DIcon(
+                isExpense: isExpense,
+                size: 92,
               ),
 
               // Floating Trend Indicator Badge
               Positioned(
-                top: -6,
-                right: -6,
+                top: 0,
+                right: 0,
                 child: Container(
                   width: 28,
                   height: 28,
@@ -264,10 +209,11 @@ class CategoryEmptyState extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          item.icon,
-                          size: 16,
-                          color: const Color(0xFF004AC6),
+                        Category3DIcon(
+                          name: item.name,
+                          icon: item.icon,
+                          isExpense: isExpense,
+                          size: 18,
                         ),
                         const SizedBox(width: 6),
                         Text(

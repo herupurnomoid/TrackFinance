@@ -56,47 +56,11 @@ class TactileTimeHeaderWrapper extends StatelessWidget {
               ),
             ),
 
-            // 2. Tekstur Garis Diagonal Taktil Halus (dicache dalam GPU layer)
-            Positioned.fill(
-              child: const RepaintBoundary(
-                child: CustomPaint(
-                  painter: HeaderHatchPainter(),
-                ),
-              ),
-            ),
-
-            // 3. Konten Asli Header (SafeArea, Row, Back Button, Judul, dsb.)
+            // 2. Konten Asli Header (SafeArea, Row, Back Button, Judul, dsb.)
             child,
           ],
         ),
       ),
     );
   }
-}
-
-/// CustomPainter untuk tekstur garis diagonal tactile halus di atas animasi langit
-class HeaderHatchPainter extends CustomPainter {
-  const HeaderHatchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 12.0;
-    final total = size.width + size.height;
-
-    for (double i = -size.height; i < total; i += spacing) {
-      canvas.drawLine(
-        Offset(i, 0),
-        Offset(i + size.height, size.height),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

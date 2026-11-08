@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Model Rincian Kategori untuk Struktur Transaksi
 class ReportCategoryItem {
+  final String? id;
   final String name;
   final double percentage;
   final int amount;
@@ -12,6 +13,7 @@ class ReportCategoryItem {
   final Color sliceColor;
 
   const ReportCategoryItem({
+    this.id,
     required this.name,
     required this.percentage,
     required this.amount,
@@ -23,6 +25,7 @@ class ReportCategoryItem {
   });
 
   ReportCategoryItem copyWith({
+    String? id,
     String? name,
     double? percentage,
     int? amount,
@@ -33,6 +36,7 @@ class ReportCategoryItem {
     Color? sliceColor,
   }) {
     return ReportCategoryItem(
+      id: id ?? this.id,
       name: name ?? this.name,
       percentage: percentage ?? this.percentage,
       amount: amount ?? this.amount,
@@ -49,6 +53,7 @@ class ReportCategoryItem {
       identical(this, other) ||
       other is ReportCategoryItem &&
           runtimeType == other.runtimeType &&
+          id == other.id &&
           name == other.name &&
           percentage == other.percentage &&
           amount == other.amount &&
@@ -60,6 +65,7 @@ class ReportCategoryItem {
 
   @override
   int get hashCode =>
+      id.hashCode ^
       name.hashCode ^
       percentage.hashCode ^
       amount.hashCode ^
@@ -187,6 +193,7 @@ class ReportDataStore {
   /// Kategori Pengeluaran (Keluar) Oktober 2026: Total Rp 248.466
   static const List<ReportCategoryItem> expenseCategoriesOktober = [
     ReportCategoryItem(
+      id: 'exp-1',
       name: 'Makanan & Minuman',
       percentage: 39.0,
       amount: 97000,
@@ -197,6 +204,7 @@ class ReportDataStore {
       sliceColor: Color(0xFFDC2626),
     ),
     ReportCategoryItem(
+      id: 'exp-2',
       name: 'Transportasi',
       percentage: 29.3,
       amount: 72666,
@@ -207,6 +215,7 @@ class ReportDataStore {
       sliceColor: Color(0xFFEF4444),
     ),
     ReportCategoryItem(
+      id: 'exp-3',
       name: 'Belanja',
       percentage: 27.7,
       amount: 68800,
@@ -217,6 +226,7 @@ class ReportDataStore {
       sliceColor: Color(0xFFF87171),
     ),
     ReportCategoryItem(
+      id: 'exp-4',
       name: 'Tagihan',
       percentage: 4.0,
       amount: 10000,
@@ -231,6 +241,7 @@ class ReportDataStore {
   /// Kategori Pemasukan (Masuk) Oktober 2026: Total Rp 5.000.000
   static const List<ReportCategoryItem> incomeCategoriesOktober = [
     ReportCategoryItem(
+      id: 'inc-1',
       name: 'Gaji',
       percentage: 90.0,
       amount: 4500000,
@@ -241,6 +252,7 @@ class ReportDataStore {
       sliceColor: Color(0xFF15803D),
     ),
     ReportCategoryItem(
+      id: 'inc-5',
       name: 'Freelance',
       percentage: 8.0,
       amount: 400000,
@@ -251,6 +263,7 @@ class ReportDataStore {
       sliceColor: Color(0xFF16A34A),
     ),
     ReportCategoryItem(
+      id: 'inc-2',
       name: 'Hadiah',
       percentage: 2.0,
       amount: 100000,

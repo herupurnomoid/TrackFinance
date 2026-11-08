@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/animations.dart';
 
@@ -81,13 +82,14 @@ class ExportRangeFilterSection extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        // 2. Sub-Segmented Selector ("Rentang", "Bulan", "Tahun")
+        // 2. Sub-Segmented Selector ("Rentang", "Bulan", "Tahun") dengan Smooth Sliding Active Pill
         Container(
           width: double.infinity,
+          height: 48,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFE2E7FF),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFDAE2FD),
+            borderRadius: BorderRadius.circular(999),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x14131B2E),
@@ -96,13 +98,51 @@ class ExportRangeFilterSection extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
+          child: Stack(
             children: [
-              _buildPeriodTab('Rentang'),
-              const SizedBox(width: 4),
-              _buildPeriodTab('Bulan'),
-              const SizedBox(width: 4),
-              _buildPeriodTab('Tahun'),
+              // Sliding Active Pill Background yang Mulus (Curves.easeOutCubic)
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                alignment: _getAlignmentForPeriod(activePeriod),
+                child: FractionallySizedBox(
+                  widthFactor: 1.0 / 3.0,
+                  child: Container(
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFF2563EB), // Primary Blue
+                          Color(0xFF004AC6), // Deep Blue
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x472563EB),
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Clickable Tab Buttons (Rentang, Bulan, Tahun)
+              Row(
+                children: [
+                  _buildPeriodTab('Rentang'),
+                  _buildPeriodTab('Bulan'),
+                  _buildPeriodTab('Tahun'),
+                ],
+              ),
             ],
           ),
         ),
@@ -186,52 +226,40 @@ class ExportRangeFilterSection extends StatelessWidget {
     );
   }
 
+  Alignment _getAlignmentForPeriod(String period) {
+    switch (period) {
+      case 'Rentang':
+        return Alignment.centerLeft;
+      case 'Tahun':
+        return Alignment.centerRight;
+      case 'Bulan':
+      default:
+        return Alignment.center;
+    }
+  }
+
   Widget _buildPeriodTab(String title) {
     final bool isSelected = activePeriod == title;
     return Expanded(
-      child: PressableScale(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           if (!isSelected) {
+            HapticFeedback.lightImpact();
             onPeriodChanged(title);
           }
         },
-        scaleFactor: 0.94,
-        translateY: 1.5,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 7),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF2563EB),
-                      Color(0xFF004AC6),
-                    ],
-                  )
-                : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected
-                    ? const Color(0x3D2563EB)
-                    : const Color(0x0A131B2E),
-                blurRadius: isSelected ? 8 : 2,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF434655),
-              ),
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isSelected ? Colors.white : const Color(0xFF434655),
+              letterSpacing: -0.1,
             ),
+            child: Text(title),
           ),
         ),
       ),

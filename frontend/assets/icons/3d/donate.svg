@@ -1,0 +1,54 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    
+    <filter id="shadow-main" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.22"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <linearGradient id="box-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="box-top" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="box-side" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <radialGradient id="heart-3d" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FDA4AF"/>
+      <stop offset="35%" stop-color="#F43F5E"/>
+      <stop offset="85%" stop-color="#E11D48"/>
+      <stop offset="100%" stop-color="#9F1239"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="128" cy="226" rx="84" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+  
+  <g filter="url(#shadow-main)">
+    <!-- 3D Donation Box -->
+    <path d="M56,150 L128,178 L200,150 L128,122 Z" fill="url(#box-top)"/>
+    <path d="M56,150 L128,178 L128,216 L56,188 Z" fill="url(#box-front)"/>
+    <path d="M128,178 L200,150 L200,188 L128,216 Z" fill="url(#box-side)"/>
+    
+    <!-- Slot on Top -->
+    <ellipse cx="128" cy="150" rx="22" ry="5" fill="#78350F"/>
+    
+    <!-- 3D Puffy Glossy Floating Red Heart -->
+    <g filter="url(#shadow-soft)">
+      <path d="M128,128 C128,128 82,90 82,60 C82,40 98,26 116,26 C124,26 132,32 136,38 C140,32 148,26 156,26 C174,26 190,40 190,60 C190,90 144,128 128,128 Z" fill="url(#heart-3d)" transform="translate(-8, -4)"/>
+      <ellipse cx="106" cy="46" rx="10" ry="5" transform="rotate(-30 106 46)" fill="#FFFFFF" opacity="0.75"/>
+      <ellipse cx="152" cy="46" rx="6" ry="3" transform="rotate(30 152 46)" fill="#FFFFFF" opacity="0.6"/>
+    </g>
+  </g>
+</svg>
