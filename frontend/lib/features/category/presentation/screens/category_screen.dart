@@ -40,9 +40,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   late CategoryRepository _repository;
   bool _isExpenseTab = true;
 
-  // Kategori bawaan terisi sejak pertama kali pengguna masuk
-  List<CategoryItem> _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
-  List<CategoryItem> _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
+  // Kategori bawaan terisi sejak pertama kali pengguna masuk (Lainnya selalu paling akhir)
+  List<CategoryItem> _expenseCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+      List.from(CategoryRepository.inMemoryExpenseCategories));
+  List<CategoryItem> _incomeCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+      List.from(CategoryRepository.inMemoryIncomeCategories));
 
   // Pesan Toast Floating Feedback
   String? _toastMessage;
@@ -137,8 +139,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
         final items = await _repository.getCategories(uid);
         if (items.isNotEmpty && mounted) {
           setState(() {
-            _expenseCategories = items.where((c) => c.isExpense).toList();
-            _incomeCategories = items.where((c) => !c.isExpense).toList();
+            _expenseCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                items.where((c) => c.isExpense).toList());
+            _incomeCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                items.where((c) => !c.isExpense).toList());
           });
         }
       } catch (e) {
@@ -184,14 +188,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
                     CategoryRepository.inMemoryExpenseCategories.isEmpty ? 0 : CategoryRepository.inMemoryExpenseCategories.length - 1,
                     newCategory,
                   );
-                  _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
+                  _expenseCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                      List.from(CategoryRepository.inMemoryExpenseCategories));
                   _isExpenseTab = true;
                 } else {
                   CategoryRepository.inMemoryIncomeCategories.insert(
                     CategoryRepository.inMemoryIncomeCategories.isEmpty ? 0 : CategoryRepository.inMemoryIncomeCategories.length - 1,
                     newCategory,
                   );
-                  _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
+                  _incomeCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                      List.from(CategoryRepository.inMemoryIncomeCategories));
                   _isExpenseTab = false;
                 }
               });
@@ -240,13 +246,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   if (index != -1) {
                     CategoryRepository.inMemoryExpenseCategories[index] = updated;
                   }
-                  _expenseCategories = List.from(CategoryRepository.inMemoryExpenseCategories);
+                  _expenseCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                      List.from(CategoryRepository.inMemoryExpenseCategories));
                 } else {
                   final index = CategoryRepository.inMemoryIncomeCategories.indexWhere((c) => c.id == category.id);
                   if (index != -1) {
                     CategoryRepository.inMemoryIncomeCategories[index] = updated;
                   }
-                  _incomeCategories = List.from(CategoryRepository.inMemoryIncomeCategories);
+                  _incomeCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                      List.from(CategoryRepository.inMemoryIncomeCategories));
                 }
               });
             }
@@ -411,8 +419,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                       _uid != null &&
                                       _uid!.isNotEmpty) {
                                     final allDocs = snapshot.data!;
-                                    _expenseCategories = allDocs.where((c) => c.isExpense).toList();
-                                    _incomeCategories = allDocs.where((c) => !c.isExpense).toList();
+                                    _expenseCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                                        allDocs.where((c) => c.isExpense).toList());
+                                    _incomeCategories = CategoryRepository.sortCategoriesWithLainnyaLast(
+                                        allDocs.where((c) => !c.isExpense).toList());
                                   }
 
                                   return Column(
@@ -603,8 +613,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Widget _buildCategoryGrid(List<CategoryItem> categories) {
-    // 4 Kolom: items kategori + 1 tombol tambah di akhir
-    final totalCount = categories.length + 1;
+    // 4 Kolom: items kategori (Lainnya selalu paling akhir) + 1 tombol tambah di akhir
+    final sortedCategories = CategoryRepository.sortCategoriesWithLainnyaLast(categories);
+    final totalCount = sortedCategories.length + 1;
 
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
@@ -618,7 +629,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ),
       itemCount: totalCount,
       itemBuilder: (context, index) {
-        if (index == categories.length) {
+        if (index == sortedCategories.length) {
           // Tombol Tambah di akhir grid
           return RepaintBoundary(
             child: CategoryAddTile(
@@ -627,7 +638,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           );
         }
 
-        final cat = categories[index];
+        final cat = sortedCategories[index];
         return RepaintBoundary(
           child: CategoryGridItem(
             category: cat,

@@ -38,6 +38,21 @@ class CategoryRepository {
       ..addAll(DefaultCategories.defaultIncomeCategories);
   }
 
+  /// Helper untuk memastikan kategori 'Lainnya' (sistem bawaan/terkunci) selalu berada di urutan paling akhir
+  static List<CategoryItem> sortCategoriesWithLainnyaLast(List<CategoryItem> items) {
+    if (items.isEmpty) return items;
+    final normal = <CategoryItem>[];
+    final lainnya = <CategoryItem>[];
+    for (final item in items) {
+      if (item.isLocked || item.name.trim().toLowerCase() == 'lainnya') {
+        lainnya.add(item);
+      } else {
+        normal.add(item);
+      }
+    }
+    return [...normal, ...lainnya];
+  }
+
   /// Mendapatkan referensi subkoleksi categories milik user tertentu
   CollectionReference<Map<String, dynamic>> _categoryCollection(String uid) {
     return _firestore.collection('users').doc(uid).collection('categories');
@@ -109,9 +124,12 @@ class CategoryRepository {
       return query
           .orderBy('order', descending: false)
           .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => CategoryItem.fromFirestore(doc))
-              .toList())
+          .map((snapshot) {
+            final items = snapshot.docs
+                .map((doc) => CategoryItem.fromFirestore(doc))
+                .toList();
+            return sortCategoriesWithLainnyaLast(items);
+          })
           .handleError((e) {
         debugPrint('CategoryRepository getCategoriesStream stream error: $e');
         return <CategoryItem>[];
@@ -142,7 +160,8 @@ class CategoryRepository {
     }
 
     final snapshot = await query.orderBy('order', descending: false).get(GetOptions(source: source));
-    return snapshot.docs.map((doc) => CategoryItem.fromFirestore(doc)).toList();
+    final items = snapshot.docs.map((doc) => CategoryItem.fromFirestore(doc)).toList();
+    return sortCategoriesWithLainnyaLast(items);
   }
 
   /// Mengambil data satu kategori berdasarkan ID dokumen
