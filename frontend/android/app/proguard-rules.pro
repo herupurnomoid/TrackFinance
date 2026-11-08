@@ -11,3 +11,8 @@
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn javax.annotation.**
+
+# Play Store deferred component / split install rules
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
