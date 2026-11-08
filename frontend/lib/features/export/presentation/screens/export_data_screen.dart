@@ -657,7 +657,6 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                     backgroundColor: Colors.white,
                     child: SizedBox.expand(
                       child: SingleChildScrollView(
-                        clipBehavior: Clip.none,
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),

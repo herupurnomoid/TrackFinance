@@ -382,7 +382,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       backgroundColor: Colors.white,
                       child: SizedBox.expand(
                         child: SingleChildScrollView(
-                          clipBehavior: Clip.none,
                           physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics(),
                           ),

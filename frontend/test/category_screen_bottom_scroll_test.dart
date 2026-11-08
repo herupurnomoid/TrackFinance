@@ -40,9 +40,18 @@ void main() {
     final addTile = find.text('Tambah');
     expect(addTile, findsOneWidget);
 
+    final singleChildWidget = tester.widget<SingleChildScrollView>(singleChildFinder);
+    // clipBehavior must be Clip.hardEdge so when body scrolls up, it enters under the header like ProfileScreen
+    expect(singleChildWidget.clipBehavior, Clip.hardEdge);
+
     // Test dragging/pull-to-refresh: bottom row must remain visible and unclipped
     await tester.drag(singleChildFinder, const Offset(0, 120));
     await tester.pump();
     expect(addTile, findsOneWidget);
+
+    // Test scrolling upwards: body items scroll up and cleanly enter under the header
+    await tester.drag(singleChildFinder, const Offset(0, -200));
+    await tester.pump();
+    expect(find.byType(CategoryScreen), findsOneWidget);
   });
 }

@@ -296,7 +296,6 @@ class _ReportScreenState extends State<ReportScreen> {
                 backgroundColor: Colors.white,
                 child: SizedBox.expand(
                   child: SingleChildScrollView(
-                    clipBehavior: Clip.none,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
