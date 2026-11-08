@@ -13,6 +13,7 @@ import '../widgets/report_month_picker_modal.dart';
 import '../widgets/report_skeleton.dart';
 import '../widgets/report_structure_card.dart';
 import '../widgets/report_trend_card.dart';
+import 'report_category_transactions_screen.dart';
 import '../../../dashboard/presentation/widgets/tactile_time_header_wrapper.dart';
 
 /// Halaman Laporan Keuangan Modern Tactile Finance
@@ -336,6 +337,8 @@ class _ReportScreenState extends State<ReportScreen> {
                                 totalAmount: _structureTotalAmount,
                                 isExpenseTab: _isExpenseMode,
                                 onTabChanged: _handleTabChanged,
+                                onCategoryTap: (cat) =>
+                                    _openCategoryTransactions(context, cat),
                                 categoryItems: _reportData != null
                                     ? (_isExpenseMode
                                         ? _reportData!.expenseCategories
@@ -548,6 +551,38 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  void _openCategoryTransactions(
+    BuildContext context,
+    ReportCategoryItem category,
+  ) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        transitionDuration: const Duration(milliseconds: 250),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            ReportCategoryTransactionsScreen(
+          categoryItem: category,
+          year: _currentYear,
+          monthIndex: _currentMonthIndex,
+          isExpense: _isExpenseMode,
+          user: _currentUser,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          );
+        },
+      ),
     );
   }
 }

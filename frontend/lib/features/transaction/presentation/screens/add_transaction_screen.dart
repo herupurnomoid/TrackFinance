@@ -7,6 +7,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/tactile_swipe_detector.dart';
 import '../../../category/data/category_model.dart';
 import '../../../category/data/category_repository.dart';
 import '../../../category/presentation/screens/category_screen.dart';
@@ -697,117 +698,144 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F3FF), // surface-container-low
-      body: Column(
-        children: [
-          // 1. Header Card Waktu Dinamis (seperti Halaman Profil)
-          _buildHeaderBar(),
+      body: TactileSwipeDetector(
+        behavior: HitTestBehavior.translucent,
+        onSwipeLeft: () {
+          if (_isExpense) {
+            _handleTypeChanged(false);
+          }
+        },
+        onSwipeRight: () {
+          if (!_isExpense) {
+            _handleTypeChanged(true);
+          }
+        },
+        child: Column(
+          children: [
+            // 1. Header Card Waktu Dinamis (seperti Halaman Profil)
+            _buildHeaderBar(),
 
-          // 2. Main Content Canvas
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _handleRefresh,
-              color: AppColors.tactilePrimary,
-              backgroundColor: Colors.white,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
-                child: AnimatedSwitcher(
-                  duration: Duration.zero,
-                  child: _isLoading
-                      ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
-                      : Column(
-                          key: const ValueKey('content'),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Interactive Error Alert Toast (if validation failed)
-                            if (_hasValidationError) ...[
-                              _buildErrorToast(),
-                              const SizedBox(height: 12),
-                            ],
+            // 2. Main Content Canvas
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _handleRefresh,
+                color: AppColors.tactilePrimary,
+                backgroundColor: Colors.white,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 36),
+                  child: AnimatedSwitcher(
+                    duration: Duration.zero,
+                    child: _isLoading
+                        ? const AddTransactionSkeleton(key: ValueKey('skeleton'))
+                        : Column(
+                            key: const ValueKey('content'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Interactive Error Alert Toast (if validation failed)
+                              if (_hasValidationError) ...[
+                                _buildErrorToast(),
+                                const SizedBox(height: 12),
+                              ],
 
-                            // 1. Segmented Control Switch: Pengeluaran vs Pemasukan
-                            TransactionTypeSwitch(
-                              isExpense: _isExpense,
-                              onChanged: _handleTypeChanged,
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // 2. Elevated Nominal Card with Carved Inset Well
-                            RepaintBoundary(
-                              child: AmountHeroCard(
-                                controller: _amountController,
+                              // 1. Segmented Control Switch: Pengeluaran vs Pemasukan
+                              TransactionTypeSwitch(
                                 isExpense: _isExpense,
-                                hasError: _hasValidationError && currentAmount <= 0,
-                                onQuickAdd: _handleQuickAdd,
-                                onClear: _handleClearAmount,
+                                onChanged: _handleTypeChanged,
                               ),
-                            ),
 
-                            const SizedBox(height: 18),
+                              const SizedBox(height: 16),
 
-                            // 3. Category Selector Section (4-Column Squircle Matrix)
-                            Builder(
-                              builder: (context) {
-                                final currentCategoryItems = _isExpense
-                                    ? _expenseCategories
-                                    : _incomeCategories;
-                                final currentCategoryOptions = currentCategoryItems
-                                    .map((c) =>
-                                        TransactionCategoryOption.fromCategoryItem(c))
-                                    .toList();
-
-                                return RepaintBoundary(
-                                  child: CategorySelectorGrid(
-                                    isExpense: _isExpense,
-                                    selectedCategoryId: _selectedCategoryId,
-                                    categories: currentCategoryOptions,
-                                    hasError: _hasValidationError &&
-                                        _selectedCategoryId.isEmpty,
-                                    onSelect: (cat) {
-                                      setState(() {
-                                        _selectedCategoryId = cat.id;
-                                        if (_hasValidationError &&
-                                            _selectedCategoryId.isNotEmpty) {
-                                          _hasValidationError = false;
-                                          _validationErrorMessage = null;
-                                        }
-                                      });
-                                    },
-                                    onManageTap: _openManageCategories,
-                                  ),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 18),
-
-                            // 4. Date & Time Elevated Blocks & Recessed Note Well
-                            RepaintBoundary(
-                              child: AdditionalDetailsSection(
-                                selectedDate: _selectedDate,
-                                selectedTime: _selectedTime,
-                                noteController: _noteController,
-                                onDateChanged: (d) =>
-                                    setState(() => _selectedDate = d),
-                                onTimeChanged: (t) =>
-                                    setState(() => _selectedTime = t),
+                              // 2. Elevated Nominal Card with Carved Inset Well
+                              RepaintBoundary(
+                                child: AmountHeroCard(
+                                  controller: _amountController,
+                                  isExpense: _isExpense,
+                                  hasError: _hasValidationError && currentAmount <= 0,
+                                  onQuickAdd: _handleQuickAdd,
+                                  onClear: _handleClearAmount,
+                                ),
                               ),
-                            ),
 
-                            const SizedBox(height: 24),
+                              const SizedBox(height: 18),
 
-                            // 5. Sticky-like Action Area: 3D Button + Trust Info
-                            _buildBottomActionArea(isFormValid),
-                          ],
-                        ),
+                              // 3. Date & Time Form (No Container & No Background Color)
+                              RepaintBoundary(
+                                child: TransactionDateTimeSection(
+                                  selectedDate: _selectedDate,
+                                  selectedTime: _selectedTime,
+                                  onDateChanged: (d) =>
+                                      setState(() => _selectedDate = d),
+                                  onTimeChanged: (t) =>
+                                      setState(() => _selectedTime = t),
+                                ),
+                              ),
+
+                              const SizedBox(height: 18),
+
+                              // 4. Category Selector Section (4-Column Squircle Matrix)
+                              Builder(
+                                builder: (context) {
+                                  final currentCategoryItems = _isExpense
+                                      ? _expenseCategories
+                                      : _incomeCategories;
+                                  final currentCategoryOptions = currentCategoryItems
+                                      .map((c) =>
+                                          TransactionCategoryOption.fromCategoryItem(c))
+                                      .toList();
+
+                                  return RepaintBoundary(
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      child: KeyedSubtree(
+                                        key: ValueKey('cat_grid_$_isExpense'),
+                                        child: CategorySelectorGrid(
+                                          isExpense: _isExpense,
+                                          selectedCategoryId: _selectedCategoryId,
+                                          categories: currentCategoryOptions,
+                                          hasError: _hasValidationError &&
+                                              _selectedCategoryId.isEmpty,
+                                          onSelect: (cat) {
+                                            setState(() {
+                                              _selectedCategoryId = cat.id;
+                                              if (_hasValidationError &&
+                                                  _selectedCategoryId.isNotEmpty) {
+                                                _hasValidationError = false;
+                                                _validationErrorMessage = null;
+                                              }
+                                            });
+                                          },
+                                          onManageTap: _openManageCategories,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              const SizedBox(height: 18),
+
+                              // 5. Inset Note / Deskripsi Well (Paling Bawah)
+                              RepaintBoundary(
+                                child: TransactionNoteInput(
+                                  noteController: _noteController,
+                                ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // 6. Sticky-like Action Area: 3D Button + Trust Info
+                              _buildBottomActionArea(isFormValid),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

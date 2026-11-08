@@ -1,0 +1,106 @@
+<svg viewBox="0 0 256 256" width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Filter Bayangan 3D Lembut -->
+    <filter id="shadow-main" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.25"/>
+    </filter>
+    <filter id="shadow-soft" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.20"/>
+    </filter>
+    <filter id="shadow-sharp" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <filter id="blur-ground" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+
+    <!-- Gradasi Lembaran Kertas 3D -->
+    <linearGradient id="sheet-grad" x1="0.1" y1="0.1" x2="0.9" y2="0.95">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="65%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+
+    <!-- Gradasi Lipatan Kertas Sudut Kanan Atas -->
+    <linearGradient id="fold-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="50%" stop-color="#CBD5E1"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+
+    <!-- Gradasi Badge Merah PDF 3D -->
+    <linearGradient id="pdf-red-grad" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="40%" stop-color="#DC2626"/>
+      <stop offset="85%" stop-color="#B91C1C"/>
+      <stop offset="100%" stop-color="#991B1B"/>
+    </linearGradient>
+
+    <!-- Gradasi Chart Bar PDF -->
+    <linearGradient id="bar-red-1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F87171"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+    <linearGradient id="bar-red-2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCA5A5"/>
+      <stop offset="100%" stop-color="#EF4444"/>
+    </linearGradient>
+    <linearGradient id="bar-blue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Bayangan Dasar Melayang -->
+  <ellipse cx="128" cy="226" rx="76" ry="14" fill="#0F172A" opacity="0.22" filter="url(#blur-ground)"/>
+
+  <g filter="url(#shadow-main)" transform="rotate(-3 128 128)">
+    <!-- Lembaran Dokumen 3D dengan Sudut Terlipat -->
+    <path d="M 62 44 L 146 44 L 194 92 L 194 204 Q 194 216 182 216 L 62 216 Q 50 216 50 204 L 50 56 Q 50 44 62 44 Z" fill="url(#sheet-grad)"/>
+
+    <!-- Lipatan Sudut Kanan Atas 3D -->
+    <g filter="url(#shadow-sharp)">
+      <path d="M 146 44 L 146 82 Q 146 92 156 92 L 194 92 Z" fill="url(#fold-grad)"/>
+    </g>
+
+    <!-- Kilauan Cahaya Kaca Melengkung di Dokumen -->
+    <path d="M 50 70 Q 120 120 194 80 L 194 60 Q 120 100 50 50 Z" fill="#FFFFFF" opacity="0.25"/>
+
+    <!-- Garis Baris Laporan Data Atas -->
+    <rect x="70" y="66" width="60" height="7" rx="3.5" fill="#EF4444" opacity="0.3"/>
+    <rect x="70" y="80" width="48" height="6" rx="3" fill="#CBD5E1"/>
+
+    <!-- Badge 3D PDF Menempel Tebal -->
+    <g filter="url(#shadow-sharp)">
+      <!-- Lapisan Dasar Badge Merah Tebal -->
+      <rect x="62" y="104" width="120" height="42" rx="10" fill="url(#pdf-red-grad)"/>
+      <!-- Kilauan Cahaya Atas Badge Merah -->
+      <path d="M 64 106 Q 122 118 180 108 L 180 105 Q 122 114 64 105 Z" fill="#FFFFFF" opacity="0.4"/>
+      <!-- Ikon Dokumen & Teks PDF Timbul Putih -->
+      <g filter="url(#shadow-sharp)">
+        <!-- Emblem Mini Page -->
+        <rect x="74" y="113" width="18" height="24" rx="3" fill="#FFFFFF"/>
+        <rect x="77" y="117" width="12" height="3" rx="1" fill="#DC2626"/>
+        <rect x="77" y="123" width="8" height="2.5" rx="1" fill="#EF4444"/>
+        <rect x="77" y="128" width="10" height="2.5" rx="1" fill="#EF4444"/>
+
+        <!-- Teks 'PDF' Tebal Modern -->
+        <text x="100" y="133" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="22" letter-spacing="1.5" fill="#FFFFFF">PDF</text>
+      </g>
+    </g>
+
+    <!-- Mini Visual Laporan Finansial di Bagian Bawah Dokumen -->
+    <g transform="translate(68, 160)">
+      <!-- Garis Grid Laporan -->
+      <line x1="0" y1="36" x2="108" y2="36" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="0" y1="18" x2="108" y2="18" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
+
+      <!-- Bar Chart 3D Mini Finansial -->
+      <rect x="8" y="16" width="14" height="20" rx="3" fill="url(#bar-blue)"/>
+      <rect x="28" y="8" width="14" height="28" rx="3" fill="url(#bar-red-1)"/>
+      <rect x="48" y="22" width="14" height="14" rx="3" fill="url(#bar-blue)"/>
+      <rect x="68" y="2" width="14" height="34" rx="3" fill="url(#bar-red-2)"/>
+      <rect x="88" y="12" width="14" height="24" rx="3" fill="url(#bar-red-1)"/>
+    </g>
+  </g>
+</svg>

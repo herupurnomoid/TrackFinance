@@ -80,72 +80,67 @@ class _LogoutButtonState extends State<LogoutButton> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      offset: _isPressed ? const Offset(0, 0.035) : Offset.zero,
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOutCubic,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutCubic,
-        child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.errorContainer,
-          borderRadius: BorderRadius.circular(99),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.error.withValues(alpha: 0.18),
-              blurRadius: 20,
-              spreadRadius: -4,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.8),
-              blurRadius: 4,
-              offset: const Offset(0, -2),
-            ),
-            BoxShadow(
-              color: AppColors.onErrorContainer.withValues(alpha: 0.15),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(99),
-            onHighlightChanged: (highlighted) {
-              setState(() {
-                _isPressed = highlighted;
-              });
-            },
-            onTap: _isLoading ? null : _handleTap,
-            child: Center(
+    return Center(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) {
+          if (!_isLoading) {
+            setState(() => _isPressed = true);
+          }
+        },
+        onTapUp: (_) {
+          if (!_isLoading) {
+            setState(() => _isPressed = false);
+          }
+        },
+        onTapCancel: () {
+          if (!_isLoading) {
+            setState(() => _isPressed = false);
+          }
+        },
+        onTap: _isLoading ? null : _handleTap,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: _isPressed ? 0.6 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
-                        color: AppColors.onErrorContainer,
+                        color: AppColors.error,
                       ),
                     )
-                  : Text(
-                      'Keluar',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onErrorContainer,
-                      ),
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.logout_rounded,
+                          size: 20,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Keluar',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ],
                     ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -5,7 +5,6 @@ import 'package:track_finance/core/models/user_profile.dart';
 import 'package:track_finance/core/theme/app_theme.dart';
 import 'package:track_finance/features/category/data/category_model.dart';
 import 'package:track_finance/features/category/data/category_repository.dart';
-import 'package:track_finance/features/category/presentation/screens/category_screen.dart';
 import 'package:track_finance/features/transaction/data/transaction_repository.dart';
 import 'package:track_finance/features/transaction/presentation/screens/add_transaction_screen.dart';
 import 'package:track_finance/features/transaction/presentation/widgets/all_categories_bottom_sheet.dart';

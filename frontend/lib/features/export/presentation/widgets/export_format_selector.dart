@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Seksi Pemilihan Format Berkas Ekspor (PDF vs CSV)
-/// Menerapkan 2 ubin squircle besar dengan badge centang pin, efek seleksi tactile,
-/// dan tampilan yang fleksibel sesuai mode tampilan (Rentang vs Bulan).
+/// Menggunakan konsep Full Ikon 3D lepas tanpa background color dan tanpa container,
+/// dengan tactile selection feedback, badge status halus, dan performa ultra-ringan.
 class ExportFormatSelector extends StatelessWidget {
   final String selectedFormat; // 'CSV' atau 'PDF'
   final ValueChanged<String> onFormatChanged;
@@ -56,33 +56,29 @@ class ExportFormatSelector extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
-        // 2. Format Tiles Grid (2 Squircles dengan Tinggi 104px)
+        // 2. Format 3D Icons Row (Full Ikon 3D Tanpa Container & Tanpa Background Color)
         Row(
           children: [
-            // Ubin 1: PDF
+            // Pilihan 1: PDF 3D Icon Button
             Expanded(
-              child: _buildFormatCard(
+              child: _Format3DIconButton(
                 formatName: 'PDF',
                 subtitle: showSubtitle ? 'Laporan visual' : null,
-                icon: Icons.picture_as_pdf_rounded,
-                iconBgColor: const Color(0xFFFFDAD6),
-                iconColor: const Color(0xFFBA1A1A),
+                assetPath: 'assets/icons/3d/pdf.webp',
                 isSelected: isPdf,
                 onTap: () => onFormatChanged('PDF'),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
 
-            // Ubin 2: CSV
+            // Pilihan 2: CSV 3D Icon Button
             Expanded(
-              child: _buildFormatCard(
+              child: _Format3DIconButton(
                 formatName: 'CSV',
                 subtitle: showSubtitle ? 'Excel & Spreadsheet' : null,
-                icon: Icons.table_chart_rounded,
-                iconBgColor: const Color(0xFFDCFCE7),
-                iconColor: const Color(0xFF006329),
+                assetPath: 'assets/icons/3d/csv.webp',
                 isSelected: isCsv,
                 onTap: () => onFormatChanged('CSV'),
               ),
@@ -132,154 +128,148 @@ class ExportFormatSelector extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildFormatCard({
-    required String formatName,
-    String? subtitle,
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+/// Tombol Format Full Ikon 3D Mandiri (Tanpa Container Card & Tanpa Background Color)
+class _Format3DIconButton extends StatefulWidget {
+  final String formatName;
+  final String? subtitle;
+  final String assetPath;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _Format3DIconButton({
+    required this.formatName,
+    this.subtitle,
+    required this.assetPath,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_Format3DIconButton> createState() => _Format3DIconButtonState();
+}
+
+class _Format3DIconButtonState extends State<_Format3DIconButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isSelected = widget.isSelected;
+
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        setState(() => _isPressed = true);
+      },
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
       onTap: () {
         HapticFeedback.lightImpact();
-        onTap();
+        widget.onTap();
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        constraints: const BoxConstraints(minHeight: 104),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isSelected
-                ? [
-                    const Color(0xFFEAEDFF),
-                    const Color(0xFFDAE2FD).withValues(alpha: 0.7),
-                  ]
-                : [
-                    Colors.white,
-                    const Color(0xFFF2F3FF),
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF004AC6)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 2.0 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.14),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF131B2E).withValues(alpha: 0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Checked Indicator Pin (Top Right saat terpilih)
-            if (isSelected)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF004AC6),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x33000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.check_rounded,
-                      size: 14,
-                      color: Colors.white,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.90 : (isSelected ? 1.04 : 0.92),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: isSelected ? 1.0 : (_isPressed ? 0.75 : 0.55),
+          duration: const Duration(milliseconds: 140),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Full Visual Ikon 3D Tanpa Container & Tanpa Background Color
+                Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Image.asset(
+                      widget.assetPath,
+                      width: 68,
+                      height: 68,
+                      fit: BoxFit.contain,
+                      cacheWidth: 204,
+                      cacheHeight: 204,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          widget.formatName == 'PDF'
+                              ? Icons.picture_as_pdf_rounded
+                              : Icons.table_chart_rounded,
+                          size: 48,
+                          color: widget.formatName == 'PDF'
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF16A34A),
+                        );
+                      },
                     ),
+
+                    // Badge Centang Status saat Terpilih (Halus & Elegan)
+                    if (isSelected)
+                      Positioned(
+                        top: -2,
+                        right: -4,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF004AC6),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x33000000),
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Nama Format Teks
+                Text(
+                  widget.formatName,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: isSelected
+                        ? const Color(0xFF131B2E)
+                        : const Color(0xFF737686),
                   ),
                 ),
-              ),
 
-            // Card Body Center
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Circular Icon Well
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: iconBgColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: iconColor.withValues(alpha: 0.15),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        size: 20,
-                        color: iconColor,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Format Name
+                if (widget.subtitle != null) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    formatName,
+                    widget.subtitle!,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                       color: isSelected
-                          ? const Color(0xFF131B2E)
-                          : const Color(0xFF434655),
+                          ? const Color(0xFF434655)
+                          : const Color(0xFF94A3B8),
                     ),
+                    textAlign: TextAlign.center,
                   ),
-
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF737686),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

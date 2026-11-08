@@ -23,17 +23,17 @@ class AddTransactionSkeleton extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // 3. Category Matrix Skeleton (4-Columns x 2 Rows = 8 items + Banner)
-          _buildCategoryGridSkeleton(),
-
-          const SizedBox(height: 20),
-
-          // 4. Date & Time Side-by-Side Cards Skeleton
+          // 3. Date & Time Side-by-Side Cards Skeleton
           _buildDateTimeSkeleton(),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // 5. Inset Note Well Skeleton
+          // 4. Category Matrix Skeleton (4-Columns x 2 Rows = 8 items + Banner)
+          _buildCategoryGridSkeleton(),
+
+          const SizedBox(height: 18),
+
+          // 5. Inset Note Well Skeleton (Deskripsi Paling Bawah)
           _buildNoteWellSkeleton(),
 
           const SizedBox(height: 24),
@@ -168,18 +168,21 @@ class AddTransactionSkeleton extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border(
+                bottom: BorderSide(
+                  color: const Color(0xFFC3C6D7).withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+              ),
             ),
             child: Row(
               children: [
                 ShimmerBox(
-                  width: 36,
-                  height: 36,
-                  borderRadius: BorderRadius.circular(12),
+                  width: 20,
+                  height: 20,
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -196,21 +199,24 @@ class AddTransactionSkeleton extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 16),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border(
+                bottom: BorderSide(
+                  color: const Color(0xFFC3C6D7).withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+              ),
             ),
             child: Row(
               children: [
                 ShimmerBox(
-                  width: 36,
-                  height: 36,
-                  borderRadius: BorderRadius.circular(12),
+                  width: 20,
+                  height: 20,
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

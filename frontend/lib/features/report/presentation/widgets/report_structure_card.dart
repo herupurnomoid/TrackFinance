@@ -15,6 +15,7 @@ class ReportStructureCard extends StatelessWidget {
   final int totalAmount;
   final bool isEmpty;
   final List<ReportCategoryItem>? categoryItems;
+  final ValueChanged<ReportCategoryItem>? onCategoryTap;
 
   const ReportStructureCard({
     super.key,
@@ -23,6 +24,7 @@ class ReportStructureCard extends StatelessWidget {
     this.totalAmount = 0,
     this.isEmpty = true,
     this.categoryItems,
+    this.onCategoryTap,
   });
 
   @override
@@ -288,7 +290,10 @@ class ReportStructureCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => HapticFeedback.selectionClick(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onCategoryTap?.call(cat);
+        },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           height: 66,

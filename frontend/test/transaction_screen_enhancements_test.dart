@@ -308,5 +308,103 @@ void main() {
       // Warna BIRU konsisten: 0xFF2563EB ke 0xFF1E40AF
       expect(gradient.colors, equals(const [Color(0xFF2563EB), Color(0xFF1E40AF)]));
     });
+
+    // -------------------------------------------------------------------------
+    // 5. Test Date and Time form uses No Container and No Background Color
+    // -------------------------------------------------------------------------
+    testWidgets('Date and Time form uses No Container and No Background Color concept', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AddTransactionScreen(user: testUser),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Tanggal & Waktu labels and icons exist
+      expect(find.text('Tanggal'), findsOneWidget);
+      expect(find.text('Waktu'), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_today_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+
+      // Verify that the Date and Time containers have NO background color (Colors.transparent) and no gradient or box shadows
+      final dateFinder = find.ancestor(
+        of: find.text('Tanggal'),
+        matching: find.byType(Container),
+      ).first;
+      final dateContainer = tester.widget<Container>(dateFinder);
+      final dateDec = dateContainer.decoration as BoxDecoration;
+      expect(dateDec.color, equals(Colors.transparent));
+      expect(dateDec.boxShadow, isNull);
+      expect(dateDec.gradient, isNull);
+      expect(dateDec.border?.bottom.width, 1.5);
+
+      final timeFinder = find.ancestor(
+        of: find.text('Waktu'),
+        matching: find.byType(Container),
+      ).first;
+      final timeContainer = tester.widget<Container>(timeFinder);
+      final timeDec = timeContainer.decoration as BoxDecoration;
+      expect(timeDec.color, equals(Colors.transparent));
+      expect(timeDec.boxShadow, isNull);
+      expect(timeDec.gradient, isNull);
+      expect(timeDec.border?.bottom.width, 1.5);
+
+      // Verify tapping opens modals
+      await tester.tap(find.text('Tanggal'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pilih Tanggal'), findsOneWidget);
+
+      await tester.tap(find.text('Batal'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Waktu'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pilih Waktu'), findsOneWidget);
+
+      await tester.tap(find.text('Batal'));
+      await tester.pumpAndSettle();
+    });
+
+    // -------------------------------------------------------------------------
+    // 6. Test Vertical Ordering: Date and Time is ABOVE Category Input
+    // -------------------------------------------------------------------------
+    testWidgets('Input Date and Time is vertically placed ABOVE Category input section', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AddTransactionScreen(user: testUser),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final nominalFinder = find.text('Nominal Transaksi');
+      final dateFinder = find.text('Tanggal');
+      final timeFinder = find.text('Waktu');
+      final categoryFinder = find.text('Kategori');
+
+      expect(nominalFinder, findsOneWidget);
+      expect(dateFinder, findsOneWidget);
+      expect(timeFinder, findsOneWidget);
+      expect(categoryFinder, findsOneWidget);
+
+      final nominalY = tester.getTopLeft(nominalFinder).dy;
+      final dateY = tester.getTopLeft(dateFinder).dy;
+      final timeY = tester.getTopLeft(timeFinder).dy;
+      final categoryY = tester.getTopLeft(categoryFinder).dy;
+
+      // Verifikasi urutan vertikal:
+      // Nominal < Tanggal/Waktu < Kategori
+      expect(nominalY, lessThan(dateY));
+      expect(nominalY, lessThan(timeY));
+      expect(dateY, lessThan(categoryY));
+      expect(timeY, lessThan(categoryY));
+    });
   });
 }

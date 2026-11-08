@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/widgets/tactile_swipe_detector.dart';
 
 /// Segmented Switcher Control Kategori (Pengeluaran & Pemasukan)
-/// Menerapkan desain tactile skeuomorphic dengan animated sliding pill dan ikon aksi,
-/// identik dengan ExportImportSegmentedControl pada fitur Impor & Ekspor.
+/// Menerapkan desain tactile skeuomorphic dengan animated sliding pill, ikon aksi,
+/// serta dukungan gesture swipe left & swipe right untuk navigasi cepat antar kategori.
 class CategoryTabBar extends StatelessWidget {
   final bool isExpenseSelected;
   final ValueChanged<bool> onTabChanged;
@@ -21,10 +22,21 @@ class CategoryTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 48,
-      padding: const EdgeInsets.all(4),
+    return TactileSwipeDetector(
+      onSwipeLeft: () {
+        if (isExpenseSelected) {
+          onTabChanged(false);
+        }
+      },
+      onSwipeRight: () {
+        if (!isExpenseSelected) {
+          onTabChanged(true);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFFDAE2FD),
         borderRadius: BorderRadius.circular(999),
@@ -146,6 +158,7 @@ class CategoryTabBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

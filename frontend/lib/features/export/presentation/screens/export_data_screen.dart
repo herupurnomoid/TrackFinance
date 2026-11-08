@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/tactile_swipe_detector.dart';
 import '../widgets/export_date_picker_modal.dart';
 import '../../data/export_share_service.dart';
 import '../../data/import_data_model.dart';
@@ -624,12 +625,24 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
-      body: Stack(
-        children: [
-          // Background Gradient Canvas
-          Container(
-            color: const Color(0xFFFAF8FF),
-          ),
+      body: TactileSwipeDetector(
+        behavior: HitTestBehavior.translucent,
+        onSwipeLeft: () {
+          if (_isImportTab) {
+            setState(() => _isImportTab = false);
+          }
+        },
+        onSwipeRight: () {
+          if (!_isImportTab) {
+            setState(() => _isImportTab = true);
+          }
+        },
+        child: Stack(
+          children: [
+            // Background Gradient Canvas
+            Container(
+              color: const Color(0xFFFAF8FF),
+            ),
 
             Column(
               children: [
@@ -643,50 +656,50 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
                     color: const Color(0xFF2563EB),
                     backgroundColor: Colors.white,
                     child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-                          child: AnimatedSwitcher(
-                            duration: Duration.zero,
-                            child: _isLoading
-                                ? (_isImportTab
-                                    ? ImportSkeleton(
-                                        key: const ValueKey('skeleton_import'),
-                                        isUploadedState: _uploadedFile != null,
-                                      )
-                                    : const ExportSkeleton(
-                                        key: ValueKey('skeleton_export'),
-                                      ))
-                                : Column(
-                                    key: const ValueKey('content'),
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // 1. Segmented Toggle Control (Impor vs Ekspor)
-                                      ExportImportSegmentedControl(
-                                        isImportSelected: _isImportTab,
-                                        onSelectionChanged: (isImport) {
-                                          setState(() => _isImportTab = isImport);
-                                        },
-                                      ),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+                        child: AnimatedSwitcher(
+                          duration: Duration.zero,
+                          child: _isLoading
+                              ? (_isImportTab
+                                  ? ImportSkeleton(
+                                      key: const ValueKey('skeleton_import'),
+                                      isUploadedState: _uploadedFile != null,
+                                    )
+                                  : const ExportSkeleton(
+                                      key: ValueKey('skeleton_export'),
+                                    ))
+                              : Column(
+                                  key: const ValueKey('content'),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // 1. Segmented Toggle Control (Impor vs Ekspor)
+                                    ExportImportSegmentedControl(
+                                      isImportSelected: _isImportTab,
+                                      onSelectionChanged: (isImport) {
+                                        setState(() => _isImportTab = isImport);
+                                      },
+                                    ),
 
-                                      const SizedBox(height: 20),
+                                    const SizedBox(height: 20),
 
-                                      // Konten Tab (Impor atau Ekspor)
-                                      AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 250),
-                                        child: _isImportTab
-                                            ? RepaintBoundary(child: _buildImportContent())
-                                            : RepaintBoundary(child: _buildExportContent()),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                                    // Konten Tab (Impor atau Ekspor)
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 250),
+                                      child: _isImportTab
+                                          ? RepaintBoundary(child: _buildImportContent())
+                                          : RepaintBoundary(child: _buildExportContent()),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                     ),
-              ],
-            ),
+                  ),
+                ],
+              ),
 
           // Primary Bottom Action Dock (Sticky with Gradient Fade)
           Positioned(
@@ -748,8 +761,9 @@ class _ExportDataScreenState extends State<ExportDataScreen> {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Top Header Bar dengan Glassmorphic Back Button dan Gradient Waktu Dinamis
   Widget _buildHeader(BuildContext context) {

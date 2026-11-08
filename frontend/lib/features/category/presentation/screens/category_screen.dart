@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/user_profile.dart';
 import '../../../../core/services/auth_service_provider.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/tactile_swipe_detector.dart';
 import '../../data/category_model.dart';
 import '../../data/category_repository.dart';
 import '../widgets/add_category_modal.dart';
@@ -125,6 +126,29 @@ class _CategoryScreenState extends State<CategoryScreen> {
         });
       }
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    HapticFeedback.lightImpact();
+    setState(() => _isLoading = true);
+    final uid = _uid;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        final items = await _repository.getCategories(uid);
+        if (items.isNotEmpty && mounted) {
+          setState(() {
+            _expenseCategories = items.where((c) => c.isExpense).toList();
+            _incomeCategories = items.where((c) => !c.isExpense).toList();
+          });
+        }
+      } catch (e) {
+        debugPrint('CategoryScreen refresh error: $e');
+      }
+    }
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _openAddModal() {
@@ -330,78 +354,95 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                // 1. Header Baru (Gradasi Biru rounded-b-[28px])
-                _buildHeader(context),
+        body: TactileSwipeDetector(
+          behavior: HitTestBehavior.translucent,
+          onSwipeLeft: () {
+            if (_isExpenseTab) {
+              setState(() => _isExpenseTab = false);
+            }
+          },
+          onSwipeRight: () {
+            if (!_isExpenseTab) {
+              setState(() => _isExpenseTab = true);
+            }
+          },
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // 1. Header Baru (Gradasi Biru rounded-b-[28px])
+                  _buildHeader(context),
 
-                // 2. Main Content Canvas (seperti Halaman Profil)
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-                      child: _isLoading
-                          ? const CategorySkeleton(key: ValueKey('skeleton'))
-                          : StreamBuilder<List<CategoryItem>>(
-                              stream: (_uid != null && _uid!.isNotEmpty)
-                                  ? _repository.getCategoriesStream(_uid!)
-                                  : null,
-                              initialData: [
-                                ..._expenseCategories,
-                                ..._incomeCategories,
-                              ],
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                                  return const CategorySkeleton(key: ValueKey('skeleton'));
-                                }
+                  // 2. Main Content Canvas (seperti Halaman Profil)
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _handleRefresh,
+                      color: const Color(0xFF2563EB),
+                      backgroundColor: Colors.white,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                        child: _isLoading
+                            ? const CategorySkeleton(key: ValueKey('skeleton'))
+                            : StreamBuilder<List<CategoryItem>>(
+                                stream: (_uid != null && _uid!.isNotEmpty)
+                                    ? _repository.getCategoriesStream(_uid!)
+                                    : null,
+                                initialData: [
+                                  ..._expenseCategories,
+                                  ..._incomeCategories,
+                                ],
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                                    return const CategorySkeleton(key: ValueKey('skeleton'));
+                                  }
 
-                                if (snapshot.hasData &&
-                                    snapshot.data != null &&
-                                    _uid != null &&
-                                    _uid!.isNotEmpty) {
-                                  final allDocs = snapshot.data!;
-                                  _expenseCategories = allDocs.where((c) => c.isExpense).toList();
-                                  _incomeCategories = allDocs.where((c) => !c.isExpense).toList();
-                                }
+                                  if (snapshot.hasData &&
+                                      snapshot.data != null &&
+                                      _uid != null &&
+                                      _uid!.isNotEmpty) {
+                                    final allDocs = snapshot.data!;
+                                    _expenseCategories = allDocs.where((c) => c.isExpense).toList();
+                                    _incomeCategories = allDocs.where((c) => !c.isExpense).toList();
+                                  }
 
-                                return Column(
-                                  key: const ValueKey('content'),
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 1. Segmented Switcher Control (Pengeluaran vs Pemasukan)
-                                    _buildSegmentedTabTrack(),
+                                  return Column(
+                                    key: const ValueKey('content'),
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // 1. Segmented Switcher Control (Pengeluaran vs Pemasukan)
+                                      _buildSegmentedTabTrack(),
 
-                                    const SizedBox(height: 14),
+                                      const SizedBox(height: 14),
 
-                                    // 2. Konten Tab (Pengeluaran atau Pemasukan)
-                                    AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 250),
-                                      child: _isExpenseTab
-                                          ? RepaintBoundary(
-                                              child: _buildTabContent(
-                                                categories: _expenseCategories,
-                                                isExpense: true,
+                                      // 2. Konten Tab (Pengeluaran atau Pemasukan)
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 250),
+                                        child: _isExpenseTab
+                                            ? RepaintBoundary(
+                                                child: _buildTabContent(
+                                                  categories: _expenseCategories,
+                                                  isExpense: true,
+                                                ),
+                                              )
+                                            : RepaintBoundary(
+                                                child: _buildTabContent(
+                                                  categories: _incomeCategories,
+                                                  isExpense: false,
+                                                ),
                                               ),
-                                            )
-                                          : RepaintBoundary(
-                                              child: _buildTabContent(
-                                                categories: _incomeCategories,
-                                                isExpense: false,
-                                              ),
-                                            ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                      ),
                     ),
                   ),
-              ],
-            ),
+                ],
+              ),
 
             // Floating Toast Notification Pill
             if (_toastMessage != null)
@@ -456,8 +497,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeader(BuildContext context) {
     return TactileTimeHeaderWrapper(
@@ -546,7 +588,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
 
     // 4-Column Skeuomorphic Tile Matrix
-    return _buildCategoryGrid(categories);
+    return KeyedSubtree(
+      key: ValueKey('grid_$isExpense'),
+      child: _buildCategoryGrid(categories),
+    );
   }
 
   Widget _buildCategoryGrid(List<CategoryItem> categories) {

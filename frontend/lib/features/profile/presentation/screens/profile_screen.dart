@@ -421,7 +421,7 @@ class _ProfileHeaderBackButtonState extends State<_ProfileHeaderBackButton> {
   }
 }
 
-/// Tombol Keluar (Logout) Tactile dengan Aksen Merah Lembut
+/// Tombol Keluar (Logout) Tactile dengan Konsep No Container & No Background Color
 class _TactileLogoutButton extends StatefulWidget {
   final VoidCallback onTap;
 
@@ -436,78 +436,51 @@ class _TactileLogoutButtonState extends State<_TactileLogoutButton> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSlide(
-      offset: Offset(0, _isPressed ? 0.035 : 0.0),
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.easeOutCubic,
-      child: AnimatedScale(
-        scale: _isPressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onHighlightChanged: (highlighted) {
-              setState(() => _isPressed = highlighted);
-            },
-            onTap: () {
-              HapticFeedback.lightImpact();
-              widget.onTap();
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                color: _isPressed ? const Color(0xFFFFF5F5) : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _isPressed ? const Color(0xFFFFB4AB) : const Color(0xFFFFDAD6),
-                  width: 1.0,
-                ),
-                boxShadow: _isPressed
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFBA1A1A).withValues(alpha: 0.04),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: const Color(0xFFBA1A1A).withValues(alpha: 0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-              ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.logout_rounded,
-                  size: 20,
-                  color: Color(0xFFBA1A1A),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Keluar',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFBA1A1A),
+    const Color logoutColor = Color(0xFFDC2626);
+
+    return Center(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          widget.onTap();
+        },
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: _isPressed ? 0.6 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: logoutColor,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    'Keluar',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: logoutColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
